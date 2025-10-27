@@ -50,7 +50,6 @@ export class FilesLocalController {
     },
   })
   //  @UseInterceptors(FileInterceptor('file'))
-
   @UseInterceptors(
     FileInterceptor('file', {
       dest: '/tmp', // ✅ Use /tmp (only writable directory in serverless)
@@ -71,7 +70,7 @@ export class FilesLocalController {
     }
     return response.sendFile(filePath);
   }
-    // download(@Param('path') path, @Response() response) {
-    // return response.sendFile(path, { root: './files' });
-    // }
+  // download(@Param('path') path, @Response() response) {
+  // return response.sendFile(path, { root: './files' });
+  // }
 }

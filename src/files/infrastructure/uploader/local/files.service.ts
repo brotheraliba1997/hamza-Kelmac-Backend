@@ -25,11 +25,11 @@ export class FilesLocalService {
         },
       });
     }
-return {
-  file: await this.fileRepository.create({
-    path: `/tmp/${file.filename}`, // ✅ safer for serverless
-  }),
-};
+    return {
+      file: await this.fileRepository.create({
+        path: `/tmp/${file.filename}`, // ✅ safer for serverless
+      }),
+    };
     // return {
     //   file: await this.fileRepository.create({
     //     path: `/${this.configService.get('app.apiPrefix', {
