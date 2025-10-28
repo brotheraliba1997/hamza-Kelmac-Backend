@@ -3,7 +3,10 @@ import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
 import { CreateEnrollmentDto } from './dto/create-enrollment.dto';
 import { EnrollmentsService } from './enrollments.service';
 
-@Controller('enrollments')
+@Controller({
+  path: 'enrollments',
+  version: '1',
+})
 export class EnrollmentsController {
   constructor(private readonly service: EnrollmentsService) {}
 

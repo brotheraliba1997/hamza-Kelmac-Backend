@@ -11,7 +11,10 @@ import {
 import { CertificatesService } from './certificates.service';
 import { CreateCertificateDto } from './dto/create-certificate.dto';
 import { UpdateCertificateDto } from './dto/update-certificate.dto';
-@Controller('certificates')
+@Controller({
+  path: 'certificates',
+  version: '1',
+})
 export class CertificatesController {
   constructor(private readonly service: CertificatesService) {}
 
