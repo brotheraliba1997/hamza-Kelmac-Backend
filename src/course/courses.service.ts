@@ -9,33 +9,33 @@ import { UpdateCourseDto } from './dto/update-course.dto';
 export class CoursesService {
   constructor(@InjectModel(Course.name) private model: Model<CourseDocument>) {}
 
-async create(dto: CreateCourseDto) {
-  const created = await this.model.create({
-    ...dto,
-    instructor: new Types.ObjectId(dto.instructor), // ✅ ensure proper type
-  });
-  return created;
-}
+  async create(dto: CreateCourseDto) {
+    const created = await this.model.create({
+      ...dto,
+      instructor: new Types.ObjectId(dto.instructor), // ✅ ensure proper type
+    });
+    return created;
+  }
 
   findAll() {
     return this.model.find().populate('instructor', 'name email').lean();
   }
 
-findOne(id: string | any) {
-  // Agar id buffer ya object format me hai, to safely convert karlo
-  const objectId =
-    id instanceof Types.ObjectId
-      ? id
-      : Types.ObjectId.isValid(id)
-      ? new Types.ObjectId(id)
-      : null;
+  findOne(id: string | any) {
+    // Agar id buffer ya object format me hai, to safely convert karlo
+    const objectId =
+      id instanceof Types.ObjectId
+        ? id
+        : Types.ObjectId.isValid(id)
+          ? new Types.ObjectId(id)
+          : null;
 
-  if (!objectId) throw new Error('Invalid ID format');
+    if (!objectId) throw new Error('Invalid ID format');
 
-  console.log('Converted ObjectId:', objectId);
+    console.log('Converted ObjectId:', objectId);
 
-  return this.model.findById(objectId).populate('instructor', 'name').lean();
-}
+    return this.model.findById(objectId).populate('instructor', 'name').lean();
+  }
 
   update(id: string, dto: UpdateCourseDto) {
     return this.model.findByIdAndUpdate(id, dto, { new: true }).lean();
