@@ -6,12 +6,25 @@ import {
   Param,
   Patch,
   Post,
+  UseGuards,
 } from '@nestjs/common';
 import { CoursesService } from './courses.service';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { RolesGuard } from '../roles/roles.guard';
+import { AuthGuard } from '@nestjs/passport';
 
-@Controller('courses')
+// @ApiBearerAuth()
+// @UseGuards(AuthGuard('jwt'))
+@ApiTags('courses')
+
+@Controller({
+  path: 'courses',
+  version: '1',
+})
+
+
 export class CoursesController {
   constructor(private readonly service: CoursesService) {}
 

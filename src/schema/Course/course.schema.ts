@@ -37,7 +37,7 @@ export class Course {
   @Prop()
   description?: string;
 
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
+  @Prop({ type: Types.ObjectId, ref: 'UserSchemaClass', required: true })
   instructor: Types.ObjectId;
 
   @Prop({ type: [ModuleSchema], default: [] })
