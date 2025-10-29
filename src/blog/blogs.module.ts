@@ -6,16 +6,18 @@ import { BlogsController } from './blogs.controller';
 import {
   BlogSchema,
   BlogSchemaClass,
-} from './infrastructure/persistence/document/entities/blog.schema';
+} from './infrastructure/persistence/document/entities/blogs.schema';
+import { DocumentBlogsPersistenceModule } from './infrastructure/persistence/document/document-persistence.module';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([
-      { name: BlogSchemaClass.name, schema: BlogSchema },
-    ]),
+    // MongooseModule.forFeature([
+    //   { name: BlogSchemaClass.name, schema: BlogSchema },
+    // ]),
+    DocumentBlogsPersistenceModule,
   ],
   controllers: [BlogsController],
   providers: [BlogsService],
-  exports: [BlogsService],
+  exports: [BlogsService, DocumentBlogsPersistenceModule],
 })
 export class BlogsModule {}

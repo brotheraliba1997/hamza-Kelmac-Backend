@@ -1,6 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { now, HydratedDocument, Types } from 'mongoose';
 import { EntityDocumentHelper } from '../../../../../utils/document-entity-helper';
+import { UserSchemaClass } from '../../../../../users/infrastructure/persistence/document/entities/user.schema';
 
 export type BlogSchemaDocument = HydratedDocument<BlogSchemaClass>;
 // @Schema({
@@ -44,7 +45,7 @@ export class BlogSchemaClass extends EntityDocumentHelper {
 
   @Prop({
     type: Types.ObjectId,
-    ref: 'User',
+    ref: UserSchemaClass.name,
     required: true,
   })
   author: Types.ObjectId;

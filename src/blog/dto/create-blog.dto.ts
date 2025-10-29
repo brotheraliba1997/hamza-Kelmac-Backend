@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsMongoId, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsMongoId, IsOptional, IsString } from 'class-validator';
 
 export class CreateBlogDto {
   @ApiProperty({
@@ -30,4 +30,9 @@ export class CreateBlogDto {
   })
   @IsOptional()
   comments?: string[];
+
+  @ApiProperty({ required: false, default: true })
+  @IsBoolean()
+  @IsOptional()
+  isPublished?: boolean;
 }

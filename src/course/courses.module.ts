@@ -7,15 +7,12 @@ import {
   CourseSchema,
   CourseSchemaClass,
 } from './infrastructure/persistence/document/entities/course.schema';
+import { DocumentCoursesPersistenceModule } from './infrastructure/persistence/document/document-persistence.module';
 
 @Module({
-  imports: [
-    MongooseModule.forFeature([
-      { name: CourseSchemaClass.name, schema: CourseSchema },
-    ]),
-  ],
+  imports: [DocumentCoursesPersistenceModule],
   controllers: [CoursesController],
   providers: [CoursesService],
-  exports: [CoursesService],
+  exports: [CoursesService, DocumentCoursesPersistenceModule],
 })
 export class CoursesModule {}

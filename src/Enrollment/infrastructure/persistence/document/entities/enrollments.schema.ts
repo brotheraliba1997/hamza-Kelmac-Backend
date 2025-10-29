@@ -1,6 +1,14 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { now, HydratedDocument, Types } from 'mongoose';
 import { EntityDocumentHelper } from '../../../../../utils/document-entity-helper';
+import { UserSchemaClass } from '../../../../../users/infrastructure/persistence/document/entities/user.schema';
+import { CourseSchemaClass } from '../../../../../course/infrastructure/persistence/document/entities/course.schema';
+import {
+  Payment,
+  PaymentSchema,
+} from '../../../../../schema/Payment/payment.schema';
+import { Offer } from '../../../../../schema/offer/offer.schema';
+import { Certificate } from '../../../../../schema/Certificate/certificate.schema';
 
 export type EnrollmentSchemaDocument = HydratedDocument<EnrollmentSchemaClass>;
 
@@ -12,20 +20,20 @@ export type EnrollmentSchemaDocument = HydratedDocument<EnrollmentSchemaClass>;
   },
 })
 export class EnrollmentSchemaClass extends EntityDocumentHelper {
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
-  user: Types.ObjectId; // Student or Corporate User
+  @Prop({ type: Types.ObjectId, ref: UserSchemaClass.name, required: true })
+  user: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: 'Course', required: true })
+  @Prop({ type: Types.ObjectId, ref: CourseSchemaClass.name, required: true })
   course: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: 'Payment' })
+  @Prop({ type: Types.ObjectId, ref: Payment.name })
   payment?: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: 'Offer' })
+  @Prop({ type: Types.ObjectId, ref: Offer.name })
   offer?: Types.ObjectId;
 
   @Prop({ default: 0, min: 0, max: 100 })
-  progress: number; // percentage (0-100)
+  progress: number;
 
   @Prop({
     type: String,
@@ -37,7 +45,7 @@ export class EnrollmentSchemaClass extends EntityDocumentHelper {
   @Prop({ type: Date })
   completionDate?: Date;
 
-  @Prop({ type: Types.ObjectId, ref: 'Certificate' })
+  @Prop({ type: Types.ObjectId, ref: Certificate.name })
   certificate?: Types.ObjectId;
 
   @Prop({ default: now })
@@ -58,3 +66,4 @@ export const EnrollmentSchema = SchemaFactory.createForClass(
 EnrollmentSchema.index({ user: 1 });
 EnrollmentSchema.index({ course: 1 });
 EnrollmentSchema.index({ status: 1 });
+EnrollmentSchema.index({ user: 1, course: 1 }, { unique: true }); // Prevent duplicate enrollments

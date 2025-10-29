@@ -8,6 +8,8 @@ import {
   Post,
   HttpCode,
   HttpStatus,
+  SerializeOptions,
+  Query,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -19,6 +21,13 @@ import {
 import { CoursesService } from './courses.service';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
+import { infinityPagination } from '../utils/infinity-pagination';
+import {
+  InfinityPaginationResponse,
+  InfinityPaginationResponseDto,
+} from '../utils/dto/infinity-pagination-response.dto';
+import { QueryUserDto } from '../users/dto/query-user.dto';
+import { CourseEntity } from './domain/course';
 
 @ApiBearerAuth()
 @ApiTags('Courses')
@@ -36,11 +45,35 @@ export class CoursesController {
     return this.service.create(dto);
   }
 
-  @ApiOkResponse()
-  @HttpCode(HttpStatus.OK)
+  @ApiOkResponse({
+    type: InfinityPaginationResponse(CourseEntity),
+  })
+  @SerializeOptions({
+    groups: ['admin'],
+  })
   @Get()
-  findAll() {
-    return this.service.findAll();
+  @HttpCode(HttpStatus.OK)
+  async findAll(
+    // @Query() query: QueryUserDto,
+    @Query() query: any,
+  ): Promise<InfinityPaginationResponseDto<CourseEntity>> {
+    const page = query?.page ?? 1;
+    let limit = query?.limit ?? 10;
+    if (limit > 50) {
+      limit = 50;
+    }
+
+    return infinityPagination(
+      await this.service.findManyWithPagination({
+        filterOptions: query?.filters,
+        sortOptions: query?.sort,
+        paginationOptions: {
+          page,
+          limit,
+        },
+      }),
+      { page, limit },
+    );
   }
 
   @ApiOkResponse()
@@ -52,7 +85,7 @@ export class CoursesController {
   @HttpCode(HttpStatus.OK)
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.service.findOne(id);
+    return this.service.findById(id);
   }
 
   @ApiOkResponse()

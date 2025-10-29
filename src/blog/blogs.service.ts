@@ -1,34 +1,64 @@
-import { InjectModel } from '@nestjs/mongoose';
-// import { Blog, BlogDocument } from '../schema/Blog/blog.schema';
+import { Injectable } from '@nestjs/common';
 import { CreateBlogDto } from './dto/create-blog.dto';
 import { UpdateBlogDto } from './dto/update-blog.dto';
-import { Model } from 'mongoose';
-import { Injectable } from '@nestjs/common';
-import {
-  BlogSchemaClass,
-  BlogSchemaDocument,
-} from './infrastructure/persistence/document/entities/blog.schema';
+import { BlogEntity } from './domain/blog';
+
+import { FilterBlogDto, SortBlogDto } from './dto/query-blog.dto';
+import { BlogRepository } from './infrastructure/persistence/document/repositories/blog.repository';
+import { IPaginationOptions } from '../utils/types/pagination-options';
 
 @Injectable()
 export class BlogsService {
-  constructor(
-    @InjectModel(BlogSchemaClass.name)
-    private model: Model<BlogSchemaDocument>,
-  ) {}
+  constructor(private readonly blogRepository: BlogRepository) {}
 
-  create(dto: CreateBlogDto) {
-    return this.model.create(dto);
+  async create(createBlogDto: CreateBlogDto): Promise<BlogEntity> {
+    const blogEntity = new BlogEntity(
+      null, // id will be generated
+      createBlogDto.title,
+      createBlogDto.content,
+      createBlogDto.author, // This should be the user ID string
+      [], // empty comments array
+      createBlogDto.isPublished ?? true,
+      new Date(), // createdAt
+      new Date(), // updatedAt
+      null, // deletedAt
+    );
+
+    return this.blogRepository.create(blogEntity);
   }
-  findAll() {
-    return this.model.find().populate('author', 'name').lean();
+
+  async findAll({
+    filterOptions,
+    sortOptions,
+    paginationOptions,
+  }: {
+    filterOptions?: FilterBlogDto;
+    sortOptions?: SortBlogDto[];
+    paginationOptions: IPaginationOptions;
+  }): Promise<BlogEntity[]> {
+    return this.blogRepository.findManyWithPagination({
+      filterOptions,
+      sortOptions,
+      paginationOptions,
+    });
   }
-  findOne(id: string) {
-    return this.model.findById(id).populate('author').lean();
+
+  async findOne(id: string): Promise<BlogEntity | null> {
+    return this.blogRepository.findById(id);
   }
-  update(id: string, dto: UpdateBlogDto) {
-    return this.model.findByIdAndUpdate(id, dto, { new: true }).lean();
+
+  async findByIds(ids: string[]): Promise<BlogEntity[]> {
+    return this.blogRepository.findByIds(ids);
   }
-  remove(id: string) {
-    return this.model.findByIdAndDelete(id);
+
+  async update(
+    id: string,
+    updateBlogDto: UpdateBlogDto,
+  ): Promise<BlogEntity | null> {
+    return this.blogRepository.update(id, updateBlogDto);
+  }
+
+  async remove(id: string): Promise<void> {
+    return this.blogRepository.remove(id);
   }
 }
