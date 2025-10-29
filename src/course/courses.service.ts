@@ -4,10 +4,17 @@ import { Model } from 'mongoose';
 import { Course, CourseDocument } from '../schema/Course/course.schema';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
+import {
+  CourseSchemaClass,
+  CourseSchemaDocument,
+} from './infrastructure/persistence/document/entities/course.schema';
 
 @Injectable()
 export class CoursesService {
-  constructor(@InjectModel(Course.name) private model: Model<CourseDocument>) {}
+  constructor(
+    @InjectModel(CourseSchemaClass.name)
+    private model: Model<CourseSchemaDocument>,
+  ) {}
 
   create(dto: CreateCourseDto) {
     return this.model.create(dto);

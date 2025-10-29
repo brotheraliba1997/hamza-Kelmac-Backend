@@ -3,11 +3,16 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { BlogsService } from './blogs.service';
 import { BlogsController } from './blogs.controller';
-import { Blog, BlogSchema } from '../schema/Blog/blog.schema';
+import {
+  BlogSchema,
+  BlogSchemaClass,
+} from './infrastructure/persistence/document/entities/blog.schema';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: Blog.name, schema: BlogSchema }]),
+    MongooseModule.forFeature([
+      { name: BlogSchemaClass.name, schema: BlogSchema },
+    ]),
   ],
   controllers: [BlogsController],
   providers: [BlogsService],

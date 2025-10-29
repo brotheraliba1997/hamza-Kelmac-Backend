@@ -1,13 +1,20 @@
 import { InjectModel } from '@nestjs/mongoose';
-import { Blog, BlogDocument } from '../schema/Blog/blog.schema';
+// import { Blog, BlogDocument } from '../schema/Blog/blog.schema';
 import { CreateBlogDto } from './dto/create-blog.dto';
 import { UpdateBlogDto } from './dto/update-blog.dto';
 import { Model } from 'mongoose';
 import { Injectable } from '@nestjs/common';
+import {
+  BlogSchemaClass,
+  BlogSchemaDocument,
+} from './infrastructure/persistence/document/entities/blog.schema';
 
 @Injectable()
 export class BlogsService {
-  constructor(@InjectModel(Blog.name) private model: Model<BlogDocument>) {}
+  constructor(
+    @InjectModel(BlogSchemaClass.name)
+    private model: Model<BlogSchemaDocument>,
+  ) {}
 
   create(dto: CreateBlogDto) {
     return this.model.create(dto);

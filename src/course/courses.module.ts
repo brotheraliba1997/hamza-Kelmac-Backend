@@ -3,11 +3,16 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { CoursesService } from './courses.service';
 import { CoursesController } from './courses.controller';
-import { Course, CourseSchema } from '../schema/Course/course.schema';
+import {
+  CourseSchema,
+  CourseSchemaClass,
+} from './infrastructure/persistence/document/entities/course.schema';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: Course.name, schema: CourseSchema }]),
+    MongooseModule.forFeature([
+      { name: CourseSchemaClass.name, schema: CourseSchema },
+    ]),
   ],
   controllers: [CoursesController],
   providers: [CoursesService],

@@ -62,6 +62,15 @@ export class UserSchemaClass extends EntityDocumentHelper {
   })
   status?: StatusSchema;
 
+  @Prop()
+  company?: string;
+
+  @Prop()
+  country?: string;
+
+  @Prop()
+  currency?: string;
+
   @Prop({ default: now })
   createdAt: Date;
 
