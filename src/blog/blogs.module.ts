@@ -3,14 +3,21 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { BlogsService } from './blogs.service';
 import { BlogsController } from './blogs.controller';
-import { Blog, BlogSchema } from '../schema/Blog/blog.schema';
+import {
+  BlogSchema,
+  BlogSchemaClass,
+} from './infrastructure/persistence/document/entities/blogs.schema';
+import { DocumentBlogsPersistenceModule } from './infrastructure/persistence/document/document-persistence.module';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: Blog.name, schema: BlogSchema }]),
+    // MongooseModule.forFeature([
+    //   { name: BlogSchemaClass.name, schema: BlogSchema },
+    // ]),
+    DocumentBlogsPersistenceModule,
   ],
   controllers: [BlogsController],
   providers: [BlogsService],
-  exports: [BlogsService],
+  exports: [BlogsService, DocumentBlogsPersistenceModule],
 })
 export class BlogsModule {}

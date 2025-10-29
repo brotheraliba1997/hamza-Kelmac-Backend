@@ -4,44 +4,52 @@ import { Model, Types } from 'mongoose';
 import { Course, CourseDocument } from '../schema/Course/course.schema';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
+import {
+  CourseSchemaClass,
+  CourseSchemaDocument,
+} from './infrastructure/persistence/document/entities/course.schema';
+import { CourseRepository } from './infrastructure/persistence/courses.repository';
+import { FilterCourseDto, SortCourseDto } from './dto/query-course.dto';
+import { IPaginationOptions } from '../utils/types/pagination-options';
+import { CourseEntity } from './domain/course';
+import { NullableType } from '../utils/types/nullable.type';
 
 @Injectable()
 export class CoursesService {
-  constructor(@InjectModel(Course.name) private model: Model<CourseDocument>) {}
+  constructor(private readonly courseRepository: CourseRepository) {}
 
-  async create(dto: CreateCourseDto) {
-    const created = await this.model.create({
-      ...dto,
-      instructor: new Types.ObjectId(dto.instructor), // ✅ ensure proper type
+  // create(dto: CreateCourseDto) {
+  create(dto: any) {
+    return this.courseRepository.create(dto);
+  }
+
+  // findAll() {
+  //   return this.model.find().populate('instructor', 'name email').lean();
+  // }
+  findManyWithPagination({
+    filterOptions,
+    sortOptions,
+    paginationOptions,
+  }: {
+    filterOptions?: FilterCourseDto | null;
+    sortOptions?: SortCourseDto[] | null;
+    paginationOptions: IPaginationOptions;
+  }): Promise<CourseEntity[]> {
+    return this.courseRepository.findManyWithPagination({
+      filterOptions,
+      sortOptions,
+      paginationOptions,
     });
-    return created;
   }
-
-  findAll() {
-    return this.model.find().populate('instructor', 'name email').lean();
-  }
-
-  findOne(id: string | any) {
-    // Agar id buffer ya object format me hai, to safely convert karlo
-    const objectId =
-      id instanceof Types.ObjectId
-        ? id
-        : Types.ObjectId.isValid(id)
-          ? new Types.ObjectId(id)
-          : null;
-
-    if (!objectId) throw new Error('Invalid ID format');
-
-    console.log('Converted ObjectId:', objectId);
-
-    return this.model.findById(objectId).populate('instructor', 'name').lean();
+  findById(id: CourseEntity['id']): Promise<NullableType<CourseEntity>> {
+    return this.courseRepository.findById(id);
   }
 
   update(id: string, dto: UpdateCourseDto) {
-    return this.model.findByIdAndUpdate(id, dto, { new: true }).lean();
+    return this.courseRepository.update(id, dto);
   }
 
   remove(id: string) {
-    return this.model.findByIdAndDelete(id);
+    return this.courseRepository.remove(id);
   }
 }

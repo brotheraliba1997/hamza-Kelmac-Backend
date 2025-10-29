@@ -1,32 +1,92 @@
-import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-
+import { Injectable, ConflictException } from '@nestjs/common';
 import { CreateEnrollmentDto } from './dto/create-enrollment.dto';
+import { UpdateEnrollmentDto } from './dto/update-enrollment.dto';
+import { EnrollmentEntity } from './domain/enrollment';
+import { IPaginationOptions } from '../utils/types/pagination-options';
 import {
-  Enrollment,
-  EnrollmentDocument,
-} from '../schema/Enrollment/enrollment.schema';
+  FilterEnrollmentDto,
+  SortEnrollmentDto,
+} from './dto/query-enrollment.dto';
+import { EnrollmentRepository } from './infrastructure/persistence/enrollments.repository';
 
 @Injectable()
 export class EnrollmentsService {
-  constructor(
-    @InjectModel(Enrollment.name) private model: Model<EnrollmentDocument>,
-  ) {}
+  constructor(private readonly enrollmentRepository: EnrollmentRepository) {}
 
-  async create(dto: CreateEnrollmentDto): Promise<Enrollment> {
-    return new this.model(dto).save();
+  async create(
+    createEnrollmentDto: any,
+    // createEnrollmentDto: CreateEnrollmentDto,
+  ): Promise<EnrollmentEntity> {
+    // Check if enrollment already exists
+
+    console.log('createEnrollmentDto:', createEnrollmentDto);
+    const existingEnrollment =
+      await this.enrollmentRepository.findByUserAndCourse(
+        createEnrollmentDto.user,
+        createEnrollmentDto.course,
+      );
+
+    if (existingEnrollment) {
+      throw new ConflictException('User is already enrolled in this course');
+    }
+
+    // const enrollmentEntity = new EnrollmentEntity(createEnrollmentDto);
+
+    return await this.enrollmentRepository.create(createEnrollmentDto);
   }
 
-  async findAll() {
-    return this.model.find().populate('user course').lean();
+  async findAll({
+    filterOptions,
+    sortOptions,
+    paginationOptions,
+  }: {
+    filterOptions?: FilterEnrollmentDto;
+    sortOptions?: SortEnrollmentDto[];
+    paginationOptions: IPaginationOptions;
+  }): Promise<EnrollmentEntity[]> {
+    return await this.enrollmentRepository.findManyWithPagination({
+      filterOptions,
+      sortOptions,
+      paginationOptions,
+    });
   }
 
-  async findUserEnrollments(userId: string) {
-    return this.model.find({ user: userId }).populate('course').lean();
+  async findOne(id: string): Promise<EnrollmentEntity | null> {
+    return this.enrollmentRepository.findById(id);
   }
 
-  async updateProgress(id: string, progress: number) {
-    return this.model.findByIdAndUpdate(id, { progress }, { new: true }).lean();
+  async findByUserAndCourse(
+    userId: string,
+    courseId: string,
+  ): Promise<EnrollmentEntity | null> {
+    return this.enrollmentRepository.findByUserAndCourse(userId, courseId);
+  }
+
+  async findByUser(
+    userId: string,
+    paginationOptions: IPaginationOptions,
+  ): Promise<EnrollmentEntity[]> {
+    return this.enrollmentRepository.findManyWithPagination({
+      filterOptions: { userId },
+      sortOptions: [{ orderBy: 'createdAt', order: 'DESC' }],
+      paginationOptions,
+    });
+  }
+
+  async update(
+    id: string,
+    updateEnrollmentDto: UpdateEnrollmentDto,
+  ): Promise<EnrollmentEntity | null> {
+    // If updating progress to 100%, automatically set as completed
+    if (updateEnrollmentDto.progress === 100) {
+      updateEnrollmentDto.status = 'completed';
+      updateEnrollmentDto.completionDate = new Date();
+    }
+
+    return this.enrollmentRepository.update(id, updateEnrollmentDto);
+  }
+
+  async remove(id: string): Promise<void> {
+    return this.enrollmentRepository.remove(id);
   }
 }
