@@ -1,12 +1,5 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  IsMongoId,
-  IsNumber,
-  IsOptional,
-  IsEnum,
-  Min,
-  Max,
-} from 'class-validator';
+﻿import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsMongoId, IsNumber, IsOptional, IsEnum, Min, Max } from 'class-validator';
 
 export class CreateEnrollmentDto {
   @ApiProperty()
@@ -34,10 +27,7 @@ export class CreateEnrollmentDto {
   @IsOptional()
   progress?: number;
 
-  @ApiPropertyOptional({
-    enum: ['active', 'completed', 'cancelled'],
-    default: 'active',
-  })
+  @ApiPropertyOptional({ enum: ['active', 'completed', 'cancelled'], default: 'active' })
   @IsEnum(['active', 'completed', 'cancelled'])
   @IsOptional()
   status?: 'active' | 'completed' | 'cancelled';

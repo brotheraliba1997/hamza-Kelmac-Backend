@@ -1,14 +1,11 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { now, HydratedDocument, Types } from 'mongoose';
-import { EntityDocumentHelper } from '../../../../../utils/document-entity-helper';
-import { UserSchemaClass } from '../../../../../users/infrastructure/persistence/document/entities/user.schema';
-import { CourseSchemaClass } from '../../../../../course/infrastructure/persistence/document/entities/course.schema';
-import {
-  Payment,
-  PaymentSchema,
-} from '../../../../../schema/Payment/payment.schema';
-import { Offer } from '../../../../../schema/offer/offer.schema';
-import { Certificate } from '../../../../../schema/Certificate/certificate.schema';
+import { EntityDocumentHelper } from '../../utils/document-entity-helper';
+import { UserSchemaClass } from '../../users/infrastructure/persistence/document/entities/user.schema';
+import { CourseSchemaClass } from '../../course/infrastructure/persistence/document/entities/course.schema';
+import { Payment } from '../../schema/Payment/payment.schema';
+import { Offer } from '../../schema/offer/offer.schema';
+import { CertificateSchemaClass } from '../../certificate/infrastructure/persistence/document/entities/certificate.schema';
 
 export type EnrollmentSchemaDocument = HydratedDocument<EnrollmentSchemaClass>;
 
@@ -45,7 +42,7 @@ export class EnrollmentSchemaClass extends EntityDocumentHelper {
   @Prop({ type: Date })
   completionDate?: Date;
 
-  @Prop({ type: Types.ObjectId, ref: Certificate.name })
+  @Prop({ type: Types.ObjectId, ref: CertificateSchemaClass.name })
   certificate?: Types.ObjectId;
 
   @Prop({ default: now })
@@ -55,15 +52,15 @@ export class EnrollmentSchemaClass extends EntityDocumentHelper {
   updatedAt: Date;
 
   @Prop()
-  deletedAt: Date;
+  deletedAt?: Date;
 }
 
 export const EnrollmentSchema = SchemaFactory.createForClass(
   EnrollmentSchemaClass,
 );
 
-// Add indexes for frequently queried fields
+// Useful indexes for queries and constraints
 EnrollmentSchema.index({ user: 1 });
 EnrollmentSchema.index({ course: 1 });
 EnrollmentSchema.index({ status: 1 });
-EnrollmentSchema.index({ user: 1, course: 1 }, { unique: true }); // Prevent duplicate enrollments
+EnrollmentSchema.index({ user: 1, course: 1 }, { unique: true });
