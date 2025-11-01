@@ -10,6 +10,7 @@ import {
   HttpStatus,
   SerializeOptions,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -26,10 +27,12 @@ import {
   InfinityPaginationResponse,
   InfinityPaginationResponseDto,
 } from '../utils/dto/infinity-pagination-response.dto';
-import { QueryUserDto } from '../users/dto/query-user.dto';
 import { CourseEntity } from './domain/course';
+import { AuthGuard } from '@nestjs/passport';
+import { RolesGuard } from '../roles/roles.guard';
+import { Roles } from '../roles/roles.decorator';
+import { RoleEnum } from '../roles/roles.enum';
 
-@ApiBearerAuth()
 @ApiTags('Courses')
 @Controller({
   path: 'courses',
@@ -38,6 +41,9 @@ import { CourseEntity } from './domain/course';
 export class CoursesController {
   constructor(private readonly service: CoursesService) {}
 
+  @ApiBearerAuth()
+  @Roles(RoleEnum.instructor, RoleEnum.admin)
+  @UseGuards(RolesGuard, AuthGuard('jwt'))
   @ApiCreatedResponse()
   @HttpCode(HttpStatus.CREATED)
   @Post()
@@ -54,7 +60,6 @@ export class CoursesController {
   @Get()
   @HttpCode(HttpStatus.OK)
   async findAll(
-    // @Query() query: QueryUserDto,
     @Query() query: any,
   ): Promise<InfinityPaginationResponseDto<CourseEntity>> {
     const page = query?.page ?? 1;
@@ -88,6 +93,8 @@ export class CoursesController {
     return this.service.findById(id);
   }
 
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'))
   @ApiOkResponse()
   @ApiParam({
     name: 'id',
@@ -99,7 +106,9 @@ export class CoursesController {
   update(@Param('id') id: string, @Body() dto: UpdateCourseDto) {
     return this.service.update(id, dto);
   }
-
+  @ApiBearerAuth()
+  @Roles(RoleEnum.admin, RoleEnum.instructor)
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
   @ApiParam({
     name: 'id',
     type: String,
