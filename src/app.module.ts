@@ -29,9 +29,10 @@ import { MongooseConfigService } from './database/mongoose-config.service';
 import { DatabaseConfig } from './database/config/database-config.type';
 import { CertificatesModule } from './certificate/certificates.module';
 import { CoursesModule } from './course/courses.module';
-import { EnrollmentModule } from './enrollment/enrollment.module';
+
 import { BlogsModule } from './blog/blogs.module';
 import { ClassScheduleModule } from './classSchedule/class-schedule.module';
+import { EnrollmentModule } from './Enrollment/enrollment.module';
 
 // <database-block>
 const infrastructureDatabaseModule = (databaseConfig() as DatabaseConfig)
