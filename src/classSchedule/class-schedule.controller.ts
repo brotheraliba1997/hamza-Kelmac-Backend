@@ -27,10 +27,13 @@ export class ClassScheduleController {
   // 📘 Create new class schedule
   @Post()
   @ApiOperation({ summary: 'Create a new class schedule' })
-  @ApiResponse({ status: 201, description: 'Class schedule created successfully.' })
+  @ApiResponse({
+    status: 201,
+    description: 'Class schedule created successfully.',
+  })
   create(@Body() dto: CreateClassScheduleDto) {
     dto.securityKey = randomUUID();
-    return  this.classScheduleService.create(dto);
+    return this.classScheduleService.create(dto);
   }
 
   // 📗 Get all classes (with filters + sorting)
@@ -46,7 +49,10 @@ export class ClassScheduleController {
   // 📘 Get one class schedule by ID
   @Get(':id')
   @ApiOperation({ summary: 'Get a specific class schedule by ID' })
-  @ApiResponse({ status: 200, description: 'Class schedule retrieved successfully.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Class schedule retrieved successfully.',
+  })
   findOne(@Param('id') id: string) {
     return this.classScheduleService.findOne(id);
   }

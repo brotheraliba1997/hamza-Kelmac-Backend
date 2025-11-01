@@ -4,7 +4,8 @@ import { EntityDocumentHelper } from '../../../../../utils/document-entity-helpe
 import { UserSchemaClass } from '../../../../../users/infrastructure/persistence/document/entities/user.schema';
 import { CourseSchemaClass } from '../../../../../course/infrastructure/persistence/document/entities/course.schema';
 
-export type ClassScheduleSchemaDocument = HydratedDocument<ClassScheduleSchemaClass>;
+export type ClassScheduleSchemaDocument =
+  HydratedDocument<ClassScheduleSchemaClass>;
 
 @Schema({
   timestamps: true,
@@ -113,8 +114,9 @@ export class ClassScheduleSchemaClass extends EntityDocumentHelper {
   deletedAt?: Date | null;
 }
 
-export const ClassScheduleSchema =
-  SchemaFactory.createForClass(ClassScheduleSchemaClass);
+export const ClassScheduleSchema = SchemaFactory.createForClass(
+  ClassScheduleSchemaClass,
+);
 
 // ✅ Indexes for performance and query optimization
 ClassScheduleSchema.index({ course: 1 });

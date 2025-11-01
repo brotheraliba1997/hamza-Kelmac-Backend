@@ -1,10 +1,11 @@
-import { DeepPartial } from "typeorm";
-import { NullableType } from "../../utils/types/nullable.type";
-import { IPaginationOptions } from "../../utils/types/pagination-options";
-import { ClassScheduleEntity } from "../doman/class-scheduleEntity";
-import { FilterClassScheduleDto, SortClassScheduleDto } from "../dto/query-class-schedule.dto";
-
-
+import { DeepPartial } from 'typeorm';
+import { NullableType } from '../../utils/types/nullable.type';
+import { IPaginationOptions } from '../../utils/types/pagination-options';
+import { ClassScheduleEntity } from '../doman/class-scheduleEntity';
+import {
+  FilterClassScheduleDto,
+  SortClassScheduleDto,
+} from '../dto/query-class-schedule.dto';
 
 export abstract class ClassScheduleRepository {
   abstract create(

@@ -1,5 +1,3 @@
-
-
 import { UserMapper } from '../../../../../users/infrastructure/persistence/document/mappers/user.mapper';
 import { UserSchemaClass } from '../../../../../users/infrastructure/persistence/document/entities/user.schema';
 import { CourseSchemaClass } from '../../../../../course/infrastructure/persistence/document/entities/course.schema';
@@ -48,7 +46,9 @@ export class ClassScheduleMapper {
   /**
    * Converts Domain Entity -> Persistence Schema
    */
-  static toPersistence(domainEntity: ClassScheduleEntity): ClassScheduleSchemaClass {
+  static toPersistence(
+    domainEntity: ClassScheduleEntity,
+  ): ClassScheduleSchemaClass {
     const persistence = new ClassScheduleSchemaClass();
 
     if (domainEntity.id && typeof domainEntity.id === 'string') {

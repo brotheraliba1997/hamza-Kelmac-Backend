@@ -10,7 +10,7 @@ import {
   Min,
   Max,
   IsNumber,
-  ArrayNotEmpty,    
+  ArrayNotEmpty,
 } from 'class-validator';
 
 export class CreateClassScheduleDto {

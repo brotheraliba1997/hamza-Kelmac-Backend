@@ -33,7 +33,6 @@ import { EnrollmentsModule } from './Enrollment/enrollments.module';
 import { BlogsModule } from './blog/blogs.module';
 import { ClassScheduleModule } from './classSchedule/class-schedule.module';
 
-
 // <database-block>
 const infrastructureDatabaseModule = (databaseConfig() as DatabaseConfig)
   .isDocumentDatabase
