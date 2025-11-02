@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { now, HydratedDocument } from 'mongoose';
-import { UserSchemaClass } from '../../../../../users/infrastructure/persistence/document/entities/user.schema';
+import { UserSchemaClass } from '../../../../../users/schema/user.schema';
 import { EntityDocumentHelper } from '../../../../../utils/document-entity-helper';
 
 export type SessionSchemaDocument = HydratedDocument<SessionSchemaClass>;

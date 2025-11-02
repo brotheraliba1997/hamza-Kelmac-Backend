@@ -24,6 +24,11 @@ import { UpdateBlogDto } from './dto/update-blog.dto';
 import { BlogEntity } from './domain/blog';
 import { FilterBlogDto, SortBlogDto } from './dto/query-blog.dto';
 import { IPaginationOptions } from '../utils/types/pagination-options';
+import { infinityPagination } from '../utils/infinity-pagination';
+import {
+  InfinityPaginationResponse,
+  InfinityPaginationResponseDto,
+} from '../utils/dto/infinity-pagination-response.dto';
 
 @ApiBearerAuth()
 @ApiTags('Blogs')
@@ -41,7 +46,9 @@ export class BlogsController {
     return this.service.create(createBlogDto);
   }
 
-  @ApiOkResponse({ type: [BlogEntity] })
+  @ApiOkResponse({
+    type: InfinityPaginationResponse(BlogEntity),
+  })
   @HttpCode(HttpStatus.OK)
   @Get()
   @ApiQuery({ name: 'page', required: false, type: Number })
@@ -49,33 +56,32 @@ export class BlogsController {
   @ApiQuery({ name: 'authorId', required: false, type: String })
   @ApiQuery({ name: 'isPublished', required: false, type: Boolean })
   @ApiQuery({ name: 'title', required: false, type: String })
-  async findAll(
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 10,
-    @Query('authorId') authorId?: string,
-    @Query('isPublished') isPublished?: boolean,
-    @Query('title') title?: string,
-  ): Promise<BlogEntity[]> {
-    const filterOptions: FilterBlogDto = {};
-    const paginationOptions: IPaginationOptions = {
-      page: Number(page),
-      limit: Number(limit),
-    };
+  async findAll(@Query() query: any) {
+    const page = query?.page ?? 1;
+    let limit = query?.limit ?? 10;
+    if (limit > 50) {
+      limit = 50;
+    }
 
-    if (authorId) filterOptions.authorId = authorId;
-    if (isPublished !== undefined)
-      filterOptions.isPublished = isPublished === true;
-    if (title) filterOptions.title = title;
+    const filterOptions: FilterBlogDto = {};
+    if (query?.authorId) filterOptions.authorId = query.authorId;
+    if (query?.isPublished !== undefined)
+      filterOptions.isPublished =
+        query.isPublished === 'true' || query.isPublished === true;
+    if (query?.title) filterOptions.title = query.title;
 
     // Default sort by createdAt descending
-    const sortOptions: SortBlogDto[] = [
+    const sortOptions: SortBlogDto[] = query?.sort || [
       { orderBy: 'createdAt', order: 'DESC' },
     ];
 
     return this.service.findAll({
       filterOptions,
       sortOptions,
-      paginationOptions,
+      paginationOptions: {
+        page: Number(page),
+        limit: Number(limit),
+      },
     });
   }
 

@@ -1,32 +1,50 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
-import { Course, CourseDocument } from '../schema/Course/course.schema';
+import { Model } from 'mongoose';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
-import {
-  CourseSchemaClass,
-  CourseSchemaDocument,
-} from './infrastructure/persistence/document/entities/course.schema';
-import { CourseRepository } from './infrastructure/persistence/courses.repository';
+import { CourseSchemaClass } from './schema/course.schema';
 import { FilterCourseDto, SortCourseDto } from './dto/query-course.dto';
 import { IPaginationOptions } from '../utils/types/pagination-options';
 import { CourseEntity } from './domain/course';
 import { NullableType } from '../utils/types/nullable.type';
+import {
+  buildMongooseQuery,
+  FilterQueryBuilder,
+  PaginationResult,
+} from '../utils/mongoose-query-builder';
 
 @Injectable()
 export class CoursesService {
-  constructor(private readonly courseRepository: CourseRepository) {}
+  constructor(
+    @InjectModel(CourseSchemaClass.name)
+    private readonly courseModel: Model<CourseSchemaClass>,
+  ) {}
 
-  // create(dto: CreateCourseDto) {
-  create(dto: any) {
-    return this.courseRepository.create(dto);
+  private map(doc: any): CourseEntity {
+    if (!doc) return undefined as any;
+    const id = typeof doc.id !== 'undefined' ? doc.id : doc._id?.toString?.();
+    return new CourseEntity({
+      id,
+      title: doc.title,
+      description: doc.description,
+      instructor: (doc.instructor as any)?.toString?.() ?? doc.instructor,
+      modules: doc.modules || [],
+      price: doc.price,
+      enrolledCount: doc.enrolledCount,
+      isPublished: doc.isPublished,
+      createdAt: doc.createdAt,
+      updatedAt: doc.updatedAt,
+      deletedAt: doc.deletedAt ?? null,
+    });
   }
 
-  // findAll() {
-  //   return this.model.find().populate('instructor', 'name email').lean();
-  // }
-  findManyWithPagination({
+  async create(dto: CreateCourseDto): Promise<CourseEntity> {
+    const created = await this.courseModel.create(dto);
+    return this.map(created);
+  }
+
+  async findManyWithPagination({
     filterOptions,
     sortOptions,
     paginationOptions,
@@ -34,22 +52,46 @@ export class CoursesService {
     filterOptions?: FilterCourseDto | null;
     sortOptions?: SortCourseDto[] | null;
     paginationOptions: IPaginationOptions;
-  }): Promise<CourseEntity[]> {
-    return this.courseRepository.findManyWithPagination({
-      filterOptions,
+  }): Promise<PaginationResult<CourseEntity>> {
+    // Build filter query using FilterQueryBuilder
+    const filterQuery = new FilterQueryBuilder<CourseSchemaClass>()
+      .addEqual('instructor' as any, filterOptions?.instructorId)
+      .addEqual('isPublished' as any, filterOptions?.isPublished)
+      .addRange(
+        'price' as any,
+        filterOptions?.minPrice,
+        filterOptions?.maxPrice,
+      )
+      .build();
+
+    // Use buildMongooseQuery utility
+    return buildMongooseQuery({
+      model: this.courseModel,
+      filterQuery,
       sortOptions,
       paginationOptions,
+      populateFields: [{ path: 'instructor', select: 'name email' }],
+      mapper: (doc) => this.map(doc),
     });
   }
-  findById(id: CourseEntity['id']): Promise<NullableType<CourseEntity>> {
-    return this.courseRepository.findById(id);
+
+  async findById(id: CourseEntity['id']): Promise<NullableType<CourseEntity>> {
+    const doc = await this.courseModel
+      .findById(id)
+      .populate('instructor', 'name email')
+      .lean();
+    return doc ? this.map(doc) : null;
   }
 
-  update(id: string, dto: UpdateCourseDto) {
-    return this.courseRepository.update(id, dto);
+  async update(id: string, dto: UpdateCourseDto): Promise<CourseEntity | null> {
+    const doc = await this.courseModel
+      .findByIdAndUpdate(id, dto, { new: true })
+      .populate('instructor', 'name email')
+      .lean();
+    return doc ? this.map(doc) : null;
   }
 
-  remove(id: string) {
-    return this.courseRepository.remove(id);
+  async remove(id: string): Promise<void> {
+    await this.courseModel.deleteOne({ _id: id });
   }
 }

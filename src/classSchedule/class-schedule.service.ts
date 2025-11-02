@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { ClassScheduleSchemaClass } from './infrastructure/persistence/document/entities/class-schedule.schema';
+import { ClassScheduleSchemaClass } from './schema/class-schedule.schema';
 
 import { CreateClassScheduleDto } from './dto/create-class-schedule.dto';
 import { UpdateClassScheduleDto } from './dto/update-class-schedule.dto';
@@ -14,6 +14,12 @@ import {
   SortClassScheduleDto,
 } from './dto/query-class-schedule.dto';
 import { randomUUID } from 'crypto';
+import {
+  buildMongooseQuery,
+  FilterQueryBuilder,
+  PaginationResult,
+} from '../utils/mongoose-query-builder';
+import { IPaginationOptions } from '../utils/types/pagination-options';
 
 @Injectable()
 export class ClassScheduleService {
@@ -21,6 +27,25 @@ export class ClassScheduleService {
     @InjectModel(ClassScheduleSchemaClass.name)
     private readonly classScheduleModel: Model<ClassScheduleSchemaClass>,
   ) {}
+
+  private map(doc: any) {
+    if (!doc) return undefined;
+    const id = typeof doc.id !== 'undefined' ? doc.id : doc._id?.toString?.();
+    return {
+      id,
+      course: doc.course,
+      instructor: doc.instructor,
+      students: doc.students,
+      date: doc.date,
+      time: doc.time,
+      duration: doc.duration,
+      googleMeetLink: doc.googleMeetLink,
+      securityKey: doc.securityKey,
+      status: doc.status,
+      createdAt: doc.createdAt,
+      updatedAt: doc.updatedAt,
+    };
+  }
 
   // 🟢 CREATE new class schedule
   async create(dto: CreateClassScheduleDto) {
@@ -30,57 +55,82 @@ export class ClassScheduleService {
     // Create class schedule
     const schedule = await this.classScheduleModel.create(dto);
 
-    // Convert to plain JS object (important to prevent serialization issues)
-    const plainSchedule = schedule.toObject();
-
-    return {
-      message: 'Class schedule created successfully',
-      data: plainSchedule,
-    };
+    return this.map(schedule);
   }
 
-  // 📗 GET all schedules (with filters + sorting)
+  // 📗 GET all schedules with pagination (with filters + sorting)
+  async findManyWithPagination({
+    filterOptions,
+    sortOptions,
+    paginationOptions,
+  }: {
+    filterOptions?: FilterClassScheduleDto | null;
+    sortOptions?: SortClassScheduleDto[] | null;
+    paginationOptions: IPaginationOptions;
+  }) {
+    // Build filter query using FilterQueryBuilder
+    const filterQueryBuilder =
+      new FilterQueryBuilder<ClassScheduleSchemaClass>()
+        .addEqual('instructor' as any, filterOptions?.instructorId)
+        .addEqual('course' as any, filterOptions?.courseId)
+        .addEqual('status' as any, filterOptions?.status);
+
+    // Add student filter
+    if (filterOptions?.studentId) {
+      filterQueryBuilder.addCustom('students' as any, {
+        $in: [filterOptions.studentId],
+      });
+    }
+
+    // Add date range filter
+    if (filterOptions?.startDate || filterOptions?.endDate) {
+      const dateFilter: any = {};
+      if (filterOptions.startDate) dateFilter.$gte = filterOptions.startDate;
+      if (filterOptions.endDate) dateFilter.$lte = filterOptions.endDate;
+      filterQueryBuilder.addCustom('date' as any, dateFilter);
+    }
+
+    // Add search filter
+    if (filterOptions?.search) {
+      filterQueryBuilder.addCustom('$or' as any, [
+        { googleMeetLink: { $regex: filterOptions.search, $options: 'i' } },
+        { securityKey: { $regex: filterOptions.search, $options: 'i' } },
+      ]);
+    }
+
+    const filterQuery = filterQueryBuilder.build();
+
+    // Use buildMongooseQuery utility
+    return buildMongooseQuery({
+      model: this.classScheduleModel,
+      filterQuery,
+      sortOptions,
+      paginationOptions,
+      populateFields: [
+        { path: 'course', select: 'title price' },
+        { path: 'instructor', select: 'firstName lastName email' },
+        { path: 'students', select: 'firstName lastName email' },
+      ],
+      mapper: (doc) => this.map(doc),
+    });
+  }
+
+  // Legacy method for backward compatibility
   async findAll(filters: FilterClassScheduleDto, sort?: SortClassScheduleDto) {
-    const query: any = {};
+    const sortOptions = sort
+      ? [sort]
+      : [{ orderBy: 'createdAt', order: 'DESC' as 'DESC' }];
 
-    // 🔍 Apply filters dynamically
-    if (filters.instructorId) query.instructor = filters.instructorId;
-    if (filters.courseId) query.course = filters.courseId;
-    if (filters.studentId) query.students = { $in: [filters.studentId] };
-    if (filters.status) query.status = filters.status;
-
-    if (filters.startDate || filters.endDate) {
-      query.date = {};
-      if (filters.startDate) query.date.$gte = filters.startDate;
-      if (filters.endDate) query.date.$lte = filters.endDate;
-    }
-
-    if (filters.search) {
-      query.$or = [
-        { googleMeetLink: { $regex: filters.search, $options: 'i' } },
-        { securityKey: { $regex: filters.search, $options: 'i' } },
-      ];
-    }
-
-    // ⚙️ Apply sorting (default by creation date descending)
-    const sortQuery: any = {};
-    if (sort?.orderBy) {
-      sortQuery[sort.orderBy] = sort?.order === 'ASC' ? 1 : -1;
-    } else {
-      sortQuery.createdAt = -1;
-    }
-
-    const schedules = await this.classScheduleModel
-      .find(query)
-      .sort(sortQuery)
-      .populate('course')
-      .populate('instructor')
-      .populate('students');
+    const schedules = await this.findManyWithPagination({
+      filterOptions: filters,
+      sortOptions,
+      paginationOptions: { page: 1, limit: 1000 }, // Large limit for "all"
+    });
 
     return {
       message: 'Class schedules fetched successfully',
-      total: schedules.length,
-      data: schedules,
+      total: schedules.totalItems,
+      data: schedules.data,
     };
   }
 
@@ -88,26 +138,27 @@ export class ClassScheduleService {
   async findOne(id: string) {
     const schedule = await this.classScheduleModel
       .findById(id)
-      .populate('course')
-      .populate('instructor')
-      .populate('students');
+      .populate('course', 'title price')
+      .populate('instructor', 'firstName lastName email')
+      .populate('students', 'firstName lastName email')
+      .lean();
 
     if (!schedule) throw new NotFoundException('Class schedule not found');
-    return { message: 'Class schedule found', data: schedule };
+    return this.map(schedule);
   }
 
   // 🟡 UPDATE schedule details
   async update(id: string, dto: UpdateClassScheduleDto) {
-    const updated = await this.classScheduleModel.findByIdAndUpdate(id, dto, {
-      new: true,
-    });
+    const updated = await this.classScheduleModel
+      .findByIdAndUpdate(id, dto, { new: true })
+      .populate('course', 'title price')
+      .populate('instructor', 'firstName lastName email')
+      .populate('students', 'firstName lastName email')
+      .lean();
 
     if (!updated) throw new NotFoundException('Class schedule not found');
 
-    return {
-      message: 'Class schedule updated successfully',
-      data: updated,
-    };
+    return this.map(updated);
   }
 
   // 🔴 DELETE schedule

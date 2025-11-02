@@ -7,7 +7,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import {
   ClassScheduleSchema,
   ClassScheduleSchemaClass,
-} from './infrastructure/persistence/document/entities/class-schedule.schema';
+} from './schema/class-schedule.schema';
 
 @Module({
   imports: [

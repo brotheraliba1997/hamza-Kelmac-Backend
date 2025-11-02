@@ -7,8 +7,10 @@ import {
   Delete,
   Put,
   Query,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { randomUUID } from 'crypto';
 
 import { CreateClassScheduleDto } from './dto/create-class-schedule.dto';
@@ -18,6 +20,8 @@ import {
   SortClassScheduleDto,
 } from './dto/query-class-schedule.dto';
 import { ClassScheduleService } from './class-schedule.service';
+import { infinityPagination } from '../utils/infinity-pagination';
+import { InfinityPaginationResponseDto } from '../utils/dto/infinity-pagination-response.dto';
 
 @ApiTags('Class Schedule')
 @Controller('class-schedule')
@@ -44,6 +48,93 @@ export class ClassScheduleController {
     @Query() sort?: SortClassScheduleDto,
   ) {
     return this.classScheduleService.findAll(filters, sort);
+  }
+
+  // 📗 Get paginated class schedules
+  @Get('paginated/list')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Get paginated class schedules with filters and sorting',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number (default: 1)',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Items per page (default: 10, max: 50)',
+  })
+  @ApiQuery({
+    name: 'instructorId',
+    required: false,
+    type: String,
+    description: 'Filter by instructor ID',
+  })
+  @ApiQuery({
+    name: 'courseId',
+    required: false,
+    type: String,
+    description: 'Filter by course ID',
+  })
+  @ApiQuery({
+    name: 'studentId',
+    required: false,
+    type: String,
+    description: 'Filter by student ID',
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    type: String,
+    description: 'Filter by status (scheduled, ongoing, completed, cancelled)',
+  })
+  @ApiQuery({
+    name: 'startDate',
+    required: false,
+    type: String,
+    description: 'Filter by start date (YYYY-MM-DD)',
+  })
+  @ApiQuery({
+    name: 'endDate',
+    required: false,
+    type: String,
+    description: 'Filter by end date (YYYY-MM-DD)',
+  })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    type: String,
+    description: 'Search in Google Meet link or security key',
+  })
+  async findPaginated(@Query() query: any) {
+    const page = query?.page ?? 1;
+    let limit = query?.limit ?? 10;
+    if (limit > 50) {
+      limit = 50;
+    }
+
+    const filterOptions: FilterClassScheduleDto = {
+      instructorId: query?.instructorId,
+      courseId: query?.courseId,
+      studentId: query?.studentId,
+      status: query?.status,
+      startDate: query?.startDate,
+      endDate: query?.endDate,
+      search: query?.search,
+    };
+
+    return this.classScheduleService.findManyWithPagination({
+      filterOptions,
+      sortOptions: query?.sort,
+      paginationOptions: {
+        page: Number(page),
+        limit: Number(limit),
+      },
+    });
   }
 
   // 📘 Get one class schedule by ID

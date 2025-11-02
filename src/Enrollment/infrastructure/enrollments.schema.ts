@@ -1,11 +1,11 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { now, HydratedDocument, Types } from 'mongoose';
 import { EntityDocumentHelper } from '../../utils/document-entity-helper';
-import { UserSchemaClass } from '../../users/infrastructure/persistence/document/entities/user.schema';
-import { CourseSchemaClass } from '../../course/infrastructure/persistence/document/entities/course.schema';
+import { UserSchemaClass } from '../../users/schema/user.schema';
+import { CourseSchemaClass } from '../../course/schema/course.schema';
 import { Payment } from '../../schema/Payment/payment.schema';
 import { Offer } from '../../schema/offer/offer.schema';
-import { CertificateSchemaClass } from '../../certificate/infrastructure/persistence/document/entities/certificate.schema';
+import { CertificateSchemaClass } from '../../certificate/schema/certificate.schema';
 
 export type EnrollmentSchemaDocument = HydratedDocument<EnrollmentSchemaClass>;
 

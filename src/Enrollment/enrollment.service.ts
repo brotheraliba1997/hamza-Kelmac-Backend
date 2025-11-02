@@ -4,6 +4,12 @@ import { Model } from 'mongoose';
 import { CreateEnrollmentDto } from './dto/create-enrollment.dto';
 import { Enrollment } from './interfaces/enrollment.interface';
 import { EnrollmentSchemaClass } from '../Enrollment/infrastructure/enrollments.schema';
+import {
+  buildMongooseQuery,
+  FilterQueryBuilder,
+  PaginationResult,
+} from '../utils/mongoose-query-builder';
+import { IPaginationOptions } from '../utils/types/pagination-options';
 
 @Injectable()
 export class EnrollmentService {
@@ -50,6 +56,40 @@ export class EnrollmentService {
   async findAll(): Promise<Enrollment[]> {
     const docs = await this.enrollmentModel.find().lean();
     return docs.map((d: any) => this.map(d));
+  }
+
+  async findManyWithPagination({
+    filterOptions,
+    sortOptions,
+    paginationOptions,
+  }: {
+    filterOptions?: {
+      userId?: string;
+      courseId?: string;
+      status?: string;
+    } | null;
+    sortOptions?: Array<{ orderBy?: string; order?: 'ASC' | 'DESC' }> | null;
+    paginationOptions: IPaginationOptions;
+  }): Promise<PaginationResult<Enrollment>> {
+    // Build filter query
+    const filterQuery = new FilterQueryBuilder<EnrollmentSchemaClass>()
+      .addEqual('user' as any, filterOptions?.userId)
+      .addEqual('course' as any, filterOptions?.courseId)
+      .addEqual('status' as any, filterOptions?.status)
+      .build();
+
+    // Use buildMongooseQuery utility
+    return buildMongooseQuery({
+      model: this.enrollmentModel,
+      filterQuery,
+      sortOptions,
+      paginationOptions,
+      populateFields: [
+        { path: 'user', select: 'name email' },
+        { path: 'course', select: 'title price' },
+      ],
+      mapper: (doc) => this.map(doc),
+    });
   }
 
   async findOne(id: string): Promise<Enrollment | undefined> {
