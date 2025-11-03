@@ -13,12 +13,18 @@ import {
   FilterQueryBuilder,
   PaginationResult,
 } from '../utils/mongoose-query-builder';
+import { MailService } from '../mail/mail.service';
+import { ConfigService } from '@nestjs/config';
+import { AllConfigType } from '../config/config.type';
+import { UserSchemaClass } from '../users/schema/user.schema';
 
 @Injectable()
 export class CoursesService {
   constructor(
     @InjectModel(CourseSchemaClass.name)
     private readonly courseModel: Model<CourseSchemaClass>,
+    private readonly mailService: MailService,
+    private readonly configService: ConfigService<AllConfigType>,
   ) {}
 
   private map(doc: any): CourseEntity {
@@ -41,6 +47,51 @@ export class CoursesService {
 
   async create(dto: CreateCourseDto): Promise<CourseEntity> {
     const created = await this.courseModel.create(dto);
+
+    // Populate instructor for email
+    const populatedCourse = await this.courseModel
+      .findById(created._id)
+      .populate('instructor')
+      .lean();
+
+    if (populatedCourse) {
+      const instructor = populatedCourse.instructor as any;
+      const adminEmail = this.configService.get('app.adminEmail', {
+        infer: true,
+      });
+
+      const emailData = {
+        courseTitle: populatedCourse.title,
+        instructorName: instructor?.firstName
+          ? `${instructor.firstName} ${instructor.lastName || ''}`
+          : instructor?.email || 'Unknown Instructor',
+        description: populatedCourse.description,
+        price: populatedCourse.price,
+        courseUrl: `${this.configService.get('app.frontendDomain', { infer: true })}/courses/${created._id}`,
+      };
+
+      try {
+        // Send email to admin
+        if (adminEmail) {
+          await this.mailService.courseCreated({
+            to: adminEmail,
+            data: emailData,
+          });
+        }
+
+        // Send email to instructor (course creator)
+        if (instructor?.email) {
+          await this.mailService.courseCreated({
+            to: instructor.email,
+            data: emailData,
+          });
+        }
+      } catch (error) {
+        // Log error but don't fail course creation
+        console.error('Failed to send course creation emails:', error);
+      }
+    }
+
     return this.map(created);
   }
 

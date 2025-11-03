@@ -8,13 +8,22 @@ import {
   ClassScheduleSchema,
   ClassScheduleSchemaClass,
 } from './schema/class-schedule.schema';
+import { MailModule } from '../mail/mail.module';
+import {
+  CourseSchema,
+  CourseSchemaClass,
+} from '../course/schema/course.schema';
+import { UserSchema, UserSchemaClass } from '../users/schema/user.schema';
 
 @Module({
   imports: [
     // ✅ Register your schema here
     MongooseModule.forFeature([
       { name: ClassScheduleSchemaClass.name, schema: ClassScheduleSchema }, // ✅ actual Schema object diya gaya
+      { name: CourseSchemaClass.name, schema: CourseSchema },
+      { name: UserSchemaClass.name, schema: UserSchema },
     ]),
+    MailModule,
   ],
   controllers: [ClassScheduleController],
   providers: [ClassScheduleService],

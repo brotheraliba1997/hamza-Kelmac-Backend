@@ -166,4 +166,187 @@ export class MailService {
       },
     });
   }
+
+  async lessonScheduled(
+    mailData: MailData<{
+      courseName: string;
+      instructorName: string;
+      lessonDate: string;
+      lessonTime: string;
+      duration: number;
+      googleMeetLink?: string;
+    }>,
+  ): Promise<void> {
+    const i18n = I18nContext.current();
+    let title: MaybeType<string>;
+    let text1: MaybeType<string>;
+    let text2: MaybeType<string>;
+    let text3: MaybeType<string>;
+
+    if (i18n) {
+      [title, text1, text2, text3] = await Promise.all([
+        i18n.t('lesson-scheduled.title'),
+        i18n.t('lesson-scheduled.text1'),
+        i18n.t('lesson-scheduled.text2'),
+        i18n.t('lesson-scheduled.text3'),
+      ]);
+    }
+
+    if (!title) title = 'New Lesson Scheduled';
+    if (!text1) text1 = 'A new lesson has been scheduled for your course.';
+    if (!text2)
+      text2 =
+        'Please make sure to join the session at the scheduled time. You can join using the Google Meet link below.';
+    if (!text3)
+      text3 =
+        'If you have any questions or need to reschedule, please contact your instructor.';
+
+    await this.mailerService.sendMail({
+      to: mailData.to,
+      subject: title,
+      text: `${title} - ${mailData.data.courseName} on ${mailData.data.lessonDate} at ${mailData.data.lessonTime}`,
+      templatePath: path.join(
+        this.configService.getOrThrow('app.workingDirectory', {
+          infer: true,
+        }),
+        'src',
+        'mail',
+        'mail-templates',
+        'lesson-scheduled.hbs',
+      ),
+      context: {
+        title,
+        text1,
+        text2,
+        text3,
+        courseName: mailData.data.courseName,
+        instructorName: mailData.data.instructorName,
+        lessonDate: mailData.data.lessonDate,
+        lessonTime: mailData.data.lessonTime,
+        duration: mailData.data.duration,
+        googleMeetLink: mailData.data.googleMeetLink,
+        app_name: this.configService.get('app.name', { infer: true }),
+      },
+    });
+  }
+
+  async courseCreated(
+    mailData: MailData<{
+      courseTitle: string;
+      instructorName: string;
+      description?: string;
+      price?: number;
+      courseUrl?: string;
+    }>,
+  ): Promise<void> {
+    const i18n = I18nContext.current();
+    let title: MaybeType<string>;
+    let text1: MaybeType<string>;
+    let text2: MaybeType<string>;
+    let text3: MaybeType<string>;
+
+    if (i18n) {
+      [title, text1, text2, text3] = await Promise.all([
+        i18n.t('course-created.title'),
+        i18n.t('course-created.text1'),
+        i18n.t('course-created.text2'),
+        i18n.t('course-created.text3'),
+      ]);
+    }
+
+    if (!title) title = 'New Course Created';
+    if (!text1)
+      text1 = 'Congratulations! Your course has been successfully created.';
+    if (!text2)
+      text2 =
+        'Students can now enroll in your course. You can start adding modules and lessons to make it even better.';
+    if (!text3)
+      text3 =
+        'Thank you for contributing to our learning platform. If you need any assistance, feel free to contact us.';
+
+    const url = mailData.data.courseUrl
+      ? mailData.data.courseUrl
+      : `${this.configService.getOrThrow('app.frontendDomain', { infer: true })}/courses`;
+
+    await this.mailerService.sendMail({
+      to: mailData.to,
+      subject: title,
+      text: `${title} - ${mailData.data.courseTitle}`,
+      templatePath: path.join(
+        this.configService.getOrThrow('app.workingDirectory', {
+          infer: true,
+        }),
+        'src',
+        'mail',
+        'mail-templates',
+        'course-created.hbs',
+      ),
+      context: {
+        title,
+        text1,
+        text2,
+        text3,
+        courseTitle: mailData.data.courseTitle,
+        instructorName: mailData.data.instructorName,
+        description: mailData.data.description,
+        price: mailData.data.price,
+        url,
+        app_name: this.configService.get('app.name', { infer: true }),
+      },
+    });
+  }
+
+  async userRegistered(
+    mailData: MailData<{
+      userName: string;
+      userEmail: string;
+      userRole?: string;
+      registrationDate: string;
+    }>,
+  ): Promise<void> {
+    const i18n = I18nContext.current();
+    let title: MaybeType<string>;
+    let text1: MaybeType<string>;
+    let text2: MaybeType<string>;
+
+    if (i18n) {
+      [title, text1, text2] = await Promise.all([
+        i18n.t('user-registered.title'),
+        i18n.t('user-registered.text1'),
+        i18n.t('user-registered.text2'),
+      ]);
+    }
+
+    if (!title) title = 'New User Registration';
+    if (!text1)
+      text1 =
+        'A new user has registered on the platform. Here are the details:';
+    if (!text2)
+      text2 = 'Please review the user account and take any necessary actions.';
+
+    await this.mailerService.sendMail({
+      to: mailData.to,
+      subject: title,
+      text: `${title} - ${mailData.data.userName} (${mailData.data.userEmail})`,
+      templatePath: path.join(
+        this.configService.getOrThrow('app.workingDirectory', {
+          infer: true,
+        }),
+        'src',
+        'mail',
+        'mail-templates',
+        'user-registered.hbs',
+      ),
+      context: {
+        title,
+        text1,
+        text2,
+        userName: mailData.data.userName,
+        userEmail: mailData.data.userEmail,
+        userRole: mailData.data.userRole,
+        registrationDate: mailData.data.registrationDate,
+        app_name: this.configService.get('app.name', { infer: true }),
+      },
+    });
+  }
 }

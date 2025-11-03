@@ -53,6 +53,15 @@ export class CreateClassScheduleDto {
   time: string;
 
   @ApiProperty({
+    example: 60,
+    description: 'Duration of the class in minutes',
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  duration?: number;
+
+  @ApiProperty({
     example: 'https://meet.google.com/xyz-1234-abc',
     description: 'Google Meet link for the scheduled class',
   })

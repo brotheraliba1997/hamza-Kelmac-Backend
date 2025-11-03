@@ -33,6 +33,9 @@ import { CoursesModule } from './course/courses.module';
 import { BlogsModule } from './blog/blogs.module';
 import { ClassScheduleModule } from './classSchedule/class-schedule.module';
 import { EnrollmentModule } from './Enrollment/enrollment.module';
+import { StripeModule } from './stripe/stripe.module';
+import stripeConfig from './stripe/config/stripe.config';
+import { PaymentModule } from './payment/payment.module';
 
 // <database-block>
 const infrastructureDatabaseModule = (databaseConfig() as DatabaseConfig)
@@ -61,6 +64,7 @@ const infrastructureDatabaseModule = (databaseConfig() as DatabaseConfig)
         facebookConfig,
         googleConfig,
         appleConfig,
+        stripeConfig,
       ],
       envFilePath: ['.env'],
     }),
@@ -103,6 +107,8 @@ const infrastructureDatabaseModule = (databaseConfig() as DatabaseConfig)
     EnrollmentModule,
     BlogsModule,
     ClassScheduleModule,
+    StripeModule,
+    PaymentModule,
   ],
 })
 export class AppModule {}

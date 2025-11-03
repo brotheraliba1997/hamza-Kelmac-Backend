@@ -50,6 +50,13 @@ export class ClassScheduleSchemaClass extends EntityDocumentHelper {
   time: string;
 
   @Prop({
+    type: Number,
+    min: 1,
+    description: 'Duration of the class in minutes',
+  })
+  duration: number;
+
+  @Prop({
     type: String,
     required: true,
     description: 'Google Meet link for the scheduled class',

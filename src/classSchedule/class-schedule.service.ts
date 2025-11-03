@@ -20,12 +20,19 @@ import {
   PaginationResult,
 } from '../utils/mongoose-query-builder';
 import { IPaginationOptions } from '../utils/types/pagination-options';
+import { MailService } from '../mail/mail.service';
+import { ConfigService } from '@nestjs/config';
+import { AllConfigType } from '../config/config.type';
+import { CourseSchemaClass } from '../course/schema/course.schema';
+import { UserSchemaClass } from '../users/schema/user.schema';
 
 @Injectable()
 export class ClassScheduleService {
   constructor(
     @InjectModel(ClassScheduleSchemaClass.name)
     private readonly classScheduleModel: Model<ClassScheduleSchemaClass>,
+    private readonly mailService: MailService,
+    private readonly configService: ConfigService<AllConfigType>,
   ) {}
 
   private map(doc: any) {
@@ -54,6 +61,77 @@ export class ClassScheduleService {
 
     // Create class schedule
     const schedule = await this.classScheduleModel.create(dto);
+
+    // Populate course and instructor details for email
+    const populatedSchedule = await this.classScheduleModel
+      .findById(schedule._id)
+      .populate('course')
+      .populate('instructor')
+      .populate('students')
+      .lean();
+
+    if (populatedSchedule) {
+      const course = populatedSchedule.course as any;
+      const instructor = populatedSchedule.instructor as any;
+      const students = (populatedSchedule.students as any[]) || [];
+
+      const adminEmail = this.configService.get('app.adminEmail', {
+        infer: true,
+      });
+
+      // Format date and time for email
+      const lessonDate = new Date(populatedSchedule.date).toLocaleDateString(
+        'en-US',
+        {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        },
+      );
+
+      const emailData = {
+        courseName: course?.title || 'Unknown Course',
+        instructorName: instructor?.firstName
+          ? `${instructor.firstName} ${instructor.lastName || ''}`
+          : instructor?.email || 'Unknown Instructor',
+        lessonDate,
+        lessonTime: populatedSchedule.time,
+        duration: populatedSchedule.duration,
+        googleMeetLink: populatedSchedule.googleMeetLink,
+      };
+
+      try {
+        // Send email to admin
+        if (adminEmail) {
+          await this.mailService.lessonScheduled({
+            to: adminEmail,
+            data: emailData,
+          });
+        }
+
+        // Send email to instructor (course creator)
+        if (instructor?.email) {
+          await this.mailService.lessonScheduled({
+            to: instructor.email,
+            data: emailData,
+          });
+        }
+
+        // Send email to all enrolled students
+        for (const student of students) {
+          if (student?.email) {
+            await this.mailService.lessonScheduled({
+              to: student.email,
+              data: emailData,
+            });
+          }
+        }
+      } catch (error) {
+        // Log error but don't fail the schedule creation
+        console.error('Failed to send lesson schedule emails:', error);
+      }
+    }
 
     return this.map(schedule);
   }

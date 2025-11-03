@@ -219,12 +219,42 @@ export class AuthService {
       },
     );
 
+    // Send activation email to user
     await this.mailService.userSignUp({
       to: dto.email,
       data: {
         hash,
       },
     });
+
+    // Send notification to admin
+    const adminEmail = this.configService.get('app.adminEmail', {
+      infer: true,
+    });
+
+    if (adminEmail) {
+      try {
+        await this.mailService.userRegistered({
+          to: adminEmail,
+          data: {
+            userName: dto.firstName
+              ? `${dto.firstName} ${dto.lastName || ''}`
+              : dto.email,
+            userEmail: dto.email,
+            userRole: 'Student',
+            registrationDate: new Date().toLocaleDateString('en-US', {
+              weekday: 'long',
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+            }),
+          },
+        });
+      } catch (error) {
+        // Log error but don't fail registration
+        console.error('Failed to send admin notification email:', error);
+      }
+    }
   }
 
   async confirmEmail(hash: string): Promise<void> {
