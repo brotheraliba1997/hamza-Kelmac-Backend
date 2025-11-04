@@ -14,19 +14,20 @@ import {
   CourseSchemaClass,
 } from '../course/schema/course.schema';
 import { UserSchema, UserSchemaClass } from '../users/schema/user.schema';
+import { GoogleOAuthProvider } from '../googleService/google.provider';
 
 @Module({
   imports: [
     // ✅ Register your schema here
     MongooseModule.forFeature([
-      { name: ClassScheduleSchemaClass.name, schema: ClassScheduleSchema }, // ✅ actual Schema object diya gaya
+      { name: ClassScheduleSchemaClass.name, schema: ClassScheduleSchema }, 
       { name: CourseSchemaClass.name, schema: CourseSchema },
       { name: UserSchemaClass.name, schema: UserSchema },
     ]),
     MailModule,
   ],
   controllers: [ClassScheduleController],
-  providers: [ClassScheduleService],
+  providers: [ClassScheduleService, GoogleOAuthProvider],
   exports: [ClassScheduleService],
 })
 export class ClassScheduleModule {}

@@ -58,18 +58,18 @@ export class ClassScheduleSchemaClass extends EntityDocumentHelper {
 
   @Prop({
     type: String,
-    required: true,
+    required: false,
     description: 'Google Meet link for the scheduled class',
   })
-  googleMeetLink: string;
+  googleMeetLink?: string;
 
   @Prop({
     type: String,
-    required: true,
+     required: false,
     unique: true,
     description: 'Security key used for class access validation',
   })
-  securityKey: string;
+  securityKey?: string;
 
   @Prop({
     type: String,
@@ -99,17 +99,16 @@ export class ClassScheduleSchemaClass extends EntityDocumentHelper {
   })
   endedAt?: Date;
 
-  @Prop({
-    type: Date,
-    description: 'When students joined (optional)',
-  })
-  attendedAt?: Date;
 
   @Prop({
-    type: String,
-    description: 'Optional certificate/report link for the class',
-  })
-  certificateLink?: string;
+  type: String,
+  description: 'Google Calendar event link',
+})
+googleCalendarEventLink?: string;
+
+ 
+
+
 
   @Prop({ default: now })
   createdAt: Date;

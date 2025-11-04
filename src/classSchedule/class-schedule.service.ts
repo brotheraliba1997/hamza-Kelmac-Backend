@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Inject,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -25,6 +26,7 @@ import { ConfigService } from '@nestjs/config';
 import { AllConfigType } from '../config/config.type';
 import { CourseSchemaClass } from '../course/schema/course.schema';
 import { UserSchemaClass } from '../users/schema/user.schema';
+import { google } from 'googleapis';
 
 @Injectable()
 export class ClassScheduleService {
@@ -33,6 +35,7 @@ export class ClassScheduleService {
     private readonly classScheduleModel: Model<ClassScheduleSchemaClass>,
     private readonly mailService: MailService,
     private readonly configService: ConfigService<AllConfigType>,
+    @Inject('GOOGLE_OAUTH2_CLIENT') private oauth2Client,
   ) {}
 
   private map(doc: any) {
@@ -55,14 +58,69 @@ export class ClassScheduleService {
   }
 
   // 🟢 CREATE new class schedule
-  async create(dto: CreateClassScheduleDto) {
-    // Always assign a unique key to avoid duplicate key errors
+  async create(
+    dto: CreateClassScheduleDto,
+    accessToken: string,
+    refreshToken: string,
+  ) {
+    // 🔹 Assign a unique key for security
     dto.securityKey = randomUUID();
 
-    // Create class schedule
+    console.log("chal raha hai")
+
+    // 🔹 Step 1: Set OAuth2 credentials
+    this.oauth2Client.setCredentials({
+      access_token: accessToken, // Your Google access token
+      refresh_token: refreshToken, // Your Google refresh token
+    });
+
+    // 🔹 Step 2: Initialize Google Calendar API
+    const calendar = google.calendar({
+      version: 'v3',
+      auth: this.oauth2Client,
+    });
+
+    // 🔹 Step 3: Build the event object
+    const event = {
+      summary: 'Scheduled Class',
+      description: 'Auto-generated class schedule with Google Meet link',
+      start: {
+        dateTime: `${dto.date}T${dto.time}:00Z`, // e.g., "2025-11-04T15:00:00Z"
+        timeZone: 'Asia/Karachi',
+      },
+      end: {
+        dateTime: new Date(
+          new Date(`${dto.date}T${dto.time}:00Z`).getTime() +
+            dto.duration * 60000,
+        ).toISOString(),
+        timeZone: 'Asia/Karachi',
+      },
+      conferenceData: {
+        createRequest: {
+          requestId: randomUUID(),
+          conferenceSolutionKey: { type: 'hangoutsMeet' },
+        },
+      },
+    };
+
+    // 🔹 Step 4: Create event in Google Calendar
+    const response = await calendar.events.insert({
+      calendarId: 'primary',
+      requestBody: event,
+      conferenceDataVersion: 1,
+    });
+
+    // 🔹 Step 5: Save Google links into DTO
+    dto.googleMeetLink =
+      response.data.conferenceData?.entryPoints?.[0]?.uri || '';
+    dto.googleCalendarEventLink = response.data.htmlLink || '';
+
+    // 🔹 Step 6: Save schedule in DB
     const schedule = await this.classScheduleModel.create(dto);
 
-    // Populate course and instructor details for email
+    console.log('Class schedule created with Google Meet link:', schedule);
+
+    // 🔹 Step 7: Populate related info for email (optional)
     const populatedSchedule = await this.classScheduleModel
       .findById(schedule._id)
       .populate('course')
@@ -79,15 +137,9 @@ export class ClassScheduleService {
         infer: true,
       });
 
-      // Format date and time for email
       const lessonDate = new Date(populatedSchedule.date).toLocaleDateString(
         'en-US',
-        {
-          weekday: 'long',
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-        },
+        { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' },
       );
 
       const emailData = {
@@ -102,23 +154,18 @@ export class ClassScheduleService {
       };
 
       try {
-        // Send email to admin
         if (adminEmail) {
           await this.mailService.lessonScheduled({
             to: adminEmail,
             data: emailData,
           });
         }
-
-        // Send email to instructor (course creator)
         if (instructor?.email) {
           await this.mailService.lessonScheduled({
             to: instructor.email,
             data: emailData,
           });
         }
-
-        // Send email to all enrolled students
         for (const student of students) {
           if (student?.email) {
             await this.mailService.lessonScheduled({
@@ -128,11 +175,11 @@ export class ClassScheduleService {
           }
         }
       } catch (error) {
-        // Log error but don't fail the schedule creation
         console.error('Failed to send lesson schedule emails:', error);
       }
     }
 
+    // 🔹 Step 8: Return mapped response
     return this.map(schedule);
   }
 
