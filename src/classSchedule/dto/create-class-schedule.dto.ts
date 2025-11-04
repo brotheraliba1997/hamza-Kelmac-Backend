@@ -66,6 +66,7 @@ export class CreateClassScheduleDto {
     description: 'Google Meet link for the scheduled class',
   })
   @IsUrl()
+  @IsOptional()
   googleMeetLink: string;
 
   @ApiProperty({
@@ -73,6 +74,7 @@ export class CreateClassScheduleDto {
     description: 'Unique key for meeting security validation',
   })
   @IsString()
+  @IsOptional()
   securityKey: string;
 
   @ApiPropertyOptional({
@@ -112,4 +114,8 @@ export class CreateClassScheduleDto {
   @IsOptional()
   @IsDateString()
   endedAt?: Date;
+
+  @IsString()
+  @IsOptional()
+  googleCalendarEventLink: string;
 }
