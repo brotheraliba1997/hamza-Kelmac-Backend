@@ -17,6 +17,10 @@ import { MailService } from '../mail/mail.service';
 import { ConfigService } from '@nestjs/config';
 import { AllConfigType } from '../config/config.type';
 import { UserSchemaClass } from '../users/schema/user.schema';
+import {
+  convertIdToString,
+  sanitizeMongooseDocument,
+} from '../utils/convert-id';
 
 @Injectable()
 export class CoursesService {
@@ -29,19 +33,28 @@ export class CoursesService {
 
   private map(doc: any): CourseEntity {
     if (!doc) return undefined as any;
-    const id = typeof doc.id !== 'undefined' ? doc.id : doc._id?.toString?.();
+
+    // Sanitize the document to convert all IDs and nested objects
+    const sanitized = sanitizeMongooseDocument(doc);
+
+    // Double-check sanitized is not null
+    if (!sanitized) return undefined as any;
+
     return new CourseEntity({
-      id,
-      title: doc.title,
-      description: doc.description,
-      instructor: (doc.instructor as any)?.toString?.() ?? doc.instructor,
-      modules: doc.modules || [],
-      price: doc.price,
-      enrolledCount: doc.enrolledCount,
-      isPublished: doc.isPublished,
-      createdAt: doc.createdAt,
-      updatedAt: doc.updatedAt,
-      deletedAt: doc.deletedAt ?? null,
+      id: sanitized.id || convertIdToString(doc),
+      title: sanitized.title,
+      description: sanitized.description,
+      instructor:
+        typeof sanitized.instructor === 'object' && sanitized.instructor
+          ? sanitized.instructor.id || sanitized.instructor
+          : sanitized.instructor,
+      modules: sanitized.modules || [],
+      price: sanitized.price,
+      enrolledCount: sanitized.enrolledCount,
+      isPublished: sanitized.isPublished,
+      createdAt: sanitized.createdAt,
+      updatedAt: sanitized.updatedAt,
+      deletedAt: sanitized.deletedAt ?? null,
     });
   }
 

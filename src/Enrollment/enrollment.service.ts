@@ -10,7 +10,10 @@ import {
   PaginationResult,
 } from '../utils/mongoose-query-builder';
 import { IPaginationOptions } from '../utils/types/pagination-options';
-
+import {
+  convertIdToString,
+  sanitizeMongooseDocument,
+} from '../utils/convert-id';
 @Injectable()
 export class EnrollmentService {
   constructor(
@@ -20,26 +23,25 @@ export class EnrollmentService {
 
   private map(doc: any): Enrollment {
     if (!doc) return undefined as any;
-    const id = typeof doc.id !== 'undefined' ? doc.id : doc._id?.toString?.();
+
+    const sanitized = sanitizeMongooseDocument(doc);
+
+    // Double-check sanitized is not null
+    if (!sanitized) return undefined as any;
+
     return {
-      id,
-      user: (doc.user as any)?.toString?.() ?? doc.user,
-      course: (doc.course as any)?.toString?.() ?? doc.course,
-      payment: doc.payment
-        ? ((doc.payment as any)?.toString?.() ?? doc.payment)
-        : undefined,
-      offer: doc.offer
-        ? ((doc.offer as any)?.toString?.() ?? doc.offer)
-        : undefined,
-      progress: doc.progress,
-      status: doc.status,
-      completionDate: doc.completionDate ?? undefined,
-      certificate: doc.certificate
-        ? ((doc.certificate as any)?.toString?.() ?? doc.certificate)
-        : undefined,
-      createdAt: doc.createdAt,
-      updatedAt: doc.updatedAt,
-      deletedAt: doc.deletedAt ?? undefined,
+      id: sanitized.id || convertIdToString(doc),
+      user: sanitized.user,
+      course: sanitized.course,
+      payment: sanitized.payment ? sanitized.payment : undefined,
+      offer: sanitized.offer ? sanitized.offer : undefined,
+      progress: sanitized.progress,
+      status: sanitized.status,
+      completionDate: sanitized.completionDate ?? undefined,
+      certificate: sanitized.certificate ? sanitized.certificate : undefined,
+      createdAt: sanitized.createdAt,
+      updatedAt: sanitized.updatedAt,
+      deletedAt: sanitized.deletedAt ?? undefined,
     } as Enrollment;
   }
 
@@ -86,7 +88,11 @@ export class EnrollmentService {
       paginationOptions,
       populateFields: [
         { path: 'user', select: 'name email' },
-        { path: 'course', select: 'title price' },
+        {
+          path: 'course',
+          select: 'title price',
+          populate: { path: 'instructor', select: 'name email' },
+        },
       ],
       mapper: (doc) => this.map(doc),
     });

@@ -19,14 +19,12 @@ import {
 import { EnrollmentService } from './enrollment.service';
 import { CreateEnrollmentDto } from './dto/create-enrollment.dto';
 import { Enrollment } from './interfaces/enrollment.interface';
-import { infinityPagination } from '../utils/infinity-pagination';
-import {
-  InfinityPaginationResponse,
-  InfinityPaginationResponseDto,
-} from '../utils/dto/infinity-pagination-response.dto';
 
 @ApiTags('enrollments')
-@Controller('enrollment')
+@Controller({
+  path: 'enrollments',
+  version: '1',
+})
 export class EnrollmentController {
   constructor(private readonly enrollmentService: EnrollmentService) {}
 
@@ -38,13 +36,13 @@ export class EnrollmentController {
     return this.enrollmentService.create(createEnrollmentDto);
   }
 
-  @Get()
-  @ApiOkResponse({ description: 'Returns all enrollments.' })
-  async findAll(): Promise<Enrollment[]> {
-    return this.enrollmentService.findAll();
-  }
+  // @Get()
+  // @ApiOkResponse({ description: 'Returns all enrollments.' })
+  // async findAll(): Promise<Enrollment[]> {
+  //   return this.enrollmentService.findAll();
+  // }
 
-  @Get('paginated')
+  @Get()
   @ApiOkResponse({
     description: 'Returns paginated enrollments with filtering and sorting.',
   })

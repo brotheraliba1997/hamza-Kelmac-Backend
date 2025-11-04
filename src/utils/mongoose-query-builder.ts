@@ -11,7 +11,15 @@ export interface QueryBuilderOptions<T> {
   filterQuery?: FilterQuery<T>;
   sortOptions?: SortOption[] | null;
   paginationOptions: IPaginationOptions;
-  populateFields?: string | Array<{ path: string; select?: string }>;
+  populateFields?:
+    | string
+    | Array<{
+        path: string;
+        select?: string;
+        populate?: any; // Support nested populate
+        model?: string;
+        options?: any;
+      }>;
   selectFields?: string;
 }
 
@@ -71,7 +79,8 @@ export async function buildMongooseQuery<T, R = T>(
       query = query.populate(populateFields);
     } else if (Array.isArray(populateFields)) {
       populateFields.forEach((field) => {
-        query = query.populate(field.path, field.select);
+        // Support nested populate by passing the entire field object
+        query = query.populate(field);
       });
     }
   }
