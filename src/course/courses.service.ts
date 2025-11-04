@@ -93,19 +93,21 @@ export class CoursesService {
         }
 
         // Send email to instructor (course creator)
-        if (instructor?.email) {
-          await this.mailService.courseCreated({
-            to: instructor.email,
-            data: emailData,
-          });
-        }
+        // if (instructor?.email) {
+        //   await this.mailService.courseCreated({
+        //     to: instructor.email,
+        //     data: emailData,
+        //   });
+        // }
       } catch (error) {
         // Log error but don't fail course creation
         console.error('Failed to send course creation emails:', error);
       }
     }
 
-    return this.map(created);
+    // Convert Mongoose document to plain object before mapping
+    const createdLean = created.toObject();
+    return this.map(createdLean);
   }
 
   async findManyWithPagination({

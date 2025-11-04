@@ -44,7 +44,7 @@ export class CoursesController {
 
   @ApiBearerAuth()
   @Roles(RoleEnum.instructor, RoleEnum.admin)
-  @UseGuards(RolesGuard, AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
   @ApiCreatedResponse()
   @HttpCode(HttpStatus.CREATED)
   @Post()
@@ -136,7 +136,8 @@ export class CoursesController {
   }
 
   @ApiBearerAuth()
-  @UseGuards(AuthGuard('jwt'))
+  @Roles(RoleEnum.admin, RoleEnum.instructor)
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
   @ApiOkResponse()
   @ApiParam({
     name: 'id',
@@ -148,6 +149,7 @@ export class CoursesController {
   update(@Param('id') id: string, @Body() dto: UpdateCourseDto) {
     return this.service.update(id, dto);
   }
+
   @ApiBearerAuth()
   @Roles(RoleEnum.admin, RoleEnum.instructor)
   @UseGuards(AuthGuard('jwt'), RolesGuard)
