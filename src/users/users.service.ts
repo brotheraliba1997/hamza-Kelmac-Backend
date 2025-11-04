@@ -25,6 +25,7 @@ import {
   FilterQueryBuilder,
   PaginationResult,
 } from '../utils/mongoose-query-builder';
+import { sanitizeMongooseDocument } from '../utils/convert-id';
 
 @Injectable()
 export class UsersService {
@@ -37,20 +38,25 @@ export class UsersService {
   private map(doc: any): User {
     if (!doc) return undefined as any;
     const id = typeof doc.id !== 'undefined' ? doc.id : doc._id?.toString?.();
+    // Sanitize the document to convert all IDs and nested objects
+    const sanitized = sanitizeMongooseDocument(doc);
+
+    // Double-check sanitized is not null
+    if (!sanitized) return undefined as any;
     return {
       id,
-      email: doc.email,
-      password: doc.password,
-      provider: doc.provider || AuthProvidersEnum.email,
-      socialId: doc.socialId,
-      firstName: doc.firstName,
-      lastName: doc.lastName,
-      photo: doc.photo,
-      role: doc.role,
-      status: doc.status,
-      createdAt: doc.createdAt,
-      updatedAt: doc.updatedAt,
-      deletedAt: doc.deletedAt,
+      email: sanitized.email,
+      password: sanitized.password,
+      provider: sanitized.provider || AuthProvidersEnum.email,
+      socialId: sanitized.socialId,
+      firstName: sanitized.firstName,
+      lastName: sanitized.lastName,
+      photo: sanitized.photo,
+      role: sanitized.role,
+      status: sanitized.status,
+      createdAt: sanitized.createdAt,
+      updatedAt: sanitized.updatedAt,
+      deletedAt: sanitized.deletedAt,
     };
   }
 
