@@ -63,8 +63,15 @@ export class CourseEntity {
     type: idType,
   })
   id: number | string;
+
   @ApiProperty({ example: 'Full Stack Web Development Bootcamp' })
   title: string;
+
+  @ApiProperty({
+    example: 'full-stack-web-development-bootcamp',
+    description: 'URL-friendly slug for the course',
+  })
+  slug?: string;
 
   @ApiProperty({
     example: 'Learn MERN stack development from scratch.',

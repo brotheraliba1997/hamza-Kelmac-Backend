@@ -6,6 +6,7 @@ import { CoursesController } from './courses.controller';
 import { CourseSchema, CourseSchemaClass } from './schema/course.schema';
 import { MailModule } from '../mail/mail.module';
 import { UserSchema, UserSchemaClass } from '../users/schema/user.schema';
+import { CategoriesModule } from '../category/categories.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { UserSchema, UserSchemaClass } from '../users/schema/user.schema';
       { name: UserSchemaClass.name, schema: UserSchema },
     ]),
     MailModule,
+    CategoriesModule,
   ],
   controllers: [CoursesController],
   providers: [CoursesService],

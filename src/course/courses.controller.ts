@@ -23,6 +23,7 @@ import {
 import { CoursesService } from './courses.service';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
+import { FilterCourseDto, QueryCourseDto } from './dto/query-course.dto';
 import { infinityPagination } from '../utils/infinity-pagination';
 import {
   InfinityPaginationResponse,
@@ -60,62 +61,16 @@ export class CoursesController {
   })
   @Get()
   @HttpCode(HttpStatus.OK)
-  @ApiQuery({
-    name: 'page',
-    required: false,
-    type: Number,
-    description: 'Page number (default: 1)',
-  })
-  @ApiQuery({
-    name: 'limit',
-    required: false,
-    type: Number,
-    description: 'Items per page (default: 10, max: 50)',
-  })
-  @ApiQuery({
-    name: 'instructorId',
-    required: false,
-    type: String,
-    description: 'Filter by instructor ID',
-  })
-  @ApiQuery({
-    name: 'isPublished',
-    required: false,
-    type: Boolean,
-    description: 'Filter by published status',
-  })
-  @ApiQuery({
-    name: 'minPrice',
-    required: false,
-    type: Number,
-    description: 'Minimum price filter',
-  })
-  @ApiQuery({
-    name: 'maxPrice',
-    required: false,
-    type: Number,
-    description: 'Maximum price filter',
-  })
-  async findAll(@Query() query: any) {
-    const page = query?.page ?? 1;
-    let limit = query?.limit ?? 10;
+  async findAll(@Query() queryDto: FilterCourseDto & QueryCourseDto) {
+    const page = queryDto?.page ?? 1;
+    let limit = queryDto?.limit ?? 10;
     if (limit > 50) {
       limit = 50;
     }
 
-    const filterOptions: any = {};
-    if (query?.instructorId) filterOptions.instructorId = query.instructorId;
-    if (query?.isPublished !== undefined)
-      filterOptions.isPublished =
-        query.isPublished === 'true' || query.isPublished === true;
-    if (query?.minPrice !== undefined)
-      filterOptions.minPrice = Number(query.minPrice);
-    if (query?.maxPrice !== undefined)
-      filterOptions.maxPrice = Number(query.maxPrice);
-
     return this.service.findManyWithPagination({
-      filterOptions,
-      sortOptions: query?.sort,
+      filterOptions: queryDto,
+      sortOptions: null,
       paginationOptions: {
         page: Number(page),
         limit: Number(limit),
@@ -133,6 +88,101 @@ export class CoursesController {
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.service.findById(id);
+  }
+
+  @ApiOkResponse({
+    description: 'Get course by slug',
+  })
+  @ApiParam({
+    name: 'slug',
+    type: String,
+    required: true,
+    description: 'Course slug (e.g., introduction-to-web-development)',
+  })
+  @HttpCode(HttpStatus.OK)
+  @Get('slug/:slug')
+  findBySlug(@Param('slug') slug: string) {
+    return this.service.findBySlug(slug);
+  }
+
+  @ApiOkResponse({
+    type: InfinityPaginationResponse(CourseEntity),
+    description: 'Get courses by category',
+  })
+  @ApiParam({
+    name: 'categorySlug',
+    type: String,
+    required: true,
+    description: 'Category slug (e.g., web-development)',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number (default: 1)',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Items per page (default: 10, max: 50)',
+  })
+  @HttpCode(HttpStatus.OK)
+  @Get('category/:categorySlug')
+  async findByCategory(
+    @Param('categorySlug') categorySlug: string,
+    @Query() query: any,
+  ) {
+    const page = query?.page ?? 1;
+    let limit = query?.limit ?? 10;
+    if (limit > 50) {
+      limit = 50;
+    }
+
+    return this.service.findByCategory(categorySlug, {
+      page: Number(page),
+      limit: Number(limit),
+    });
+  }
+
+  @ApiOkResponse({
+    type: InfinityPaginationResponse(CourseEntity),
+    description: 'Get courses by subcategory',
+  })
+  @ApiParam({
+    name: 'subcategory',
+    type: String,
+    required: true,
+    description: 'Subcategory name',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number (default: 1)',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Items per page (default: 10, max: 50)',
+  })
+  @HttpCode(HttpStatus.OK)
+  @Get('subcategory/:subcategory')
+  async findBySubcategory(
+    @Param('subcategory') subcategory: string,
+    @Query() query: any,
+  ) {
+    const page = query?.page ?? 1;
+    let limit = query?.limit ?? 10;
+    if (limit > 50) {
+      limit = 50;
+    }
+
+    return this.service.findBySubcategory(subcategory, {
+      page: Number(page),
+      limit: Number(limit),
+    });
   }
 
   @ApiBearerAuth()
