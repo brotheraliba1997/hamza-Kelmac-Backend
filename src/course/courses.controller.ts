@@ -42,9 +42,9 @@ import { RoleEnum } from '../roles/roles.enum';
 export class CoursesController {
   constructor(private readonly service: CoursesService) {}
 
-  @ApiBearerAuth()
-  @Roles(RoleEnum.instructor, RoleEnum.admin)
-  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  // @ApiBearerAuth()
+  // @Roles(RoleEnum.instructor, RoleEnum.admin)
+  // @UseGuards(AuthGuard('jwt'), RolesGuard)
   @ApiCreatedResponse()
   @HttpCode(HttpStatus.CREATED)
   @Post()
