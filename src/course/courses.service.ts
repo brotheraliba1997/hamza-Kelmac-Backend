@@ -93,12 +93,12 @@ export class CoursesService {
         }
 
         // Send email to instructor (course creator)
-        // if (instructor?.email) {
-        //   await this.mailService.courseCreated({
-        //     to: instructor.email,
-        //     data: emailData,
-        //   });
-        // }
+        if (instructor?.email) {
+          await this.mailService.courseCreated({
+            to: instructor.email,
+            data: emailData,
+          });
+        }
       } catch (error) {
         // Log error but don't fail course creation
         console.error('Failed to send course creation emails:', error);

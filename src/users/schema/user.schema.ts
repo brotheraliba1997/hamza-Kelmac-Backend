@@ -32,6 +32,11 @@ export class UserSchemaClass extends EntityDocumentHelper {
   provider: string;
 
   @Prop({
+    default: false,
+  })
+  isEmailVerified: boolean;
+
+  @Prop({
     type: String,
     default: null,
   })

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import fs from 'node:fs/promises';
 import { ConfigService } from '@nestjs/config';
 import nodemailer from 'nodemailer';
@@ -8,6 +8,8 @@ import { AllConfigType } from '../config/config.type';
 @Injectable()
 export class MailerService {
   private readonly transporter: nodemailer.Transporter;
+  private readonly logger = new Logger(MailerService.name);
+
   constructor(private readonly configService: ConfigService<AllConfigType>) {
     this.transporter = nodemailer.createTransport({
       host: configService.get('mail.host', { infer: true }),
@@ -30,24 +32,51 @@ export class MailerService {
     templatePath: string;
     context: Record<string, unknown>;
   }): Promise<void> {
-    let html: string | undefined;
-    if (templatePath) {
-      const template = await fs.readFile(templatePath, 'utf-8');
-      html = Handlebars.compile(template, {
-        strict: true,
-      })(context);
-    }
+    try {
+      let html: string | undefined;
+      if (templatePath) {
+        try {
+          const template = await fs.readFile(templatePath, 'utf-8');
+          html = Handlebars.compile(template, {
+            strict: true,
+          })(context);
+        } catch (templateError) {
+          this.logger.warn(
+            `Failed to load or compile email template: ${templatePath}`,
+            templateError instanceof Error
+              ? templateError.message
+              : String(templateError),
+          );
+          throw new Error(`Email template error: ${templatePath}`);
+        }
+      }
 
-    await this.transporter.sendMail({
-      ...mailOptions,
-      from: mailOptions.from
-        ? mailOptions.from
-        : `"${this.configService.get('mail.defaultName', {
-            infer: true,
-          })}" <${this.configService.get('mail.defaultEmail', {
-            infer: true,
-          })}>`,
-      html: mailOptions.html ? mailOptions.html : html,
-    });
+      const mailResult = await this.transporter.sendMail({
+        ...mailOptions,
+        from: mailOptions.from
+          ? mailOptions.from
+          : `"${this.configService.get('mail.defaultName', {
+              infer: true,
+            })}" <${this.configService.get('mail.defaultEmail', {
+              infer: true,
+            })}>`,
+        html: mailOptions.html ? mailOptions.html : html,
+      });
+
+      this.logger.log(
+        `Email sent successfully to ${mailOptions.to} - MessageId: ${mailResult.messageId}`,
+      );
+    } catch (error) {
+      const recipient = mailOptions.to;
+      const subject = mailOptions.subject || 'No subject';
+
+      this.logger.warn(
+        `⚠️ Failed to send email to ${recipient} with subject "${subject}"`,
+        error instanceof Error ? error.message : String(error),
+      );
+
+      // Re-throw the error so calling code can handle it
+      throw error;
+    }
   }
 }
