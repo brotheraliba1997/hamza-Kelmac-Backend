@@ -29,11 +29,17 @@ export class ClassScheduleSchemaClass extends EntityDocumentHelper {
   })
   instructor: Types.ObjectId;
 
+  // @Prop({
+  //   type: [{ type: Types.ObjectId, ref: UserSchemaClass.name }],
+  //   default: [],
+  // })
+  // students: Types.ObjectId[];
+
   @Prop({
-    type: [{ type: Types.ObjectId, ref: UserSchemaClass.name }],
-    default: [],
+    type: String,
+    required: true,
   })
-  students: Types.ObjectId[];
+  students?: string;
 
   @Prop({
     type: String,
@@ -65,7 +71,7 @@ export class ClassScheduleSchemaClass extends EntityDocumentHelper {
 
   @Prop({
     type: String,
-     required: false,
+    required: false,
     unique: true,
     description: 'Security key used for class access validation',
   })
@@ -99,16 +105,11 @@ export class ClassScheduleSchemaClass extends EntityDocumentHelper {
   })
   endedAt?: Date;
 
-
   @Prop({
-  type: String,
-  description: 'Google Calendar event link',
-})
-googleCalendarEventLink?: string;
-
- 
-
-
+    type: String,
+    description: 'Google Calendar event link',
+  })
+  googleCalendarEventLink?: string;
 
   @Prop({ default: now })
   createdAt: Date;

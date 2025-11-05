@@ -11,6 +11,7 @@ import {
   HttpStatus,
   HttpCode,
   SerializeOptions,
+ 
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -36,10 +37,13 @@ import { UsersService } from './users.service';
 import { RolesGuard } from '../roles/roles.guard';
 import { infinityPagination } from '../utils/infinity-pagination';
 
-@ApiBearerAuth()
-@Roles(RoleEnum.admin, RoleEnum.instructor)
-@UseGuards(AuthGuard('jwt'), RolesGuard)
+// @ApiBearerAuth()
+// @Roles(RoleEnum.admin, RoleEnum.instructor)
+// @UseGuards(AuthGuard('jwt'), RolesGuard)
+
 @ApiTags('Users')
+
+
 @Controller({
   path: 'users',
   version: '1',

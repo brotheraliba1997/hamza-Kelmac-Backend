@@ -66,8 +66,6 @@ export class ClassScheduleService {
     // 🔹 Assign a unique key for security
     dto.securityKey = randomUUID();
 
-    console.log("chal raha hai")
-
     // 🔹 Step 1: Set OAuth2 credentials
     this.oauth2Client.setCredentials({
       access_token: accessToken, // Your Google access token
@@ -131,7 +129,7 @@ export class ClassScheduleService {
     if (populatedSchedule) {
       const course = populatedSchedule.course as any;
       const instructor = populatedSchedule.instructor as any;
-      const students = (populatedSchedule.students as any[]) || [];
+      const students = (populatedSchedule.students as any) ;
 
       const adminEmail = this.configService.get('app.adminEmail', {
         infer: true,

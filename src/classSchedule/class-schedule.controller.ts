@@ -24,7 +24,7 @@ import { infinityPagination } from '../utils/infinity-pagination';
 import { InfinityPaginationResponseDto } from '../utils/dto/infinity-pagination-response.dto';
 
 @ApiTags('Class Schedule')
-@Controller('class-schedule')
+@Controller('v1/class-schedule')
 export class ClassScheduleController {
   constructor(private readonly classScheduleService: ClassScheduleService) {}
 

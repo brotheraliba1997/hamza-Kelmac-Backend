@@ -33,10 +33,11 @@ export class CreateClassScheduleDto {
     example: ['671018fabc123456789ef015', '671018fabc123456789ef016'],
     description: 'List of student IDs attending this class',
   })
-  @IsArray()
-  @ArrayNotEmpty()
+  // @IsArray()
+   @IsString()
+  @IsOptional()
   @IsMongoId({ each: true })
-  students: string[];
+  students: string;
 
   @ApiProperty({
     example: '2025-11-05',
