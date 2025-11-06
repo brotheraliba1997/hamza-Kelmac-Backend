@@ -48,6 +48,21 @@ export class FAQSchemaClass {
 
 const FAQSchema = SchemaFactory.createForClass(FAQSchemaClass);
 
+export class ClassDateOptionSchemaClass {
+  @Prop({ type: Date, required: true })
+  date: Date;
+
+  @Prop({ type: String, required: true, trim: true })
+  description: string;
+
+  @Prop({ type: String, required: true, trim: true })
+  time?: string;
+}
+
+const ClassDateSchema = SchemaFactory.createForClass(
+  ClassDateOptionSchemaClass,
+);
+
 // Topic Item Schema (Individual topics within a session)
 @Schema({
   timestamps: false,
@@ -112,6 +127,9 @@ export class SessionSchemaClass {
 
   @Prop({ type: [TopicItemSchema], default: [] })
   topics: TopicItemSchemaClass[];
+
+  @Prop({ type: [ClassDateSchema], default: [] })
+  timeTable: ClassDateOptionSchemaClass[];
 
   @Prop({ type: [String], default: [] })
   resources: string[]; // Resource URLs

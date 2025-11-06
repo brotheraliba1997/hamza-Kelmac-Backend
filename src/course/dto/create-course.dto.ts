@@ -12,6 +12,8 @@ import {
   Min,
   Max,
   Matches,
+  MaxLength,
+  IsDate,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import {
@@ -256,6 +258,23 @@ export class CourseDetailsDto {
   features?: string[];
 }
 
+class ClassDateOptionDto {
+  @ApiProperty({ example: '2025-11-06T13:44:37.064+00:00' })
+  @IsDate()
+  @Type(() => Date)
+  date: Date;
+
+  @ApiProperty({ example: 'Full Week , Weekend Per day' })
+  @IsString()
+  @IsOptional()
+  description?: string; // e.g. "Full Week"
+
+  @ApiProperty({ example: '9:00 AM - 4:30 PM (Eastern Time (GMT-5))' })
+  @IsString()
+  @IsOptional()
+  time?: string;
+}
+
 export class CreateCourseDto {
   // ===== Basic Information =====
   @ApiProperty({
@@ -300,7 +319,7 @@ export class CreateCourseDto {
   // ===== Category & Classification =====
   @ApiProperty({
     description: 'The category slug of the course',
-    example: 'web-development',
+    example: '690bc43d8ddd23690d42287e',
   })
   @IsString()
   category: string;
@@ -473,4 +492,11 @@ export class CreateCourseDto {
   @ApiPropertyOptional()
   @IsOptional()
   lastUpdated?: Date;
+
+  @ApiPropertyOptional({ type: [ClassDateOptionDto] })
+  @ValidateNested({ each: true })
+  @Type(() => ClassDateOptionDto) 
+  @IsArray()
+  @IsOptional()
+  timeTable?: ClassDateOptionDto[];
 }
