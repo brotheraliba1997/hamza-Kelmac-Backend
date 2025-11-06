@@ -61,7 +61,7 @@ async findManyWithPagination({
     filterQuery,
     sortOptions,
     paginationOptions,
-    populateFields: [{ path: 'instructor', select: 'name email' }],
+    populateFields: [{ path: 'instructor', select: 'lastName firstName email' }],
     mapper: (doc) => this.map(doc),
   });
 }
@@ -94,7 +94,7 @@ return buildMongooseQuery({
   sortOptions,
   paginationOptions,
   populateFields: [
-    { path: 'user', select: 'name email' },
+    { path: 'user', select: 'lastName firstName email' },
     { path: 'course', select: 'title price' },
     { path: 'certificate', select: 'certificateUrl' },
   ],
@@ -205,7 +205,7 @@ async findManyWithPagination(options): Promise<CourseEntity[]> {
     .sort(sort)
     .skip((paginationOptions.page - 1) * paginationOptions.limit)
     .limit(paginationOptions.limit)
-    .populate('instructor', 'name email')
+    .populate('instructor', 'lastName firstName email')
     .lean();
     
   return docs.map(d => this.map(d));
@@ -226,7 +226,7 @@ async findManyWithPagination(options): Promise<CourseEntity[]> {
     filterQuery,
     sortOptions,
     paginationOptions,
-    populateFields: [{ path: 'instructor', select: 'name email' }],
+    populateFields: [{ path: 'instructor', select: 'lastName firstName email' }],
     mapper: (doc) => this.map(doc),
   });
 }

@@ -91,10 +91,10 @@ export class CoursesService {
       title: sanitized.title,
       slug: sanitized.slug,
       description: sanitized.description,
-      instructor:
-        typeof sanitized.instructor === 'object' && sanitized.instructor
-          ? sanitized.instructor.id || sanitized.instructor
-          : sanitized.instructor,
+      instructor: sanitized.instructor,
+      // typeof sanitized.instructor === 'object' && sanitized.instructor
+      //   ? sanitized.instructor.id || sanitized.instructor
+      //   : sanitized.instructor,
       // modules: sanitized.modules || [],
       price: sanitized.price,
       enrolledCount: sanitized.enrolledCount,
@@ -251,7 +251,10 @@ export class CoursesService {
       filterQuery: combinedFilter,
       sortOptions,
       paginationOptions,
-      populateFields: [{ path: 'instructor', select: 'name email' }],
+      populateFields: [
+        { path: 'instructor', select: 'lastName firstName email' },
+        { path: 'category', select: 'name slug description icon color' },
+      ],
       mapper: (doc) => this.map(doc),
     });
   }
@@ -259,7 +262,8 @@ export class CoursesService {
   async findById(id: CourseEntity['id']): Promise<NullableType<CourseEntity>> {
     const doc = await this.courseModel
       .findById(id)
-      .populate('instructor', 'name email')
+      .populate('instructor', 'lastName firstName email')
+      .populate('category', 'name slug description icon color')
       .lean();
     return doc ? this.map(doc) : null;
   }
@@ -270,7 +274,10 @@ export class CoursesService {
   async findBySlug(slug: string): Promise<NullableType<CourseEntity>> {
     const doc = await this.courseModel
       .findOne({ slug })
-      .populate('instructor', 'name email')
+      .populate([
+        { path: 'instructor', select: 'lastName firstName email' },
+        { path: 'category', select: 'name slug description icon color' },
+      ])
       .lean();
 
     if (!doc) {
@@ -330,7 +337,7 @@ export class CoursesService {
 
     const doc = await this.courseModel
       .findByIdAndUpdate(id, dto, { new: true })
-      .populate('instructor', 'name email')
+      .populate('instructor', 'lastName firstName email')
       .lean();
     return doc ? this.map(doc) : null;
   }
@@ -373,7 +380,9 @@ export class CoursesService {
       filterQuery,
       sortOptions: [{ orderBy: 'createdAt', order: 'DESC' }],
       paginationOptions,
-      populateFields: [{ path: 'instructor', select: 'name email' }],
+      populateFields: [
+        { path: 'instructor', select: 'lastName firstName email' },
+      ],
       mapper: (doc) => this.map(doc),
     });
   }
@@ -395,7 +404,9 @@ export class CoursesService {
       filterQuery,
       sortOptions: [{ orderBy: 'createdAt', order: 'DESC' }],
       paginationOptions,
-      populateFields: [{ path: 'instructor', select: 'name email' }],
+      populateFields: [
+        { path: 'instructor', select: 'lastName firstName email' },
+      ],
       mapper: (doc) => this.map(doc),
     });
   }

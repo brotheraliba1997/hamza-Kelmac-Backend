@@ -87,11 +87,11 @@ export class EnrollmentService {
       sortOptions,
       paginationOptions,
       populateFields: [
-        { path: 'user', select: 'name email' },
+        { path: 'user', select: 'lastName firstName email' },
         {
           path: 'course',
           select: 'title price',
-          populate: { path: 'instructor', select: 'name email' },
+          populate: { path: 'instructor', select: 'lastName firstName email' },
         },
       ],
       mapper: (doc) => this.map(doc),
