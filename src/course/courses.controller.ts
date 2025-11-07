@@ -19,6 +19,9 @@ import {
   ApiParam,
   ApiTags,
   ApiQuery,
+  ApiOperation,
+  ApiBody,
+  ApiResponse,
 } from '@nestjs/swagger';
 import { CoursesService } from './courses.service';
 import { CreateCourseDto } from './dto/create-course.dto';
@@ -46,6 +49,20 @@ export class CoursesController {
   // @ApiBearerAuth()
   // @Roles(RoleEnum.instructor, RoleEnum.admin)
   // @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @ApiOperation({
+    summary: 'Create a new course',
+    description:
+      'Creates a new course with all details including sessions, FAQs, pricing, timetables, and snapshots. Requires instructor or admin role (currently disabled).',
+  })
+  @ApiBody({ type: CreateCourseDto })
+  @ApiCreatedResponse({
+    description: 'Course created successfully',
+    type: CourseEntity,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - validation failed or category not found',
+  })
   @ApiCreatedResponse()
   @HttpCode(HttpStatus.CREATED)
   @Post()
@@ -53,6 +70,89 @@ export class CoursesController {
     return this.service.create(dto);
   }
 
+  @ApiOperation({
+    summary: 'Get all courses with filters',
+    description:
+      'Retrieve a paginated list of courses with optional filters for category, price, rating, skill level, language, and more.',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number (default: 1)',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Items per page (default: 10, max: 50)',
+  })
+  @ApiQuery({
+    name: 'category',
+    required: false,
+    type: String,
+    description: 'Filter by category ID',
+  })
+  @ApiQuery({
+    name: 'subcategory',
+    required: false,
+    type: String,
+    description: 'Filter by subcategory name',
+  })
+  @ApiQuery({
+    name: 'topic',
+    required: false,
+    type: String,
+    description: 'Filter by topic',
+  })
+  @ApiQuery({
+    name: 'minPrice',
+    required: false,
+    type: Number,
+    description: 'Minimum price filter',
+  })
+  @ApiQuery({
+    name: 'maxPrice',
+    required: false,
+    type: Number,
+    description: 'Maximum price filter',
+  })
+  @ApiQuery({
+    name: 'minRating',
+    required: false,
+    type: Number,
+    description: 'Minimum average rating (0-5)',
+  })
+  @ApiQuery({
+    name: 'skillLevel',
+    required: false,
+    type: String,
+    description: 'Filter by skill level (beginner, intermediate, advanced)',
+  })
+  @ApiQuery({
+    name: 'language',
+    required: false,
+    type: String,
+    description: 'Filter by course language',
+  })
+  @ApiQuery({
+    name: 'isFeatured',
+    required: false,
+    type: Boolean,
+    description: 'Filter featured courses',
+  })
+  @ApiQuery({
+    name: 'isPublished',
+    required: false,
+    type: Boolean,
+    description: 'Filter published/draft courses',
+  })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    type: String,
+    description: 'Search in title and description',
+  })
   @ApiOkResponse({
     type: InfinityPaginationResponse(CourseEntity),
   })
@@ -78,11 +178,24 @@ export class CoursesController {
     });
   }
 
-  @ApiOkResponse()
+  @ApiOperation({
+    summary: 'Get course by ID',
+    description: 'Retrieve a single course by its MongoDB ObjectId',
+  })
+  @ApiOkResponse({
+    description: 'Course found',
+    type: CourseEntity,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Course not found',
+  })
   @ApiParam({
     name: 'id',
     type: String,
     required: true,
+    description: 'Course ObjectId',
+    example: '507f1f77bcf86cd799439011',
   })
   @HttpCode(HttpStatus.OK)
   @Get(':id')
@@ -90,14 +203,25 @@ export class CoursesController {
     return this.service.findById(id);
   }
 
+  @ApiOperation({
+    summary: 'Get course by slug',
+    description:
+      'Retrieve a course using its SEO-friendly slug (e.g., introduction-to-web-development)',
+  })
   @ApiOkResponse({
-    description: 'Get course by slug',
+    description: 'Course found',
+    type: CourseEntity,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Course not found',
   })
   @ApiParam({
     name: 'slug',
     type: String,
     required: true,
     description: 'Course slug (e.g., introduction-to-web-development)',
+    example: 'introduction-to-web-development',
   })
   @HttpCode(HttpStatus.OK)
   @Get('slug/:slug')
@@ -105,15 +229,25 @@ export class CoursesController {
     return this.service.findBySlug(slug);
   }
 
+  @ApiOperation({
+    summary: 'Get courses by category',
+    description:
+      'Retrieve paginated courses filtered by category slug. Returns all courses in the specified category.',
+  })
   @ApiOkResponse({
     type: InfinityPaginationResponse(CourseEntity),
-    description: 'Get courses by category',
+    description: 'Paginated list of courses in the category',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Category not found',
   })
   @ApiParam({
     name: 'categorySlug',
     type: String,
     required: true,
     description: 'Category slug (e.g., web-development)',
+    example: 'web-development',
   })
   @ApiQuery({
     name: 'page',
@@ -145,15 +279,21 @@ export class CoursesController {
     });
   }
 
+  @ApiOperation({
+    summary: 'Get courses by subcategory',
+    description:
+      'Retrieve paginated courses filtered by subcategory name. Returns all courses with the specified subcategory.',
+  })
   @ApiOkResponse({
     type: InfinityPaginationResponse(CourseEntity),
-    description: 'Get courses by subcategory',
+    description: 'Paginated list of courses in the subcategory',
   })
   @ApiParam({
     name: 'subcategory',
     type: String,
     required: true,
     description: 'Subcategory name',
+    example: 'Frontend Development',
   })
   @ApiQuery({
     name: 'page',
@@ -185,14 +325,37 @@ export class CoursesController {
     });
   }
 
+  @ApiOperation({
+    summary: 'Update course',
+    description:
+      'Update an existing course. Requires authentication and admin/instructor role. Can update all course details including sessions, pricing, and metadata.',
+  })
   @ApiBearerAuth()
   @Roles(RoleEnum.admin, RoleEnum.instructor)
   @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @ApiOkResponse()
+  @ApiBody({ type: UpdateCourseDto })
+  @ApiOkResponse({
+    description: 'Course updated successfully',
+    type: CourseEntity,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - authentication required',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - insufficient permissions',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Course not found',
+  })
   @ApiParam({
     name: 'id',
     type: String,
     required: true,
+    description: 'Course ObjectId',
+    example: '507f1f77bcf86cd799439011',
   })
   @HttpCode(HttpStatus.OK)
   @Patch(':id')
@@ -200,13 +363,36 @@ export class CoursesController {
     return this.service.update(id, dto);
   }
 
+  @ApiOperation({
+    summary: 'Delete course',
+    description:
+      'Permanently delete a course. Requires authentication and admin/instructor role. This action cannot be undone and will decrement the category course count.',
+  })
   @ApiBearerAuth()
   @Roles(RoleEnum.admin, RoleEnum.instructor)
   @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @ApiResponse({
+    status: 204,
+    description: 'Course deleted successfully',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - authentication required',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - insufficient permissions',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Course not found',
+  })
   @ApiParam({
     name: 'id',
     type: String,
     required: true,
+    description: 'Course ObjectId',
+    example: '507f1f77bcf86cd799439011',
   })
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':id')

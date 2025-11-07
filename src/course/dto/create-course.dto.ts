@@ -258,7 +258,7 @@ export class CourseDetailsDto {
   features?: string[];
 }
 
-class ClassDateOptionDto {
+export class DateOptionDto {
   @ApiProperty({ example: '2025-11-06T13:44:37.064+00:00' })
   @IsDate()
   @Type(() => Date)
@@ -493,10 +493,13 @@ export class CreateCourseDto {
   @IsOptional()
   lastUpdated?: Date;
 
-  @ApiPropertyOptional({ type: [ClassDateOptionDto] })
+  @ApiPropertyOptional({
+    type: [DateOptionDto],
+    description: 'Course time table/schedule',
+  })
   @ValidateNested({ each: true })
-  @Type(() => ClassDateOptionDto) 
+  @Type(() => DateOptionDto)
   @IsArray()
   @IsOptional()
-  timeTable?: ClassDateOptionDto[];
+  timeTable?: DateOptionDto[];
 }

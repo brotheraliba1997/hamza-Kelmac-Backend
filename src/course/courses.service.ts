@@ -128,7 +128,6 @@ export class CoursesService {
         throw error;
       }
     }
-
     const created = await this.courseModel.create({
       ...dto,
       slug: uniqueSlug,
@@ -264,7 +263,7 @@ export class CoursesService {
       .findById(id)
       .populate('instructor', 'lastName firstName email')
       .populate('category', 'name slug description icon color')
-      .lean();
+      .lean({ virtuals: false, getters: false });
     return doc ? this.map(doc) : null;
   }
 
@@ -277,8 +276,16 @@ export class CoursesService {
       .populate([
         { path: 'instructor', select: 'lastName firstName email' },
         { path: 'category', select: 'name slug description icon color' },
+        {
+          path: 'timeTable',
+          populate: {
+            path: 'studentsEnrolled',
+            select: 'firstName lastName email',
+            options: { lean: true },
+          },
+        },
       ])
-      .lean();
+      .lean({ virtuals: false, getters: false });
 
     if (!doc) {
       throw new NotFoundException('Course not found');
@@ -338,6 +345,7 @@ export class CoursesService {
     const doc = await this.courseModel
       .findByIdAndUpdate(id, dto, { new: true })
       .populate('instructor', 'lastName firstName email')
+      .populate('category', 'name slug description icon color')
       .lean();
     return doc ? this.map(doc) : null;
   }
@@ -374,7 +382,6 @@ export class CoursesService {
       .addEqual('category' as any, categorySlug)
       .addEqual('isPublished' as any, true)
       .build();
-
     return buildMongooseQuery({
       model: this.courseModel,
       filterQuery,
@@ -382,6 +389,7 @@ export class CoursesService {
       paginationOptions,
       populateFields: [
         { path: 'instructor', select: 'lastName firstName email' },
+        { path: 'category', select: 'name slug description icon color' },
       ],
       mapper: (doc) => this.map(doc),
     });
@@ -406,6 +414,7 @@ export class CoursesService {
       paginationOptions,
       populateFields: [
         { path: 'instructor', select: 'lastName firstName email' },
+        { path: 'category', select: 'name slug description icon color' },
       ],
       mapper: (doc) => this.map(doc),
     });
