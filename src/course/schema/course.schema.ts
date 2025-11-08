@@ -62,13 +62,6 @@ export class ClassDateOptionSchemaClass {
 
   @Prop({ type: String, required: true, trim: true })
   time?: string;
-
-  @Prop({
-    type: [Types.ObjectId],
-    default: [],
-    ref: UserSchemaClass.name,
-  })
-  studentsEnrolled: Types.ObjectId[];
 }
 
 const ClassDateOptionSchema = SchemaFactory.createForClass(
@@ -139,8 +132,6 @@ export class SessionSchemaClass {
 
   @Prop({ type: [TopicItemSchema], default: [] })
   topics: TopicItemSchemaClass[];
-
-  
 
   @Prop({ type: [String], default: [] })
   resources: string[]; // Resource URLs
@@ -342,7 +333,6 @@ export class CourseSchemaClass extends EntityDocumentHelper {
   // ===== Schedule & Timetable =====
   @Prop({ type: [ClassDateOptionSchema], default: [] })
   timeTable: ClassDateOptionSchemaClass[];
-
 
   // @Prop({ type: [ClassDateSchema], default: [] })
   // timeTable: ClassDateOptionSchemaClass[];

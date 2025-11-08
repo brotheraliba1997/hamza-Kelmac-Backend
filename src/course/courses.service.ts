@@ -92,10 +92,6 @@ export class CoursesService {
       slug: sanitized.slug,
       description: sanitized.description,
       instructor: sanitized.instructor,
-      // typeof sanitized.instructor === 'object' && sanitized.instructor
-      //   ? sanitized.instructor.id || sanitized.instructor
-      //   : sanitized.instructor,
-      // modules: sanitized.modules || [],
       price: sanitized.price,
       enrolledCount: sanitized.enrolledCount,
       isPublished: sanitized.isPublished,
@@ -261,8 +257,13 @@ export class CoursesService {
   async findById(id: CourseEntity['id']): Promise<NullableType<CourseEntity>> {
     const doc = await this.courseModel
       .findById(id)
-      .populate('instructor', 'lastName firstName email')
-      .populate('category', 'name slug description icon color')
+      .populate([
+        { path: 'instructor', select: 'lastName firstName email' },
+        { path: 'category', select: 'name slug description icon color' },
+        {
+          path: 'timeTable',
+        },
+      ])
       .lean({ virtuals: false, getters: false });
     return doc ? this.map(doc) : null;
   }
@@ -278,11 +279,6 @@ export class CoursesService {
         { path: 'category', select: 'name slug description icon color' },
         {
           path: 'timeTable',
-          populate: {
-            path: 'studentsEnrolled',
-            select: 'firstName lastName email',
-            options: { lean: true },
-          },
         },
       ])
       .lean({ virtuals: false, getters: false });
