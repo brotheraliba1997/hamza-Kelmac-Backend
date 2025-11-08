@@ -42,7 +42,8 @@ export class PaymentController {
     @Request() req: any,
   ) {
     // In a real app, get userId from authenticated user
-    const userId = req.user?.id || createPaymentDto.courseId; // Temporary for testing
+    const userId = req?.body?.userId // Temporary for testing
+    // console.log('userId', userId);
     return this.paymentService.createPayment(userId, createPaymentDto);
   }
 

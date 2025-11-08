@@ -110,8 +110,8 @@ const infrastructureDatabaseModule = (databaseConfig() as DatabaseConfig)
     BlogsModule,
     ClassScheduleModule,
     GoogleModule,
-    // StripeModule,
-    // PaymentModule,
+    StripeModule,
+    PaymentModule,
   ],
 })
 export class AppModule {}

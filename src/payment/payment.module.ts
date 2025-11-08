@@ -3,8 +3,8 @@ import { MongooseModule } from '@nestjs/mongoose';
 
 import { Payment, PaymentSchema } from './schema/payment.schema';
 import { StripeModule } from '../stripe/stripe.module';
-import { Course, CourseSchema } from '../schema/Course/course.schema';
-import { User, UserSchema } from '../schema/User/user.schema';
+
+
 import {
   EnrollmentSchemaClass,
   EnrollmentSchema,
@@ -12,13 +12,16 @@ import {
 import { MailModule } from '../mail/mail.module';
 import { PaymentController } from './payment.controller';
 import { PaymentService } from './payment.service';
+import {  CourseSchema, CourseSchemaClass } from '../course/schema/course.schema';
+import { UserSchema, UserSchemaClass } from '../users/schema/user.schema';
+
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: Payment.name, schema: PaymentSchema },
-      { name: Course.name, schema: CourseSchema },
-      { name: User.name, schema: UserSchema },
+      { name: CourseSchemaClass.name, schema: CourseSchema },
+    { name: UserSchemaClass.name, schema: UserSchema },
       { name: EnrollmentSchemaClass.name, schema: EnrollmentSchema },
     ]),
     StripeModule,

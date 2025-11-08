@@ -16,9 +16,15 @@ import { MailService } from '../mail/mail.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { CreateCheckoutDto } from './dto/create-checkout.dto';
 import { RefundPaymentDto } from './dto/refund-payment.dto';
-import { Course } from '../schema/Course/course.schema';
+
 import { User } from '../schema/User/user.schema';
 import { EnrollmentSchemaClass } from '../Enrollment/infrastructure/enrollments.schema';
+import {
+  CourseSchemaClass,
+  CourseSchema,
+} from '../course/schema/course.schema';
+import { Course } from '../schema/Course/course.schema';
+import { UserSchemaClass } from '../users/schema/user.schema';
 
 @Injectable()
 export class PaymentService {
@@ -27,10 +33,10 @@ export class PaymentService {
   constructor(
     @InjectModel(Payment.name)
     private paymentModel: Model<PaymentDocument>,
-    @InjectModel(Course.name)
-    private courseModel: Model<Course>,
-    @InjectModel(User.name)
-    private userModel: Model<User>,
+    @InjectModel(CourseSchemaClass.name)
+    private courseModel: Model<CourseSchemaClass>,
+    @InjectModel(UserSchemaClass.name)
+    private readonly userModel: Model<UserSchemaClass>,
     @InjectModel(EnrollmentSchemaClass.name)
     private enrollmentModel: Model<EnrollmentSchemaClass>,
     private stripeService: StripeService,
@@ -42,23 +48,27 @@ export class PaymentService {
    */
   async createPayment(userId: string, createPaymentDto: CreatePaymentDto) {
     const { courseId, amount, currency = 'usd', metadata } = createPaymentDto;
+    console.log('user', userId);
+    // const course = courseId;
+    // const user = userId;
 
-    // Validate course exists
     const course = await this.courseModel.findById(courseId);
+
     if (!course) {
       throw new NotFoundException('Course not found');
     }
 
     // Validate user exists
     const user = await this.userModel.findById(userId);
+
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
     // Check if user already enrolled
     const existingEnrollment = await this.enrollmentModel.findOne({
-      user: new Types.ObjectId(userId),
-      course: new Types.ObjectId(courseId),
+      user: user,
+      course: course,
       status: { $in: ['active', 'completed'] },
     });
 
@@ -78,8 +88,8 @@ export class PaymentService {
 
     // Create payment record
     const payment = new this.paymentModel({
-      user: new Types.ObjectId(userId),
-      course: new Types.ObjectId(courseId),
+       courseId: course?._id.toString(),
+        userId: user?._id.toString(),
       amount: paymentAmount,
       currency,
       status: PaymentStatus.PENDING,
@@ -87,20 +97,25 @@ export class PaymentService {
       metadata: {
         ...metadata,
         courseName: course.title,
-        userName: user.name,
+        userName: user.firstName + ' ' + user.lastName,
         userEmail: user.email,
       },
     });
 
+   
+
     await payment.save();
+
+
+     console.log('user found', user, course);
 
     try {
       // Create Stripe payment intent
       const paymentIntent = await this.stripeService.createPaymentIntent({
         amount: amountInCents,
         currency,
-        courseId,
-        userId,
+        courseId: course?._id.toString(),
+        userId: user?._id.toString(),
         description: `Payment for ${course.title}`,
       });
 
@@ -177,7 +192,7 @@ export class PaymentService {
       metadata: {
         ...metadata,
         courseName: course.title,
-        userName: user.name,
+        userName: user.firstName + ' ' + user.lastName,
         userEmail: user.email,
       },
     });
@@ -249,8 +264,8 @@ export class PaymentService {
     try {
       // Create enrollment
       const enrollment = new this.enrollmentModel({
-        user: payment.user,
-        course: payment.course,
+        user: payment.userId,
+        course: payment.courseId,
         status: 'active',
         enrolledAt: new Date(),
         paymentStatus: 'paid',
@@ -263,12 +278,12 @@ export class PaymentService {
       await payment.save();
 
       this.logger.log(
-        `Enrollment created for user ${payment.user} in course ${payment.course}`,
+        `Enrollment created for user ${payment.userId} in course ${payment.courseId}`,
       );
 
       // Send confirmation email
-      const user = payment.user as any;
-      const course = payment.course as any;
+      const user = payment.userId as any;
+      const course = payment.courseId as any;
 
       try {
         await this.mailService.userRegistered({
@@ -377,8 +392,8 @@ export class PaymentService {
       );
 
       // Send refund confirmation email
-      const user = payment.user as any;
-      const course = payment.course as any;
+      const user = payment.userId as any;
+      const course = payment.courseId as any;
 
       try {
         await this.mailService.userRegistered({

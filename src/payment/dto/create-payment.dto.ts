@@ -13,6 +13,11 @@ export class CreatePaymentDto {
   @IsString()
   courseId: string;
 
+  @ApiProperty({ description: 'user ID to purchase' })
+  @IsNotEmpty()
+  @IsString()
+  userId: string;
+
   @ApiPropertyOptional({
     description: 'Custom amount (if different from course price)',
   })

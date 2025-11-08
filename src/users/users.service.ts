@@ -30,8 +30,7 @@ import { sanitizeMongooseDocument } from '../utils/convert-id';
 @Injectable()
 export class UsersService {
   constructor(
-    @InjectModel(UserSchemaClass.name)
-    private readonly userModel: Model<UserSchemaClass>,
+    @InjectModel(UserSchemaClass.name) private readonly userModel: Model<UserSchemaClass>,
     private readonly filesService: FilesService,
   ) {}
 

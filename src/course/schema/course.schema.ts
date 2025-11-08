@@ -128,8 +128,7 @@ export class SessionSchemaClass {
   @Prop({ type: [TopicItemSchema], default: [] })
   topics: TopicItemSchemaClass[];
 
-  @Prop({ type: [ClassDateSchema], default: [] })
-  timeTable: ClassDateOptionSchemaClass[];
+  
 
   @Prop({ type: [String], default: [] })
   resources: string[]; // Resource URLs
@@ -328,6 +327,10 @@ export class CourseSchemaClass extends EntityDocumentHelper {
 
   @Prop({ type: Date })
   lastUpdated?: Date;
+
+
+  @Prop({ type: [ClassDateSchema], default: [] })
+  timeTable: ClassDateOptionSchemaClass[];
 
   // ===== Timestamps =====
   @Prop({ type: Date })

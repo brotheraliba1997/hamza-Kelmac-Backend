@@ -1,6 +1,9 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Schema as MongooseSchema } from 'mongoose';
+import { Document, Schema as MongooseSchema, Types } from 'mongoose';
 import { ApiProperty } from '@nestjs/swagger';
+import { UserSchemaClass } from '../../users/schema/user.schema';
+import { CourseSchemaClass } from '../../course/schema/course.schema';
+
 
 export type PaymentDocument = Payment & Document;
 
@@ -23,21 +26,19 @@ export enum PaymentMethod {
 export class Payment {
   @ApiProperty()
   @Prop({
-    type: MongooseSchema.Types.ObjectId,
-    ref: 'User',
+    type: Types.ObjectId,
+    ref: UserSchemaClass.name,
     required: true,
-    index: true,
   })
-  user: MongooseSchema.Types.ObjectId;
+  userId: Types.ObjectId;
 
   @ApiProperty()
   @Prop({
-    type: MongooseSchema.Types.ObjectId,
-    ref: 'Course',
+    type: Types.ObjectId,
+     ref: CourseSchemaClass.name,
     required: true,
-    index: true,
   })
-  course: MongooseSchema.Types.ObjectId;
+  courseId: Types.ObjectId;
 
   @ApiProperty()
   @Prop({
