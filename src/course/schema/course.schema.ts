@@ -48,6 +48,11 @@ export class FAQSchemaClass {
 
 const FAQSchema = SchemaFactory.createForClass(FAQSchemaClass);
 
+@Schema({
+  timestamps: false,
+  toJSON: { virtuals: true, getters: true },
+  // _id: false,
+})
 export class ClassDateOptionSchemaClass {
   @Prop({ type: Date, required: true })
   date: Date;
@@ -57,9 +62,16 @@ export class ClassDateOptionSchemaClass {
 
   @Prop({ type: String, required: true, trim: true })
   time?: string;
+
+  @Prop({
+    type: [Types.ObjectId],
+    default: [],
+    ref: UserSchemaClass.name,
+  })
+  studentsEnrolled: Types.ObjectId[];
 }
 
-const ClassDateSchema = SchemaFactory.createForClass(
+const ClassDateOptionSchema = SchemaFactory.createForClass(
   ClassDateOptionSchemaClass,
 );
 
@@ -327,6 +339,9 @@ export class CourseSchemaClass extends EntityDocumentHelper {
 
   @Prop({ type: Date })
   lastUpdated?: Date;
+  // ===== Schedule & Timetable =====
+  @Prop({ type: [ClassDateOptionSchema], default: [] })
+  timeTable: ClassDateOptionSchemaClass[];
 
 
   @Prop({ type: [ClassDateSchema], default: [] })
