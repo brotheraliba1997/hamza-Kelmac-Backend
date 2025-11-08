@@ -344,8 +344,8 @@ export class CourseSchemaClass extends EntityDocumentHelper {
   timeTable: ClassDateOptionSchemaClass[];
 
 
-  @Prop({ type: [ClassDateSchema], default: [] })
-  timeTable: ClassDateOptionSchemaClass[];
+  // @Prop({ type: [ClassDateSchema], default: [] })
+  // timeTable: ClassDateOptionSchemaClass[];
 
   // ===== Timestamps =====
   @Prop({ type: Date })

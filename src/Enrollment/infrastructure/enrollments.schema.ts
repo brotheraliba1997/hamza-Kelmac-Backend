@@ -3,9 +3,10 @@ import { now, HydratedDocument, Types } from 'mongoose';
 import { EntityDocumentHelper } from '../../utils/document-entity-helper';
 import { UserSchemaClass } from '../../users/schema/user.schema';
 import { CourseSchemaClass } from '../../course/schema/course.schema';
-import { Payment } from '../../schema/Payment/payment.schema';
-import { Offer } from '../../schema/offer/offer.schema';
+
+
 import { CertificateSchemaClass } from '../../certificate/schema/certificate.schema';
+import { Payment } from '../../payment/schema/payment.schema';
 
 export type EnrollmentSchemaDocument = HydratedDocument<EnrollmentSchemaClass>;
 
@@ -26,8 +27,8 @@ export class EnrollmentSchemaClass extends EntityDocumentHelper {
   @Prop({ type: Types.ObjectId, ref: Payment.name })
   payment?: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: Offer.name })
-  offer?: Types.ObjectId;
+  // @Prop({ type: Types.ObjectId, ref: Offer.name })
+  // offer?: Types.ObjectId;
 
   @Prop({ default: 0, min: 0, max: 100 })
   progress: number;

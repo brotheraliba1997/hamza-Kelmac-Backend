@@ -17,13 +17,12 @@ import { CreatePaymentDto } from './dto/create-payment.dto';
 import { CreateCheckoutDto } from './dto/create-checkout.dto';
 import { RefundPaymentDto } from './dto/refund-payment.dto';
 
-import { User } from '../schema/User/user.schema';
 import { EnrollmentSchemaClass } from '../Enrollment/infrastructure/enrollments.schema';
 import {
   CourseSchemaClass,
   CourseSchema,
 } from '../course/schema/course.schema';
-import { Course } from '../schema/Course/course.schema';
+
 import { UserSchemaClass } from '../users/schema/user.schema';
 
 @Injectable()
@@ -88,8 +87,8 @@ export class PaymentService {
 
     // Create payment record
     const payment = new this.paymentModel({
-       courseId: course?._id.toString(),
-        userId: user?._id.toString(),
+      courseId: course?._id.toString(),
+      userId: user?._id.toString(),
       amount: paymentAmount,
       currency,
       status: PaymentStatus.PENDING,
@@ -102,12 +101,9 @@ export class PaymentService {
       },
     });
 
-   
-
     await payment.save();
 
-
-     console.log('user found', user, course);
+    console.log('user found', user, course);
 
     try {
       // Create Stripe payment intent
