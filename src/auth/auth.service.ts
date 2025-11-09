@@ -150,6 +150,13 @@ export class AuthService {
         provider: authProvider,
         role,
         status,
+        company: null,
+        jobTitle: null,
+        emailAddress: null,
+        phoneNumber: null,
+        country: null,
+        industry: null,
+        currency: null,
       });
 
       user = await this.usersService.findById(user.id);
@@ -194,6 +201,7 @@ export class AuthService {
   }
 
   async register(dto: AuthRegisterLoginDto): Promise<void> {
+    // ✅ Create the user with extended fields
     const user = await this.usersService.create({
       ...dto,
       email: dto.email,
@@ -203,8 +211,16 @@ export class AuthService {
       status: {
         id: StatusEnum.inactive,
       },
+      // New fields (set defaults or from dto if available)
+      company: dto.company ?? null,
+      jobTitle: dto.jobTitle ?? null,
+      emailAddress: dto.emailAddress ?? dto.email,
+      phoneNumber: dto.phoneNumber ?? null,
+      country: dto.country ?? null,
+      industry: dto.industry ?? null,
     });
 
+    // ✅ Generate email confirmation token
     const hash = await this.jwtService.signAsync(
       {
         confirmEmailUserId: user.id,
@@ -219,7 +235,7 @@ export class AuthService {
       },
     );
 
-    // Send activation email to user
+    // ✅ Send activation email to user
     await this.mailService.userSignUp({
       to: dto.email,
       data: {
@@ -227,7 +243,7 @@ export class AuthService {
       },
     });
 
-    // Send notification to admin
+    // ✅ Notify admin about registration
     const adminEmail = this.configService.get('app.adminEmail', {
       infer: true,
     });
@@ -251,7 +267,6 @@ export class AuthService {
           },
         });
       } catch (error) {
-        // Log error but don't fail registration
         console.error('Failed to send admin notification email:', error);
       }
     }

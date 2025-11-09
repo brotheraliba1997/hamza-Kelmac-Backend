@@ -30,7 +30,7 @@ export class FilterClassScheduleDto {
   })
   @IsMongoId()
   @IsOptional()
-  studentId?: string;
+  studentId?: string[];
 
   @ApiPropertyOptional({
     enum: ['scheduled', 'ongoing', 'completed', 'cancelled'],

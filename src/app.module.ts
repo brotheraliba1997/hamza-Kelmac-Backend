@@ -37,6 +37,7 @@ import { StripeModule } from './stripe/stripe.module';
 import stripeConfig from './stripe/config/stripe.config';
 import { PaymentModule } from './payment/payment.module';
 import { GoogleModule } from './googleService/google.module';
+import { BookingsModule } from './booking/booking.module';
 
 // <database-block>
 const infrastructureDatabaseModule = (databaseConfig() as DatabaseConfig)
@@ -112,6 +113,7 @@ const infrastructureDatabaseModule = (databaseConfig() as DatabaseConfig)
     GoogleModule,
     StripeModule,
     PaymentModule,
+    BookingsModule,
   ],
 })
 export class AppModule {}

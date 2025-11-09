@@ -1,6 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { now, HydratedDocument } from 'mongoose';
-
 import { AuthProvidersEnum } from '../../auth/auth-providers.enum';
 import { FileSchemaClass } from '../../files/infrastructure/persistence/document/entities/file.schema';
 import { EntityDocumentHelper } from '../../utils/document-entity-helper';
@@ -17,58 +16,52 @@ export type UserSchemaDocument = HydratedDocument<UserSchemaClass>;
   },
 })
 export class UserSchemaClass extends EntityDocumentHelper {
-  @Prop({
-    type: String,
-    unique: true,
-  })
+  @Prop({ type: String, unique: true })
   email: string | null;
 
   @Prop()
   password?: string;
 
-  @Prop({
-    default: AuthProvidersEnum.email,
-  })
+  @Prop({ default: AuthProvidersEnum.email })
   provider: string;
 
-  @Prop({
-    default: false,
-  })
+  @Prop({ default: false })
   isEmailVerified: boolean;
 
-  @Prop({
-    type: String,
-    default: null,
-  })
+  @Prop({ type: String, default: null })
   socialId?: string | null;
 
-  @Prop({
-    type: String,
-  })
+  @Prop({ type: String })
   firstName: string | null;
 
-  @Prop({
-    type: String,
-  })
+  @Prop({ type: String })
   lastName: string | null;
 
-  @Prop({
-    type: FileSchemaClass,
-  })
+  @Prop({ type: FileSchemaClass })
   photo?: FileSchemaClass | null;
 
-  @Prop({
-    type: RoleSchema,
-  })
+  @Prop({ type: RoleSchema })
   role?: RoleSchema | null;
 
-  @Prop({
-    type: StatusSchema,
-  })
+  @Prop({ type: StatusSchema })
   status?: StatusSchema;
 
+  // ✅ Renamed from DTO field `companyName`
   @Prop()
   company?: string;
+
+  // ✅ Newly added fields (missing before)
+  @Prop()
+  jobTitle?: string;
+
+  @Prop()
+  emailAddress?: string;
+
+  @Prop()
+  phoneNumber?: number;
+
+  @Prop()
+  industry?: string;
 
   @Prop()
   country?: string;

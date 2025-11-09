@@ -1,10 +1,16 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 // import { Booking } from './schemas/booking.schema';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { UpdateBookingDto } from './dto/update-booking.dto';
 import { Booking, BookingDocument } from './schema/booking.schema';
+import { Payment, PaymentDocument } from '../payment/schema/payment.schema';
 
 @Injectable()
 export class BookingsService {
@@ -12,31 +18,45 @@ export class BookingsService {
 
   constructor(
     @InjectModel(Booking.name) private bookingModel: Model<BookingDocument>,
+    @InjectModel(Payment.name) private paymentModel: Model<PaymentDocument>,
   ) {}
 
-  /**
-   * ✅ Create new booking
-   * Automatically populates all references in the response.
-   */
   async create(createBookingDto: CreateBookingDto) {
+    const payments = await this.paymentModel.findOne({
+      userId: createBookingDto.studentId,
+    });
+
+    if (payments?.userId?.toString() === createBookingDto.studentId) {
+      throw new BadRequestException(
+        'Payment has already been used by this student',
+      );
+    }
+
+    const booking = await this.bookingModel.findOne({
+      studentId: new Types.ObjectId(createBookingDto.studentId),
+    });
+
+    console.log('Existing booking:', booking);
+
+    if (booking?.studentId?.toString() === createBookingDto.studentId) {
+      throw new BadRequestException(
+        'already you have booked this course or same other course',
+      );
+    }
+
     try {
       const newBooking = await this.bookingModel.create({
         ...createBookingDto,
         studentId: new Types.ObjectId(createBookingDto.studentId),
         courseId: new Types.ObjectId(createBookingDto.courseId),
         timeTableId: new Types.ObjectId(createBookingDto.timeTableId),
-        paymentId: new Types.ObjectId(createBookingDto.paymentId),
+        status: 'pending',
       });
 
-      return await this.bookingModel
-        .findById(newBooking._id)
-        .populate('studentId', 'name email')
-        .populate('courseId', 'title category')
-        .populate('timeTableId', 'date time')
-        .populate('paymentId', 'amount currency status')
-        .exec();
+      return newBooking.toObject();
     } catch (error) {
       this.logger.error('Failed to create booking', error.stack);
+      console.log('Error details:', error);
       throw error;
     }
   }
@@ -66,7 +86,8 @@ export class BookingsService {
       .populate('paymentId', 'amount currency status')
       .exec();
 
-    if (!booking) throw new NotFoundException(`Booking with id ${id} not found`);
+    if (!booking)
+      throw new NotFoundException(`Booking with id ${id} not found`);
     return booking;
   }
 
@@ -82,7 +103,8 @@ export class BookingsService {
       .populate('paymentId', 'amount currency status')
       .exec();
 
-    if (!updated) throw new NotFoundException(`Booking with id ${id} not found`);
+    if (!updated)
+      throw new NotFoundException(`Booking with id ${id} not found`);
     return updated;
   }
 
@@ -91,7 +113,8 @@ export class BookingsService {
    */
   async remove(id: string) {
     const deleted = await this.bookingModel.findByIdAndDelete(id);
-    if (!deleted) throw new NotFoundException(`Booking with id ${id} not found`);
+    if (!deleted)
+      throw new NotFoundException(`Booking with id ${id} not found`);
     return { message: 'Booking deleted successfully' };
   }
 }

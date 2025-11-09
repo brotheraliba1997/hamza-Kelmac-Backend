@@ -31,9 +31,7 @@ export class Booking {
   @Prop({ type: Types.ObjectId, ref: CourseSchemaClass.name, required: true })
   timeTableId: Types.ObjectId;
 
-  @ApiProperty({ description: 'Associated payment record' })
-  @Prop({ type: Types.ObjectId, ref: Payment.name, required: true })
-  paymentId: Types.ObjectId;
+ 
 
   @ApiProperty({ enum: BookingStatus, default: BookingStatus.PENDING })
   @Prop({

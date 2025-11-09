@@ -5,7 +5,7 @@ import {
   Inject,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { ClassScheduleSchemaClass } from './schema/class-schedule.schema';
 
 import { CreateClassScheduleDto } from './dto/create-class-schedule.dto';
@@ -57,22 +57,18 @@ export class ClassScheduleService {
     };
   }
 
-  // 🟢 CREATE new class schedule
   async create(
     dto: CreateClassScheduleDto,
     accessToken: string,
     refreshToken: string,
   ) {
-    // 🔹 Assign a unique key for security
     dto.securityKey = randomUUID();
 
-    // 🔹 Step 1: Set OAuth2 credentials
     this.oauth2Client.setCredentials({
-      access_token: accessToken, // Your Google access token
-      refresh_token: refreshToken, // Your Google refresh token
+      access_token: accessToken,
+      refresh_token: refreshToken,
     });
 
-    // 🔹 Step 2: Initialize Google Calendar API
     const calendar = google.calendar({
       version: 'v3',
       auth: this.oauth2Client,
@@ -101,84 +97,95 @@ export class ClassScheduleService {
       },
     };
 
-    // 🔹 Step 4: Create event in Google Calendar
     const response = await calendar.events.insert({
       calendarId: 'primary',
       requestBody: event,
       conferenceDataVersion: 1,
     });
 
-    // 🔹 Step 5: Save Google links into DTO
     dto.googleMeetLink =
       response.data.conferenceData?.entryPoints?.[0]?.uri || '';
     dto.googleCalendarEventLink = response.data.htmlLink || '';
 
-    // 🔹 Step 6: Save schedule in DB
-    const schedule = await this.classScheduleModel.create(dto);
+    const schedules = await this.classScheduleModel.findOne({course: dto.course});
+    const studentId = dto.students;
 
-    console.log('Class schedule created with Google Meet link:', schedule);
-
-    // 🔹 Step 7: Populate related info for email (optional)
-    const populatedSchedule = await this.classScheduleModel
-      .findById(schedule._id)
-      .populate('course')
-      .populate('instructor')
-      .populate('students')
-      .lean();
-
-    if (populatedSchedule) {
-      const course = populatedSchedule.course as any;
-      const instructor = populatedSchedule.instructor as any;
-      const students = (populatedSchedule.students as any) ;
-
-      const adminEmail = this.configService.get('app.adminEmail', {
-        infer: true,
-      });
-
-      const lessonDate = new Date(populatedSchedule.date).toLocaleDateString(
-        'en-US',
-        { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' },
+    if (schedules.students.includes(studentId)) {
+      throw new BadRequestException(
+        `Student ${dto.students} is already added in schedule ${schedules._id}`,
       );
-
-      const emailData = {
-        courseName: course?.title || 'Unknown Course',
-        instructorName: instructor?.firstName
-          ? `${instructor.firstName} ${instructor.lastName || ''}`
-          : instructor?.email || 'Unknown Instructor',
-        lessonDate,
-        lessonTime: populatedSchedule.time,
-        duration: populatedSchedule.duration,
-        googleMeetLink: populatedSchedule.googleMeetLink,
-      };
-
-      try {
-        if (adminEmail) {
-          await this.mailService.lessonScheduled({
-            to: adminEmail,
-            data: emailData,
-          });
-        }
-        if (instructor?.email) {
-          await this.mailService.lessonScheduled({
-            to: instructor.email,
-            data: emailData,
-          });
-        }
-        for (const student of students) {
-          if (student?.email) {
-            await this.mailService.lessonScheduled({
-              to: student.email,
-              data: emailData,
-            });
-          }
-        }
-      } catch (error) {
-        console.error('Failed to send lesson schedule emails:', error);
-      }
     }
 
-    // 🔹 Step 8: Return mapped response
-    return this.map(schedule);
+    
+    schedules.students.push(studentId);
+    await schedules.save();
+
+    console.log(`✅ Student added to schedule ${schedules._id}`);
+
+    // const schedule = await this.classScheduleModel.create(dto);
+
+    // const populatedSchedule = await this.classScheduleModel
+    //   .findById(schedule._id)
+    //   .populate('course')
+    //   .populate('instructor')
+    //   .populate('students')
+    //   .lean();
+
+    // if (populatedSchedule) {
+    //   const course = populatedSchedule.course as any;
+    //   const instructor = populatedSchedule.instructor as any;
+    //   const students = populatedSchedule.students;
+
+    //   console.log(students, "students")
+
+    //   const adminEmail = this.configService.get('app.adminEmail', {
+    //     infer: true,
+    //   });
+
+    //   const lessonDate = new Date(populatedSchedule.date).toLocaleDateString(
+    //     'en-US',
+    //     { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' },
+    //   );
+
+    //   const emailData = {
+    //     courseName: course?.title || 'Unknown Course',
+    //     instructorName: instructor?.firstName
+    //       ? `${instructor.firstName} ${instructor.lastName || ''}`
+    //       : instructor?.email || 'Unknown Instructor',
+    //     lessonDate,
+    //     lessonTime: populatedSchedule.time,
+    //     duration: populatedSchedule.duration,
+    //     googleMeetLink: populatedSchedule.googleMeetLink,
+    //   };
+
+    //   try {
+    //     if (adminEmail) {
+    //       await this.mailService.lessonScheduled({
+    //         to: adminEmail,
+    //         data: emailData,
+    //       });
+    //     }
+    //     if (instructor?.email) {
+    //       await this.mailService.lessonScheduled({
+    //         to: instructor.email,
+    //         data: emailData,
+    //       });
+    //     }
+    //     for (const student of students) {
+    //       if (student?.email) {
+    //         await this.mailService.lessonScheduled({
+    //           to: student.email,
+    //           data: emailData,
+    //         });
+    //       }
+    //     }
+    //   } catch (error) {
+    //     console.error('Failed to send lesson schedule emails:', error);
+    //   }
+    // }
+
+    // // 🔹 Step 8: Return mapped response
+    // return this.map(schedule);
   }
 
   // 📗 GET all schedules with pagination (with filters + sorting)

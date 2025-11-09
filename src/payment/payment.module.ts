@@ -14,6 +14,8 @@ import { PaymentController } from './payment.controller';
 import { PaymentService } from './payment.service';
 import {  CourseSchema, CourseSchemaClass } from '../course/schema/course.schema';
 import { UserSchema, UserSchemaClass } from '../users/schema/user.schema';
+import { Booking, BookingSchema } from '../booking/schema/booking.schema';
+
 
 
 @Module({
@@ -23,6 +25,7 @@ import { UserSchema, UserSchemaClass } from '../users/schema/user.schema';
       { name: CourseSchemaClass.name, schema: CourseSchema },
     { name: UserSchemaClass.name, schema: UserSchema },
       { name: EnrollmentSchemaClass.name, schema: EnrollmentSchema },
+      { name: Booking.name, schema: BookingSchema },
     ]),
     StripeModule,
     MailModule,
