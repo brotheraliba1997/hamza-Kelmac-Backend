@@ -1,12 +1,23 @@
-import { Controller, Get, Post, Body, Param, Patch, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Patch,
+  Delete,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { UpdateBookingDto } from './dto/update-booking.dto';
 import { BookingsService } from './booking.services';
 
-@ApiTags('Bookings')
-@Controller('bookings')
+@ApiTags('bookings')
+@Controller({
+  path: 'bookings',
+  version: '1',
+})
 export class BookingsController {
   constructor(private readonly bookingsService: BookingsService) {}
 

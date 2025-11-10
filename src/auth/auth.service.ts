@@ -200,7 +200,7 @@ export class AuthService {
     };
   }
 
-  async register(dto: AuthRegisterLoginDto): Promise<void> {
+  async register(dto: AuthRegisterLoginDto): Promise<LoginResponseDto> {
     // ✅ Create the user with extended fields
     const user = await this.usersService.create({
       ...dto,
@@ -219,7 +219,7 @@ export class AuthService {
       country: dto.country ?? null,
       industry: dto.industry ?? null,
     });
-
+    console.log(dto, 'User created:', user);
     // ✅ Generate email confirmation token
     const hash = await this.jwtService.signAsync(
       {
@@ -270,6 +270,30 @@ export class AuthService {
         console.error('Failed to send admin notification email:', error);
       }
     }
+
+    const sessionHash = crypto
+      .createHash('sha256')
+      .update(randomStringGenerator())
+      .digest('hex');
+
+    const session = await this.sessionService.create({
+      user,
+      hash: sessionHash,
+    });
+
+    const { token, refreshToken, tokenExpires } = await this.getTokensData({
+      id: user.id,
+      role: user.role,
+      sessionId: session.id,
+      hash: sessionHash,
+    });
+
+    return {
+      refreshToken,
+      token,
+      tokenExpires,
+      user,
+    };
   }
 
   async confirmEmail(hash: string): Promise<void> {

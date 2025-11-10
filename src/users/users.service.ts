@@ -30,7 +30,8 @@ import { sanitizeMongooseDocument } from '../utils/convert-id';
 @Injectable()
 export class UsersService {
   constructor(
-    @InjectModel(UserSchemaClass.name) private readonly userModel: Model<UserSchemaClass>,
+    @InjectModel(UserSchemaClass.name)
+    private readonly userModel: Model<UserSchemaClass>,
     private readonly filesService: FilesService,
   ) {}
 
@@ -39,7 +40,7 @@ export class UsersService {
     const id = typeof doc.id !== 'undefined' ? doc.id : doc._id?.toString?.();
     // Sanitize the document to convert all IDs and nested objects
     const sanitized = sanitizeMongooseDocument(doc);
-
+    console.log('User created SERVICE: 2', sanitized, doc);
     // Double-check sanitized is not null
     if (!sanitized) return undefined as any;
     return {
@@ -159,6 +160,8 @@ export class UsersService {
       provider: createUserDto.provider ?? AuthProvidersEnum.email,
       socialId: createUserDto.socialId,
     });
+    console.log('User created SERVICE:', created);
+
     return this.map(created);
   }
 

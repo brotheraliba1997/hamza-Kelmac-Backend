@@ -76,7 +76,7 @@ export class MailerService {
       );
 
       // Re-throw the error so calling code can handle it
-      throw error;
+      // throw error;
     }
   }
 }
