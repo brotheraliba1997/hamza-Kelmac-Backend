@@ -27,6 +27,7 @@ import { AllConfigType } from '../config/config.type';
 import { CourseSchemaClass } from '../course/schema/course.schema';
 import { UserSchemaClass } from '../users/schema/user.schema';
 import { google } from 'googleapis';
+import { sanitizeMongooseDocument } from '../utils/convert-id';
 
 @Injectable()
 export class ClassScheduleService {
@@ -107,7 +108,9 @@ export class ClassScheduleService {
       response.data.conferenceData?.entryPoints?.[0]?.uri || '';
     dto.googleCalendarEventLink = response.data.htmlLink || '';
 
-    const schedules = await this.classScheduleModel.findOne({course: dto.course});
+    const schedules = await this.classScheduleModel.findOne({
+      course: dto.course,
+    });
     const studentId = dto.students;
 
     if (schedules.students.includes(studentId)) {
@@ -116,76 +119,76 @@ export class ClassScheduleService {
       );
     }
 
-    
     schedules.students.push(studentId);
     await schedules.save();
 
     console.log(`✅ Student added to schedule ${schedules._id}`);
 
-    // const schedule = await this.classScheduleModel.create(dto);
+    const schedule = await this.classScheduleModel.create({
+      ...dto,
+      course: new Types.ObjectId(dto?.course),
+    });
 
-    // const populatedSchedule = await this.classScheduleModel
-    //   .findById(schedule._id)
-    //   .populate('course')
-    //   .populate('instructor')
-    //   .populate('students')
-    //   .lean();
+    const populatedSchedule = await this.classScheduleModel
+      .findById(schedule._id)
+      .populate('course')
+      .populate('instructor')
+      .populate('students')
+      .lean();
 
-    // if (populatedSchedule) {
-    //   const course = populatedSchedule.course as any;
-    //   const instructor = populatedSchedule.instructor as any;
-    //   const students = populatedSchedule.students;
+    if (populatedSchedule) {
+      const course = populatedSchedule.course as any;
+      const instructor = populatedSchedule.instructor as any;
+      const students = populatedSchedule.students;
 
-    //   console.log(students, "students")
+      const adminEmail = this.configService.get('app.adminEmail', {
+        infer: true,
+      });
 
-    //   const adminEmail = this.configService.get('app.adminEmail', {
-    //     infer: true,
-    //   });
+      const lessonDate = new Date(populatedSchedule.date).toLocaleDateString(
+        'en-US',
+        { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' },
+      );
 
-    //   const lessonDate = new Date(populatedSchedule.date).toLocaleDateString(
-    //     'en-US',
-    //     { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' },
-    //   );
+      const emailData = {
+        courseName: course?.title || 'Unknown Course',
+        instructorName: instructor?.firstName
+          ? `${instructor.firstName} ${instructor.lastName || ''}`
+          : instructor?.email || 'Unknown Instructor',
+        lessonDate,
+        lessonTime: populatedSchedule.time,
+        duration: populatedSchedule.duration,
+        googleMeetLink: populatedSchedule.googleMeetLink,
+      };
 
-    //   const emailData = {
-    //     courseName: course?.title || 'Unknown Course',
-    //     instructorName: instructor?.firstName
-    //       ? `${instructor.firstName} ${instructor.lastName || ''}`
-    //       : instructor?.email || 'Unknown Instructor',
-    //     lessonDate,
-    //     lessonTime: populatedSchedule.time,
-    //     duration: populatedSchedule.duration,
-    //     googleMeetLink: populatedSchedule.googleMeetLink,
-    //   };
+      try {
+        if (adminEmail) {
+          await this.mailService.lessonScheduled({
+            to: adminEmail,
+            data: emailData,
+          });
+        }
+        if (instructor?.email) {
+          await this.mailService.lessonScheduled({
+            to: instructor.email,
+            data: emailData,
+          });
+        }
+        // for (const student of students) {
+        //   if (student?.email) {
+        //     await this.mailService.lessonScheduled({
+        //       to: student.email,
+        //       data: emailData,
+        //     });
+        //   }
+        // }
+      } catch (error) {
+        console.error('Failed to send lesson schedule emails:', error);
+      }
+    }
 
-    //   try {
-    //     if (adminEmail) {
-    //       await this.mailService.lessonScheduled({
-    //         to: adminEmail,
-    //         data: emailData,
-    //       });
-    //     }
-    //     if (instructor?.email) {
-    //       await this.mailService.lessonScheduled({
-    //         to: instructor.email,
-    //         data: emailData,
-    //       });
-    //     }
-    //     for (const student of students) {
-    //       if (student?.email) {
-    //         await this.mailService.lessonScheduled({
-    //           to: student.email,
-    //           data: emailData,
-    //         });
-    //       }
-    //     }
-    //   } catch (error) {
-    //     console.error('Failed to send lesson schedule emails:', error);
-    //   }
-    // }
-
-    // // 🔹 Step 8: Return mapped response
-    // return this.map(schedule);
+    // 🔹 Step 8: Return mapped response
+    return this.map(schedule);
   }
 
   // 📗 GET all schedules with pagination (with filters + sorting)
@@ -274,7 +277,28 @@ export class ClassScheduleService {
       .lean();
 
     if (!schedule) throw new NotFoundException('Class schedule not found');
-    return this.map(schedule);
+    const sanitized = sanitizeMongooseDocument(schedule);
+
+    console.log(sanitized, "sanitized")
+    // const sanitized = sanitizeMongooseDocument(doc);
+
+    if (!sanitized) return undefined as any;
+
+    return {
+      ...sanitized,
+      id,
+      course: sanitized.course,
+      instructor: sanitized.instructor,
+      students: sanitized.students,
+      date: sanitized.date,
+      time: sanitized.time,
+      duration: sanitized.duration,
+      googleMeetLink: sanitized.googleMeetLink,
+      securityKey: sanitized.securityKey,
+      status: sanitized.status,
+      createdAt: sanitized.createdAt,
+      updatedAt: sanitized.updatedAt,
+    };
   }
 
   // 🟡 UPDATE schedule details

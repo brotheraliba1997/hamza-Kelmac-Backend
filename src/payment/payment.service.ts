@@ -116,7 +116,10 @@ export class PaymentService {
       // Update payment with Stripe details
       payment.stripePaymentIntentId = paymentIntent.paymentIntentId;
       payment.status = PaymentStatus.PROCESSING;
+      
       await payment.save();
+
+
 
       this.logger.log(
         `Payment intent created: ${paymentIntent.paymentIntentId} for user ${userId}`,
@@ -136,6 +139,23 @@ export class PaymentService {
       this.logger.error(`Failed to create payment intent: ${error.message}`);
       throw new BadRequestException('Failed to create payment');
     }
+  }
+
+  async confirmPayment(paymentIntentId: string) {
+    // Find the payment by Stripe PaymentIntent ID
+    const payment = await this.paymentModel.findOne({
+      stripePaymentIntentId: paymentIntentId,
+    });
+
+    if (!payment) {
+      throw new NotFoundException('Payment not found');
+    }
+
+    // Update status to PAID
+    payment.status = PaymentStatus.SUCCEEDED;
+    await payment.save();
+
+    return { success: true, message: 'Payment confirmed', payment };
   }
 
   /**
@@ -255,7 +275,7 @@ export class PaymentService {
     payment.paidAt = new Date();
 
     const booking = await this.bookingModel.findOne({
-      studentId: new Types.ObjectId(payment.userId) ,
+      studentId: new Types.ObjectId(payment.userId),
       courseId: new Types.ObjectId(payment.courseId),
     });
 

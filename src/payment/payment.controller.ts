@@ -9,6 +9,7 @@ import {
   Request,
   HttpCode,
   HttpStatus,
+  NotFoundException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -24,7 +25,7 @@ import { RefundPaymentDto } from './dto/refund-payment.dto';
 import { PaymentStatus } from './schema/payment.schema';
 
 @ApiTags('Payment')
-@Controller('payment')
+@Controller('v1/payment')
 export class PaymentController {
   constructor(private readonly paymentService: PaymentService) {}
 
@@ -41,9 +42,8 @@ export class PaymentController {
     @Body() createPaymentDto: CreatePaymentDto,
     @Request() req: any,
   ) {
-    // In a real app, get userId from authenticated user
-    const userId = req?.body?.userId // Temporary for testing
-    // console.log('userId', userId);
+    const userId = req?.body?.userId;
+
     return this.paymentService.createPayment(userId, createPaymentDto);
   }
 
@@ -73,6 +73,17 @@ export class PaymentController {
   @ApiResponse({ status: 404, description: 'Payment not found' })
   async refundPayment(@Body() refundDto: RefundPaymentDto) {
     return this.paymentService.refundPayment(refundDto);
+  }
+
+  @Post('confirm')
+  async confirmPayment(@Body() body: { paymentIntentId: string }) {
+    const { paymentIntentId } = body;
+
+    if (!paymentIntentId) {
+      throw new NotFoundException('PaymentIntentId is required');
+    }
+
+    return this.paymentService.confirmPayment(paymentIntentId);
   }
 
   @Get(':id')
