@@ -29,17 +29,17 @@ export class ClassScheduleSchemaClass extends EntityDocumentHelper {
   })
   instructor: Types.ObjectId;
 
-  // @Prop({
-  //   type: [{ type: Types.ObjectId, ref: UserSchemaClass.name }],
-  //   default: [],
-  // })
-  // students: Types.ObjectId[];
-
   @Prop({
-    type: String,
-    required: true,
+    type: [{ type: Types.ObjectId, ref: UserSchemaClass.name }],
+    default: [],
   })
-  students?: string;
+  students: string[];
+
+  // @Prop({
+  //   type: String,
+  //   required: true,
+  // })
+  // students?: string;
 
   @Prop({
     type: String,

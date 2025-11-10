@@ -26,12 +26,7 @@ export class CreateBookingDto {
   @IsMongoId()
   timeTableId: string;
 
-  @ApiProperty({
-    description: 'Payment ID',
-    example: '670c9fd871fa82325d15df11',
-  })
-  @IsMongoId()
-  paymentId: string;
+
 
   @ApiProperty({
     description: 'Booking status',

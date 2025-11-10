@@ -24,6 +24,8 @@ import {
 } from '../course/schema/course.schema';
 
 import { UserSchemaClass } from '../users/schema/user.schema';
+import { Booking, BookingDocument } from '../booking/schema/booking.schema';
+import { BookingStatus } from '../booking/dto/create-booking.dto';
 
 @Injectable()
 export class PaymentService {
@@ -36,6 +38,7 @@ export class PaymentService {
     private courseModel: Model<CourseSchemaClass>,
     @InjectModel(UserSchemaClass.name)
     private readonly userModel: Model<UserSchemaClass>,
+    @InjectModel(Booking.name) private bookingModel: Model<BookingDocument>,
     @InjectModel(EnrollmentSchemaClass.name)
     private enrollmentModel: Model<EnrollmentSchemaClass>,
     private stripeService: StripeService,
@@ -47,9 +50,6 @@ export class PaymentService {
    */
   async createPayment(userId: string, createPaymentDto: CreatePaymentDto) {
     const { courseId, amount, currency = 'usd', metadata } = createPaymentDto;
-    console.log('user', userId);
-    // const course = courseId;
-    // const user = userId;
 
     const course = await this.courseModel.findById(courseId);
 
@@ -102,8 +102,6 @@ export class PaymentService {
     });
 
     await payment.save();
-
-    console.log('user found', user, course);
 
     try {
       // Create Stripe payment intent
@@ -255,6 +253,19 @@ export class PaymentService {
     // Update payment status
     payment.status = PaymentStatus.SUCCEEDED;
     payment.paidAt = new Date();
+
+    const booking = await this.bookingModel.findOne({
+      studentId: new Types.ObjectId(payment.userId) ,
+      courseId: new Types.ObjectId(payment.courseId),
+    });
+
+    console.log('Associated booking:', booking);
+
+    // if (booking) {
+    //   booking.status = BookingStatus.CONFIRMED;
+    //   await booking.save();
+    // }
+
     await payment.save();
 
     try {
