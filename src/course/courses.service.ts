@@ -79,7 +79,7 @@ export class CoursesService {
   private map(doc: any): CourseEntity {
     if (!doc) return undefined as any;
 
-   
+    // Sanitize the document to convert all IDs and nested objects
     const sanitized = sanitizeMongooseDocument(doc);
 
     // Double-check sanitized is not null
