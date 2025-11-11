@@ -41,21 +41,20 @@ export class ClassScheduleService {
 
   private map(doc: any) {
     if (!doc) return undefined;
-    // const id = typeof doc.id !== 'undefined' ? doc.id : doc._id?.toString?.();
-    const sanitized = sanitizeMongooseDocument(doc);
+    const id = typeof doc.id !== 'undefined' ? doc.id : doc._id?.toString?.();
     return {
-      id: sanitized.id,
-      course: sanitized.course,
-      instructor: sanitized.instructor,
-      students: sanitized.students,
-      date: sanitized.date,
-      time: sanitized.time,
-      duration: sanitized.duration,
-      googleMeetLink: sanitized.googleMeetLink,
-      securityKey: sanitized.securityKey,
-      status: sanitized.status,
-      createdAt: sanitized.createdAt,
-      updatedAt: sanitized.updatedAt,
+      id,
+      course: doc.course,
+      instructor: doc.instructor,
+      students: doc.students,
+      date: doc.date,
+      time: doc.time,
+      duration: doc.duration,
+      googleMeetLink: doc.googleMeetLink,
+      securityKey: doc.securityKey,
+      status: doc.status,
+      createdAt: doc.createdAt,
+      updatedAt: doc.updatedAt,
     };
   }
 
@@ -76,7 +75,7 @@ export class ClassScheduleService {
       auth: this.oauth2Client,
     });
 
-    // 🔹 Step 3: Build the event object
+    
     const event = {
       summary: 'Scheduled Class',
       description: 'Auto-generated class schedule with Google Meet link',
@@ -98,7 +97,7 @@ export class ClassScheduleService {
         },
       },
     };
-    // convertIdToString(doc)
+
     const response = await calendar.events.insert({
       calendarId: 'primary',
       requestBody: event,
@@ -132,13 +131,11 @@ export class ClassScheduleService {
 
     const populatedSchedule = await this.classScheduleModel
       .findById(schedule._id)
-      .populate([
-        { path: 'course' },
-        { path: 'instructor' },
-        { path: 'students' },
-      ])
+      .populate('course')
+      .populate('instructor')
+      .populate('students')
       .lean();
-    console.log(populatedSchedule, 'populatedSchedule=>>>');
+
     if (populatedSchedule) {
       const course = populatedSchedule.course as any;
       const instructor = populatedSchedule.instructor as any;
@@ -274,27 +271,43 @@ export class ClassScheduleService {
   async findOne(id: string) {
     const schedule = await this.classScheduleModel
       .findById(id)
-      .populate([
-        { path: 'course', select: 'title price' },
-        { path: 'students', select: 'firstName lastName email' },
-        { path: 'instructor', select: 'firstName lastName email' },
-      ])
+      .populate('course', 'title price')
+      .populate('instructor', 'firstName lastName email')
+      .populate('students', 'firstName lastName email')
       .lean();
 
     if (!schedule) throw new NotFoundException('Class schedule not found');
+    const sanitized = sanitizeMongooseDocument(schedule);
 
-    return this.map(schedule);
+    console.log(sanitized, "sanitized")
+    // const sanitized = sanitizeMongooseDocument(doc);
+
+    if (!sanitized) return undefined as any;
+
+    return {
+      ...sanitized,
+      id,
+      course: sanitized.course,
+      instructor: sanitized.instructor,
+      students: sanitized.students,
+      date: sanitized.date,
+      time: sanitized.time,
+      duration: sanitized.duration,
+      googleMeetLink: sanitized.googleMeetLink,
+      securityKey: sanitized.securityKey,
+      status: sanitized.status,
+      createdAt: sanitized.createdAt,
+      updatedAt: sanitized.updatedAt,
+    };
   }
 
   // 🟡 UPDATE schedule details
   async update(id: string, dto: UpdateClassScheduleDto) {
     const updated = await this.classScheduleModel
       .findByIdAndUpdate(id, dto, { new: true })
-      .populate([
-        { path: 'course', select: 'title price' },
-        { path: 'students', select: 'firstName lastName email' },
-        { path: 'instructor', select: 'firstName lastName email' },
-      ])
+      .populate('course', 'title price')
+      .populate('instructor', 'firstName lastName email')
+      .populate('students', 'firstName lastName email')
       .lean();
 
     if (!updated) throw new NotFoundException('Class schedule not found');
@@ -314,11 +327,8 @@ export class ClassScheduleService {
   async joinClass(securityKey: string) {
     const schedule = await this.classScheduleModel
       .findOne({ securityKey })
-      .populate([
-        { path: 'course', select: 'title price' },
-        { path: 'students', select: 'firstName lastName email' },
-        { path: 'instructor', select: 'firstName lastName email' },
-      ]);
+      .populate('course')
+      .populate('instructor');
 
     if (!schedule) throw new NotFoundException('Invalid security key');
 
