@@ -11,6 +11,7 @@ import { CreateBookingDto } from './dto/create-booking.dto';
 import { UpdateBookingDto } from './dto/update-booking.dto';
 import { Booking, BookingDocument } from './schema/booking.schema';
 import { Payment, PaymentDocument } from '../payment/schema/payment.schema';
+import { sanitizeMongooseDocument } from '../utils/convert-id';
 
 @Injectable()
 export class BookingsService {
@@ -20,7 +21,11 @@ export class BookingsService {
     @InjectModel(Booking.name) private bookingModel: Model<BookingDocument>,
     @InjectModel(Payment.name) private paymentModel: Model<PaymentDocument>,
   ) {}
-
+  async map(doc: any): Promise<Booking> {
+    if (!doc) return undefined as any;
+    const sanitized = sanitizeMongooseDocument(doc);
+    return sanitized;
+  }
   async create(createBookingDto: CreateBookingDto) {
     const payments = await this.paymentModel.findOne({
       userId: createBookingDto.studentId,
@@ -53,7 +58,7 @@ export class BookingsService {
         status: 'pending',
       });
 
-      return newBooking.toObject();
+      return this.map(newBooking.toObject());
     } catch (error) {
       this.logger.error('Failed to create booking', error.stack);
       console.log('Error details:', error);
@@ -65,13 +70,16 @@ export class BookingsService {
    * ✅ Get all bookings with populated details
    */
   async findAll() {
-    return this.bookingModel
+    const bookings = await this.bookingModel
       .find()
-      .populate('studentId', 'name email')
-      .populate('courseId', 'title category')
-      .populate('timeTableId', 'date time')
-      .populate('paymentId', 'amount currency status')
+      .populate([
+        { path: 'paymentId', select: 'amount currency status' },
+        { path: 'studentId', select: 'name email' },
+        { path: 'courseId', select: 'title category' },
+        { path: 'timeTableId', select: 'date time' },
+      ])
       .exec();
+    return this.map(bookings);
   }
 
   /**
@@ -80,15 +88,17 @@ export class BookingsService {
   async findOne(id: string) {
     const booking = await this.bookingModel
       .findById(id)
-      .populate('studentId', 'name email')
-      .populate('courseId', 'title category')
-      .populate('timeTableId', 'date time')
-      .populate('paymentId', 'amount currency status')
+      .populate([
+        { path: 'paymentId', select: 'amount currency status' },
+        { path: 'studentId', select: 'name email' },
+        { path: 'courseId', select: 'title category' },
+        { path: 'timeTableId', select: 'date time' },
+      ])
       .exec();
 
     if (!booking)
       throw new NotFoundException(`Booking with id ${id} not found`);
-    return booking;
+    return this.map(booking);
   }
 
   /**
@@ -97,15 +107,17 @@ export class BookingsService {
   async update(id: string, updateBookingDto: UpdateBookingDto) {
     const updated = await this.bookingModel
       .findByIdAndUpdate(id, updateBookingDto, { new: true })
-      .populate('studentId', 'name email')
-      .populate('courseId', 'title category')
-      .populate('timeTableId', 'date time')
-      .populate('paymentId', 'amount currency status')
+      .populate([
+        { path: 'paymentId', select: 'amount currency status' },
+        { path: 'studentId', select: 'name email' },
+        { path: 'courseId', select: 'title category' },
+        { path: 'timeTableId', select: 'date time' },
+      ])
       .exec();
 
     if (!updated)
       throw new NotFoundException(`Booking with id ${id} not found`);
-    return updated;
+    return this.map(updated);
   }
 
   /**
