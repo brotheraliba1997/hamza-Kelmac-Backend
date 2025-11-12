@@ -321,7 +321,7 @@ export class CreateCourseDto {
     description: 'The category slug of the course',
     example: '690bc43d8ddd23690d42287e',
   })
-  @IsString()
+  @IsMongoId()
   category: string;
 
   @ApiPropertyOptional({

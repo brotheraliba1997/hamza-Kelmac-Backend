@@ -161,8 +161,8 @@ export class UsersService {
       socialId: createUserDto.socialId,
     });
     console.log('User created SERVICE:', created);
-
-    return this.map(created);
+    const { password: _, ...userObj } = created.toObject();
+    return this.map(userObj);
   }
 
   async findManyWithPagination({

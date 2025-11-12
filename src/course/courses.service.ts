@@ -91,7 +91,7 @@ export class CoursesService {
       title: sanitized.title,
       slug: sanitized.slug,
       description: sanitized.description,
-      instructor: sanitized.instructor,
+      // instructor: sanitized.instructor,
       price: sanitized.price,
       enrolledCount: sanitized.enrolledCount,
       isPublished: sanitized.isPublished,
@@ -235,7 +235,14 @@ export class CoursesService {
     }
 
     if (filterOptions?.search) {
-      additionalFilters.$text = { $search: filterOptions.search };
+      // Use regex search for better compatibility
+      const searchRegex = new RegExp(filterOptions.search, 'i');
+      additionalFilters.$or = [
+        { title: searchRegex },
+        { description: searchRegex },
+        { subcategories: searchRegex },
+        { topics: searchRegex },
+      ];
     }
 
     const combinedFilter = { ...filterQuery, ...additionalFilters };
@@ -281,7 +288,7 @@ export class CoursesService {
           path: 'timeTable',
         },
       ])
-      .lean({ virtuals: false, getters: false });
+      .lean();
 
     if (!doc) {
       throw new NotFoundException('Course not found');
@@ -308,7 +315,10 @@ export class CoursesService {
     }
 
     // Validate new category if provided
-    if (dto.category && dto.category !== existingCourse.category) {
+    if (
+      dto.category &&
+      dto.category !== existingCourse.category._id.toString()
+    ) {
       try {
         const category = await this.categoriesService.findBySlug(dto.category);
         if (!category || !category.isActive) {
@@ -329,7 +339,7 @@ export class CoursesService {
       try {
         if (existingCourse.category) {
           await this.categoriesService.decrementCourseCount(
-            existingCourse.category,
+            existingCourse.category._id.toString(),
           );
         }
         await this.categoriesService.incrementCourseCount(dto.category);
@@ -354,7 +364,9 @@ export class CoursesService {
       // Decrement category course count
       if (course.category) {
         try {
-          await this.categoriesService.decrementCourseCount(course.category);
+          await this.categoriesService.decrementCourseCount(
+            course.category._id.toString(),
+          );
         } catch (error) {
           console.error('Failed to decrement category course count:', error);
         }
