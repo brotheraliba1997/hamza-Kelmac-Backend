@@ -75,7 +75,6 @@ export class ClassScheduleService {
       auth: this.oauth2Client,
     });
 
-    
     const event = {
       summary: 'Scheduled Class',
       description: 'Auto-generated class schedule with Google Meet link',
@@ -109,8 +108,14 @@ export class ClassScheduleService {
     dto.googleCalendarEventLink = response.data.htmlLink || '';
 
     const schedules = await this.classScheduleModel.findOne({
-      course: dto.course,
+      course: new Types.ObjectId(dto.course),
     });
+
+    if (!schedules) {
+      throw new BadRequestException(
+        `course data is not valid or its not in database`,
+      );
+    }
     const studentId = dto.students;
 
     if (schedules.students.includes(studentId)) {
@@ -279,7 +284,7 @@ export class ClassScheduleService {
     if (!schedule) throw new NotFoundException('Class schedule not found');
     const sanitized = sanitizeMongooseDocument(schedule);
 
-    console.log(sanitized, "sanitized")
+    console.log(sanitized, 'sanitized');
     // const sanitized = sanitizeMongooseDocument(doc);
 
     if (!sanitized) return undefined as any;
