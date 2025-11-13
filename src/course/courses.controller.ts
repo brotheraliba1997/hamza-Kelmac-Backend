@@ -399,4 +399,74 @@ export class CoursesController {
   remove(@Param('id') id: string) {
     return this.service.remove(id);
   }
+
+  @ApiOperation({
+    summary: 'Get courses grouped by featured categories',
+    description:
+      'Retrieve all published courses organized by featured categories. Returns category details and courses with duration, lessons count, and descriptions. Dynamically includes all featured categories.',
+  })
+  @ApiOkResponse({
+    description:
+      'Courses grouped by featured categories with category metadata',
+    schema: {
+      type: 'object',
+      example: {
+        isoCourses: {
+          categoryName: 'ISO Courses',
+          categorySlug: 'iso-courses',
+          categoryDescription:
+            'International Organization for Standardization certification courses',
+          categoryIcon: 'fas fa-certificate',
+          categoryColor: '#e74c3c',
+          courses: [
+            {
+              href: '/courses/iso-9001-foundation',
+              title: 'ISO 9001 Foundation',
+              hours: '19+ Hours',
+              lessons: '10 Lessons',
+              description: 'Learn the fundamentals of ISO 9001 standards',
+            },
+          ],
+        },
+        qualityManagement: {
+          categoryName: 'Quality Management',
+          categorySlug: 'quality-management',
+          categoryDescription: 'Quality management systems and methodologies',
+          categoryIcon: 'fas fa-award',
+          categoryColor: '#3498db',
+          courses: [
+            {
+              href: '/courses/quality-basics',
+              title: 'Quality Basics',
+              hours: '10+ Hours',
+              lessons: '6 Lessons',
+              description: 'Introduction to quality management',
+            },
+          ],
+        },
+        healthSafety: {
+          categoryName: 'Health & Safety',
+          categorySlug: 'health-safety',
+          categoryDescription:
+            'Workplace health, safety and environmental courses',
+          categoryIcon: 'fas fa-shield-alt',
+          categoryColor: '#27ae60',
+          courses: [
+            {
+              href: '/courses/hse-foundation',
+              title: 'HSE Foundation',
+              hours: '14+ Hours',
+              lessons: '7 Lessons',
+              description: 'Learn Health, Safety & Environment fundamentals',
+            },
+          ],
+        },
+      },
+    },
+  })
+  @HttpCode(HttpStatus.OK)
+  @Get('grouped/by-category')
+  getCoursesByCategories() {
+    return this.service.getCoursesByCategories();
+  }
 }

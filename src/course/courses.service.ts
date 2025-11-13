@@ -427,4 +427,80 @@ export class CoursesService {
       mapper: (doc) => this.map(doc),
     });
   }
+
+  /**
+   * Get courses grouped by category
+   */
+  async getCoursesByCategories() {
+    // Fetch all featured categories
+    const featuredCategories =
+      await this.categoriesService.getFeaturedCategories();
+
+    // Fetch all published courses
+    const courses = await this.courseModel
+      .find({ isPublished: true })
+      .populate('category', 'name slug')
+      .lean();
+
+    // Create a map to group courses by category slug
+    const categoriesMap: Record<string, any[]> = {};
+
+    // Initialize arrays for each featured category
+    for (const category of featuredCategories) {
+      categoriesMap[category.slug] = [];
+    }
+
+    // Group courses by category
+    for (const course of courses) {
+      const category = course.category as any;
+      const categorySlug = category?.slug || '';
+
+      // Only include courses from featured categories
+      if (categoriesMap[categorySlug] !== undefined) {
+        // Count total sessions/lessons
+        const totalLessons = course.sessions?.length || 0;
+
+        // Calculate total duration from sessions
+        const totalDuration =
+          course.sessions?.reduce(
+            (sum, session) => sum + (session.duration || 0),
+            0,
+          ) || 0;
+        const totalHours = Math.ceil(totalDuration / 60);
+
+        const courseData = {
+          href: `/course/${course.slug}`,
+          title: course.title,
+          hours: `${totalHours}+ Hours`,
+          lessons: `${totalLessons} Lessons`,
+          description: course.description || '',
+        };
+
+        categoriesMap[categorySlug].push(courseData);
+      }
+    }
+
+    // Build response with category details
+    const result: any = {};
+
+    for (const category of featuredCategories) {
+      const categoryKey = category.slug
+        .split('-')
+        .map((word, index) =>
+          index === 0 ? word : word.charAt(0).toUpperCase() + word.slice(1),
+        )
+        .join('');
+
+      result[categoryKey] = {
+        categoryName: category.name,
+        categorySlug: category.slug,
+        categoryDescription: category.description,
+        categoryIcon: category.icon,
+        categoryColor: category.color,
+        courses: categoriesMap[category.slug] || [],
+      };
+    }
+
+    return result;
+  }
 }
