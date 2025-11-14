@@ -111,28 +111,29 @@ export class ClassScheduleService {
       course: new Types.ObjectId(dto.course),
     });
 
-    if (!schedules) {
-      throw new BadRequestException(
-        `course data is not valid or its not in database`,
-      );
-    }
     const studentId = dto.students;
 
-    if (schedules.students.includes(studentId)) {
-      throw new BadRequestException(
-        `Student ${dto.students} is already added in schedule ${schedules._id}`,
-      );
+    let schedule = null;
+
+    if (schedules) {
+      if (schedules.students.includes(studentId)) {
+        throw new BadRequestException(
+          `Student ${dto.students} is already added in schedule ${schedules._id}`,
+        );
+      }
+
+      schedules.students.push(studentId);
+      await schedules.save();
+
+      console.log(`✅ Student added to schedule ${schedules._id}`);
+      schedule = schedules;
+    } else {
+      schedule = await this.classScheduleModel.create({
+        ...dto,
+        course: new Types.ObjectId(dto?.course),
+        students: [studentId],
+      });
     }
-
-    schedules.students.push(studentId);
-    await schedules.save();
-
-    console.log(`✅ Student added to schedule ${schedules._id}`);
-
-    const schedule = await this.classScheduleModel.create({
-      ...dto,
-      course: new Types.ObjectId(dto?.course),
-    });
 
     const populatedSchedule = await this.classScheduleModel
       .findById(schedule._id)
