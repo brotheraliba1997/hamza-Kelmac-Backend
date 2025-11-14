@@ -316,7 +316,7 @@ export class ClassScheduleService {
       .populate('students', 'firstName lastName email')
       .lean();
 
-    if (!updated) throw new NotFoundException('Class schedule not found');
+    if (!updated) throw new NotFoundException('Class schedule not founds');
 
     return this.map(updated);
   }
