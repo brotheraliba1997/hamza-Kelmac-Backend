@@ -42,19 +42,20 @@ export class ClassScheduleService {
   private map(doc: any) {
     if (!doc) return undefined;
     const id = typeof doc.id !== 'undefined' ? doc.id : doc._id?.toString?.();
+    const sanitizedDoc = sanitizeMongooseDocument(doc);
     return {
       id,
-      course: doc.course,
-      instructor: doc.instructor,
-      students: doc.students,
-      date: doc.date,
-      time: doc.time,
-      duration: doc.duration,
-      googleMeetLink: doc.googleMeetLink,
-      securityKey: doc.securityKey,
-      status: doc.status,
-      createdAt: doc.createdAt,
-      updatedAt: doc.updatedAt,
+      course: sanitizedDoc.course,
+      instructor: sanitizedDoc.instructor,
+      students: sanitizedDoc.students,
+      date: sanitizedDoc.date,
+      time: sanitizedDoc.time,
+      duration: sanitizedDoc.duration,
+      googleMeetLink: sanitizedDoc.googleMeetLink,
+      securityKey: sanitizedDoc.securityKey,
+      status: sanitizedDoc.status,
+      createdAt: sanitizedDoc.createdAt,
+      updatedAt: sanitizedDoc.updatedAt,
     };
   }
 
@@ -64,7 +65,6 @@ export class ClassScheduleService {
     refreshToken: string,
   ) {
     dto.securityKey = randomUUID();
-
     this.oauth2Client.setCredentials({
       access_token: accessToken,
       refresh_token: refreshToken,
@@ -113,7 +113,7 @@ export class ClassScheduleService {
 
     const studentId = dto.students;
 
-    let schedule = null;
+    let schedule: any = null;
 
     if (schedules) {
       if (schedules.students.includes(studentId)) {
@@ -137,9 +137,11 @@ export class ClassScheduleService {
 
     const populatedSchedule = await this.classScheduleModel
       .findById(schedule._id)
-      .populate('course')
-      .populate('instructor')
-      .populate('students')
+      .populate([
+        { path: 'course' },
+        { path: 'instructor' },
+        { path: 'students' },
+      ])
       .lean();
 
     if (populatedSchedule) {
@@ -194,7 +196,7 @@ export class ClassScheduleService {
     }
 
     // 🔹 Step 8: Return mapped response
-    return this.map(schedule);
+    return this.map(schedule.toObject());
   }
 
   // 📗 GET all schedules with pagination (with filters + sorting)
@@ -277,43 +279,30 @@ export class ClassScheduleService {
   async findOne(id: string) {
     const schedule = await this.classScheduleModel
       .findById(id)
-      .populate('course', 'title price')
-      .populate('instructor', 'firstName lastName email')
-      .populate('students', 'firstName lastName email')
+      .populate([
+        { path: 'course', select: 'title price' },
+        { path: 'instructor', select: 'firstName lastName email' },
+        { path: 'students', select: 'firstName lastName email' },
+      ])
+      // .populate('course', 'title price')
+      // .populate('instructor', 'firstName lastName email')
+      // .populate('students', 'firstName lastName email')
       .lean();
 
     if (!schedule) throw new NotFoundException('Class schedule not found');
-    const sanitized = sanitizeMongooseDocument(schedule);
 
-    console.log(sanitized, 'sanitized');
-    // const sanitized = sanitizeMongooseDocument(doc);
-
-    if (!sanitized) return undefined as any;
-
-    return {
-      ...sanitized,
-      id,
-      course: sanitized.course,
-      instructor: sanitized.instructor,
-      students: sanitized.students,
-      date: sanitized.date,
-      time: sanitized.time,
-      duration: sanitized.duration,
-      googleMeetLink: sanitized.googleMeetLink,
-      securityKey: sanitized.securityKey,
-      status: sanitized.status,
-      createdAt: sanitized.createdAt,
-      updatedAt: sanitized.updatedAt,
-    };
+    return this.map(schedule);
   }
 
   // 🟡 UPDATE schedule details
   async update(id: string, dto: UpdateClassScheduleDto) {
     const updated = await this.classScheduleModel
       .findByIdAndUpdate(id, dto, { new: true })
-      .populate('course', 'title price')
-      .populate('instructor', 'firstName lastName email')
-      .populate('students', 'firstName lastName email')
+      .populate([
+        { path: 'course', select: 'title price' },
+        { path: 'instructor', select: 'firstName lastName email' },
+        { path: 'students', select: 'firstName lastName email' },
+      ])
       .lean();
 
     if (!updated) throw new NotFoundException('Class schedule not founds');

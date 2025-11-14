@@ -4,6 +4,7 @@ import Stripe from 'stripe';
 import { AllConfigType } from '../config/config.type';
 import { CreatePaymentIntentDto } from './dto/create-payment-intent.dto';
 import { CreateCheckoutSessionDto } from './dto/create-checkout-session.dto';
+import { CreatePaymentMethodDto } from './dto/create-payment-method.dto';
 
 @Injectable()
 export class StripeService {
@@ -242,6 +243,38 @@ export class StripeService {
       email: (customer as Stripe.Customer).email || null,
       name: (customer as Stripe.Customer).name || null,
       metadata: (customer as Stripe.Customer).metadata || {},
+    };
+  }
+
+  /**
+   * Create a payment method (card)
+   */
+  async createPaymentMethod(dto: CreatePaymentMethodDto) {
+    const paymentMethod = await this.stripe.paymentMethods.create({
+      type: 'card',
+      card: {
+        number: dto.cardNumber,
+        exp_month: dto.expMonth,
+        exp_year: dto.expYear,
+        cvc: dto.cvc,
+      },
+      billing_details: {
+        name: dto.cardholderName,
+      },
+    });
+
+    return {
+      id: paymentMethod.id,
+      type: paymentMethod.type,
+      card: {
+        brand: paymentMethod.card?.brand,
+        last4: paymentMethod.card?.last4,
+        expMonth: paymentMethod.card?.exp_month,
+        expYear: paymentMethod.card?.exp_year,
+      },
+      billingDetails: {
+        name: paymentMethod.billing_details.name,
+      },
     };
   }
 }

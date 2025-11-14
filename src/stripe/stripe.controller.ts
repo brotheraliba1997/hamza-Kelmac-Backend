@@ -12,14 +12,21 @@ import {
   Req,
   BadRequestException,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
+  ApiBody,
+} from '@nestjs/swagger';
 import { StripeService } from './stripe.service';
 import { CreatePaymentIntentDto } from './dto/create-payment-intent.dto';
 import { CreateCheckoutSessionDto } from './dto/create-checkout-session.dto';
+import { CreatePaymentMethodDto } from './dto/create-payment-method.dto';
 import { Request } from 'express';
 
 @ApiTags('Stripe Payments')
-@Controller('stripe')
+@Controller({ path: 'stripe', version: '1' })
 export class StripeController {
   constructor(private readonly stripeService: StripeService) {}
 
@@ -191,5 +198,54 @@ export class StripeController {
       console.error('Webhook error:', error.message);
       throw new BadRequestException(`Webhook Error: ${error.message}`);
     }
+  }
+
+  @Post('create-payment-method')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Create a payment method',
+    description:
+      'Creates a payment method (card) for future use. This tokenizes the card details without charging it.',
+  })
+  @ApiBody({ type: CreatePaymentMethodDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Payment method created successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        id: {
+          type: 'string',
+          example: 'pm_1234567890',
+          description: 'Payment method ID',
+        },
+        type: {
+          type: 'string',
+          example: 'card',
+        },
+        card: {
+          type: 'object',
+          properties: {
+            brand: { type: 'string', example: 'visa' },
+            last4: { type: 'string', example: '4242' },
+            expMonth: { type: 'number', example: 12 },
+            expYear: { type: 'number', example: 2026 },
+          },
+        },
+        billingDetails: {
+          type: 'object',
+          properties: {
+            name: { type: 'string', example: 'John Doe' },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid card details or validation error',
+  })
+  async createPaymentMethod(@Body() dto: CreatePaymentMethodDto) {
+    return this.stripeService.createPaymentMethod(dto);
   }
 }
