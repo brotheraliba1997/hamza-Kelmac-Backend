@@ -1,7 +1,6 @@
 // Export all DTOs
 export {
   CreateCourseDto,
-  TopicItemDto,
   SessionDto,
   FAQDto,
   CourseSnapshotDto,

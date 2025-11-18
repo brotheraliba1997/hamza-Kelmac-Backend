@@ -3,6 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
   Inject,
+  Logger,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -31,9 +32,13 @@ import { sanitizeMongooseDocument } from '../utils/convert-id';
 
 @Injectable()
 export class ClassScheduleService {
+  private readonly logger = new Logger(ClassScheduleService.name);
+
   constructor(
     @InjectModel(ClassScheduleSchemaClass.name)
     private readonly classScheduleModel: Model<ClassScheduleSchemaClass>,
+    @InjectModel(CourseSchemaClass.name)
+    private readonly courseModel: Model<CourseSchemaClass>,
     private readonly mailService: MailService,
     private readonly configService: ConfigService<AllConfigType>,
     @Inject('GOOGLE_OAUTH2_CLIENT') private oauth2Client,
@@ -248,7 +253,7 @@ export class ClassScheduleService {
       sortOptions,
       paginationOptions,
       populateFields: [
-        { path: 'course', select: 'title price' },
+        { path: 'course' }, // Full course with sessions (sessions are embedded, so automatically included)
         { path: 'instructor', select: 'firstName lastName email' },
         { path: 'students', select: 'firstName lastName email' },
       ],

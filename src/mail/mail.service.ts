@@ -349,4 +349,74 @@ export class MailService {
       },
     });
   }
+
+  async purchaseOrderSubmitted(
+    mailData: MailData<{
+      poNumber: string;
+      studentName?: string;
+      courseTitle?: string;
+      bankSlipUrl?: string;
+      submittedAt?: string;
+    }>,
+  ): Promise<void> {
+    const subject = `Purchase Order ${mailData.data.poNumber} submitted`;
+
+    const lines = [
+      `Purchase Order Number: ${mailData.data.poNumber}`,
+      mailData.data.studentName
+        ? `Student: ${mailData.data.studentName}`
+        : undefined,
+      mailData.data.courseTitle
+        ? `Course: ${mailData.data.courseTitle}`
+        : undefined,
+      mailData.data.submittedAt
+        ? `Submitted At: ${mailData.data.submittedAt}`
+        : undefined,
+      mailData.data.bankSlipUrl
+        ? `Bank Slip: ${mailData.data.bankSlipUrl}`
+        : undefined,
+    ].filter(Boolean);
+
+    const text = lines.join('\n');
+
+    await this.mailerService.sendMail({
+      to: mailData.to,
+      subject,
+      text,
+    });
+  }
+
+  async purchaseOrderDecision(
+    mailData: MailData<{
+      poNumber: string;
+      courseTitle?: string;
+      status: string;
+      decisionNotes?: string;
+      reviewedBy?: string;
+    }>,
+  ): Promise<void> {
+    const subject = `Purchase Order ${mailData.data.poNumber} ${mailData.data.status}`;
+
+    const lines = [
+      `Purchase Order Number: ${mailData.data.poNumber}`,
+      mailData.data.courseTitle
+        ? `Course: ${mailData.data.courseTitle}`
+        : undefined,
+      `Status: ${mailData.data.status}`,
+      mailData.data.reviewedBy
+        ? `Reviewed By: ${mailData.data.reviewedBy}`
+        : undefined,
+      mailData.data.decisionNotes
+        ? `Notes: ${mailData.data.decisionNotes}`
+        : undefined,
+    ].filter(Boolean);
+
+    const text = lines.join('\n');
+
+    await this.mailerService.sendMail({
+      to: mailData.to,
+      subject,
+      text,
+    });
+  }
 }

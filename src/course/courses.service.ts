@@ -27,6 +27,17 @@ import {
 } from '../utils/convert-id';
 import { CategoriesService } from '../category/categories.service';
 
+type TimeBlockLike = {
+  startDate?: string;
+  endDate?: string;
+  startTime?: string;
+  endTime?: string;
+};
+
+type SessionLike = {
+  timeBlocks?: TimeBlockLike[];
+};
+
 @Injectable()
 export class CoursesService {
   constructor(
@@ -74,6 +85,90 @@ export class CoursesService {
       uniqueSlug = `${slug}-${counter}`;
       counter++;
     }
+  }
+
+  private convertTimeToMinutes(time?: string): number | null {
+    if (!time) return null;
+    const match = time.match(/^(\d{1,2}):([0-5][0-9])$/);
+    if (!match) return null;
+    const hours = Number(match[1]);
+    const minutes = Number(match[2]);
+    if (
+      Number.isNaN(hours) ||
+      Number.isNaN(minutes) ||
+      hours < 0 ||
+      hours > 23
+    ) {
+      return null;
+    }
+    return hours * 60 + minutes;
+  }
+
+  private calculateInclusiveDays(startDate?: string, endDate?: string): number {
+    if (!startDate || !endDate) {
+      return 1;
+    }
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    if (Number.isNaN(start.valueOf()) || Number.isNaN(end.valueOf())) {
+      return 1;
+    }
+    const startMs = new Date(
+      start.getFullYear(),
+      start.getMonth(),
+      start.getDate(),
+    ).getTime();
+    const endMs = new Date(
+      end.getFullYear(),
+      end.getMonth(),
+      end.getDate(),
+    ).getTime();
+
+    if (endMs < startMs) {
+      return 1;
+    }
+
+    const diffDays = Math.floor((endMs - startMs) / 86400000);
+    return diffDays + 1;
+  }
+
+  private calculateTimeBlockMinutes(block?: TimeBlockLike): number {
+    if (!block) {
+      return 0;
+    }
+    const startMinutes = this.convertTimeToMinutes(block.startTime);
+    const endMinutes = this.convertTimeToMinutes(block.endTime);
+
+    if (startMinutes === null || endMinutes === null) {
+      return 0;
+    }
+
+    let duration = endMinutes - startMinutes;
+    if (duration <= 0) {
+      duration += 24 * 60;
+    }
+
+    const days = this.calculateInclusiveDays(block.startDate, block.endDate);
+    return duration * days;
+  }
+
+  private calculateTotalSessionMinutes(
+    sessions?: SessionLike[],
+  ): number {
+    if (!Array.isArray(sessions) || sessions.length === 0) {
+      return 0;
+    }
+
+    return sessions.reduce((sessionSum, session) => {
+      const blocks = Array.isArray(session?.timeBlocks)
+        ? session.timeBlocks
+        : [];
+      const blockMinutes = blocks.reduce(
+        (blockSum, block) => blockSum + this.calculateTimeBlockMinutes(block),
+        0,
+      );
+      return sessionSum + blockMinutes;
+    }, 0);
   }
 
   private map(doc: any): CourseEntity {
@@ -457,22 +552,26 @@ export class CoursesService {
 
       // Only include courses from featured categories
       if (categoriesMap[categorySlug] !== undefined) {
-        // Count total sessions/lessons
-        const totalLessons = course.sessions?.length || 0;
+        // Count total session formats
+        const totalSessions = course.sessions?.length || 0;
 
-        // Calculate total duration from sessions
-        const totalDuration =
-          course.sessions?.reduce(
-            (sum, session) => sum + (session.duration || 0),
-            0,
-          ) || 0;
-        const totalHours = Math.ceil(totalDuration / 60);
+        // Calculate duration using time blocks
+        const totalDurationMinutes = this.calculateTotalSessionMinutes(
+          course.sessions as SessionLike[],
+        );
+        const totalHours =
+          totalDurationMinutes > 0
+            ? Math.max(1, Math.ceil(totalDurationMinutes / 60))
+            : 0;
 
         const courseData = {
           href: `/course/${course.slug}`,
           title: course.title,
-          hours: `${totalHours}+ Hours`,
-          lessons: `${totalLessons} Lessons`,
+          hours: totalHours > 0 ? `${totalHours}+ Hours` : 'Flexible Schedule',
+          lessons:
+            totalSessions > 0
+              ? `${totalSessions} Sessions`
+              : 'Schedule TBD',
           description: course.description || '',
         };
 

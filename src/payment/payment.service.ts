@@ -10,6 +10,7 @@ import {
   Payment,
   PaymentDocument,
   PaymentStatus,
+  PaymentMethod,
 } from './schema/payment.schema';
 import { StripeService } from '../stripe/stripe.service';
 import { MailService } from '../mail/mail.service';
@@ -553,6 +554,97 @@ export class PaymentService {
         totalPages: Math.ceil(total / limit),
       },
     };
+  }
+
+  /**
+   * Create payment from approved Purchase Order
+   */
+  async createPaymentFromPurchaseOrder(
+    purchaseOrderId: string,
+    userId: string,
+    courseId: string,
+    amount: number,
+    currency: string = 'usd',
+  ) {
+    // Validate user exists
+    const user = await this.userModel.findById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Validate course exists
+    const course = await this.courseModel.findById(courseId);
+    if (!course) {
+      throw new NotFoundException('Course not found');
+    }
+
+    // Check if user already enrolled
+    const existingEnrollment = await this.enrollmentModel.findOne({
+      user: new Types.ObjectId(userId),
+      course: new Types.ObjectId(courseId),
+      status: { $in: ['active', 'completed'] },
+    });
+
+    if (existingEnrollment) {
+      throw new BadRequestException('User already enrolled in this course');
+    }
+
+    // Create payment record with PO method
+    const payment = new this.paymentModel({
+      user: new Types.ObjectId(userId),
+      course: new Types.ObjectId(courseId),
+      amount,
+      currency,
+      status: PaymentStatus.SUCCEEDED, // PO approved = payment succeeded
+      paymentMethod: PaymentMethod.PURCHASE_ORDER,
+      purchaseOrderId: new Types.ObjectId(purchaseOrderId),
+      description: `Payment via Purchase Order for course: ${course.title}`,
+      paidAt: new Date(),
+      metadata: {
+        courseName: course.title,
+        userName: `${user.firstName} ${user.lastName}`,
+        userEmail: user.email,
+        paymentMethod: 'purchase_order',
+      },
+    });
+
+    await payment.save();
+
+    try {
+      // Create enrollment
+      const enrollment = new this.enrollmentModel({
+        user: new Types.ObjectId(userId),
+        course: new Types.ObjectId(courseId),
+        status: 'active',
+        enrolledAt: new Date(),
+        paymentStatus: 'paid',
+      });
+
+      await enrollment.save();
+
+      // Link enrollment to payment
+      payment.enrollment = enrollment._id as any;
+      await payment.save();
+
+      this.logger.log(
+        `Payment and enrollment created from PO ${purchaseOrderId} for user ${userId} in course ${courseId}`,
+      );
+
+      return {
+        payment: payment.toObject(),
+        enrollment: enrollment.toObject(),
+      };
+    } catch (error) {
+      // Rollback payment status if enrollment fails
+      payment.status = PaymentStatus.FAILED;
+      payment.failureReason = error.message;
+      await payment.save();
+
+      this.logger.error(
+        `Failed to create enrollment from PO payment: ${error.message}`,
+      );
+      throw error;
+    }
   }
 
   /**

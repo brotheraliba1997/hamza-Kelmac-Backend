@@ -7,15 +7,13 @@ All Course DTOs have been updated to match the comprehensive course schema.
 ### 1. **CreateCourseDto** - Comprehensive Course Creation
 
 #### Sub-DTOs Created:
-- **TopicItemDto**: Individual topics within sessions
-  - `title`, `description`, `isCompleted`, `order`
+- **TimeBlockDto**: Structured time slots inside a session format
+  - `startDate`, `endDate`, `startTime`, `endTime`, `timeZone`
   
-- **SessionDto**: Course sessions/lectures
-  - Basic: `title`, `description`, `sessionType` (enum)
-  - Timing: `startTime`, `endTime` (HH:MM format), `duration`
-  - Content: `videoUrl`, `content`, `resources[]`
-  - Organization: `order`, `dayGroup`, `dayNumber`
-  - Features: `isFree`, `isBreak`, `color`, `topics[]`
+- **SessionDto**: High-level delivery format per course
+  - `type` (enum: Full Week, Split Week, Weekend, Evening)
+  - `timeBlocks[]` (array of `TimeBlockDto`)
+  - `seatsLeft`
   
 - **FAQDto**: Frequently asked questions
   - `question`, `answer`
@@ -64,9 +62,8 @@ All Course DTOs have been updated to match the comprehensive course schema.
 - `publishedAt`, `lastUpdated`
 
 #### Validation Rules:
-- ✅ All enums validated (`SessionTypeEnum`, `SkillLevelEnum`, `CurrencyEnum`)
+- ✅ All enums validated (`SessionFormatEnum`, `SkillLevelEnum`, `CurrencyEnum`)
 - ✅ Time format validation (HH:MM regex)
-- ✅ Hex color validation (#RRGGBB)
 - ✅ Number ranges (price ≥ 0, rating 0-5, discount 0-100)
 - ✅ Nested validation with `@ValidateNested()`
 - ✅ Type transformation with `@Type()`

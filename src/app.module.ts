@@ -38,6 +38,7 @@ import stripeConfig from './stripe/config/stripe.config';
 import { PaymentModule } from './payment/payment.module';
 import { GoogleModule } from './googleService/google.module';
 import { BookingsModule } from './booking/booking.module';
+import { PurchaseOrderModule } from './purchaseOrder/purchase.module';
 
 // <database-block>
 const infrastructureDatabaseModule = (databaseConfig() as DatabaseConfig)
@@ -114,6 +115,8 @@ const infrastructureDatabaseModule = (databaseConfig() as DatabaseConfig)
     StripeModule,
     PaymentModule,
     BookingsModule,
+    PurchaseOrderModule,
+    
   ],
 })
 export class AppModule {}

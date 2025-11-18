@@ -17,141 +17,62 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import {
-  SessionTypeEnum,
+  SessionFormatEnum,
   SkillLevelEnum,
   CurrencyEnum,
 } from '../schema/course.schema';
 
-// Topic Item DTO
-export class TopicItemDto {
-  @ApiProperty({ example: 'Variables and Data Types' })
+// Time Block DTO
+export class TimeBlockDto {
+  @ApiProperty({ example: '2025-01-06' })
   @IsString()
-  title: string;
+  startDate: string;
 
-  @ApiPropertyOptional({ example: 'Understanding different data types' })
+  @ApiProperty({ example: '2025-01-10' })
+  @IsString()
+  endDate: string;
+
+  @ApiProperty({ example: '09:00' })
+  @Matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, {
+    message: 'Start time must be in HH:MM format',
+  })
+  startTime: string;
+
+  @ApiProperty({ example: '17:00' })
+  @Matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, {
+    message: 'End time must be in HH:MM format',
+  })
+  endTime: string;
+
+  @ApiPropertyOptional({ example: 'Eastern Time (GMT-5)' })
   @IsString()
   @IsOptional()
-  description?: string;
-
-  @ApiPropertyOptional({ example: false })
-  @IsBoolean()
-  @IsOptional()
-  isCompleted?: boolean;
-
-  @ApiPropertyOptional({ example: 1 })
-  @IsInt()
-  @Min(0)
-  @IsOptional()
-  order?: number;
+  timeZone?: string;
 }
 
 // Session DTO
 export class SessionDto {
-  @ApiProperty({ example: 'Introduction to JavaScript' })
-  @IsString()
-  title: string;
-
-  @ApiPropertyOptional({ example: 'Learn the fundamentals of JavaScript' })
-  @IsString()
-  @IsOptional()
-  description?: string;
-
-  @ApiPropertyOptional({
-    enum: SessionTypeEnum,
-    example: SessionTypeEnum.LECTURE,
+  @ApiProperty({
+    enum: SessionFormatEnum,
+    example: SessionFormatEnum.FULL_WEEK,
   })
-  @IsEnum(SessionTypeEnum)
-  @IsOptional()
-  sessionType?: SessionTypeEnum;
+  @IsEnum(SessionFormatEnum)
+  type: SessionFormatEnum;
 
-  @ApiPropertyOptional({
-    example: '09:00',
-    description: 'Start time in HH:MM format',
+  @ApiProperty({
+    type: [TimeBlockDto],
+    description: 'Structured time blocks for this session type',
   })
-  @Matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, {
-    message: 'Start time must be in HH:MM format',
-  })
-  @IsOptional()
-  startTime?: string;
-
-  @ApiPropertyOptional({
-    example: '10:30',
-    description: 'End time in HH:MM format',
-  })
-  @Matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, {
-    message: 'End time must be in HH:MM format',
-  })
-  @IsOptional()
-  endTime?: string;
-
-  @ApiPropertyOptional({ example: 'https://example.com/video.mp4' })
-  @IsString()
-  @IsOptional()
-  videoUrl?: string;
-
-  @ApiPropertyOptional({ example: 'Detailed session content here...' })
-  @IsString()
-  @IsOptional()
-  content?: string;
-
-  @ApiPropertyOptional({ example: 90, description: 'Duration in minutes' })
-  @IsInt()
-  @Min(0)
-  @IsOptional()
-  duration?: number;
-
-  @ApiPropertyOptional({ example: false })
-  @IsBoolean()
-  @IsOptional()
-  isFree?: boolean;
-
-  @ApiPropertyOptional({ example: false })
-  @IsBoolean()
-  @IsOptional()
-  isBreak?: boolean;
-
-  @ApiPropertyOptional({ type: [TopicItemDto] })
   @ValidateNested({ each: true })
-  @Type(() => TopicItemDto)
+  @Type(() => TimeBlockDto)
   @IsArray()
-  @IsOptional()
-  topics?: TopicItemDto[];
+  timeBlocks: TimeBlockDto[];
 
-  @ApiPropertyOptional({
-    type: [String],
-    example: ['https://example.com/resource1.pdf'],
-  })
-  @IsArray()
-  @IsString({ each: true })
-  @IsOptional()
-  resources?: string[];
-
-  @ApiPropertyOptional({
-    example: '#3498db',
-    description: 'Hex color code',
-  })
-  @Matches(/^#[0-9A-F]{6}$/i, {
-    message: 'Color must be a valid hex color code',
-  })
-  @IsOptional()
-  color?: string;
-
-  @ApiPropertyOptional({ example: 1 })
+  @ApiPropertyOptional({ example: 12 })
   @IsInt()
   @Min(0)
   @IsOptional()
-  order?: number;
-
-  @ApiPropertyOptional({ example: 'DAY 01' })
-  @IsString()
-  @IsOptional()
-  dayGroup?: string;
-
-  @ApiPropertyOptional({ example: 1 })
-  @IsInt()
-  @Min(1)
-  @IsOptional()
-  dayNumber?: number;
+  seatsLeft?: number;
 }
 
 // FAQ DTO

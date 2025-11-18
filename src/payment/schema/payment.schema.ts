@@ -20,6 +20,7 @@ export enum PaymentMethod {
   STRIPE = 'stripe',
   PAYPAL = 'paypal',
   CREDIT_CARD = 'credit_card',
+  PURCHASE_ORDER = 'purchase_order',
 }
 
 @Schema({ timestamps: true })
@@ -80,6 +81,14 @@ export class Payment {
   @ApiProperty()
   @Prop()
   stripeCustomerId?: string;
+
+  @ApiProperty()
+  @Prop({
+    type: MongooseSchema.Types.ObjectId,
+    ref: 'PurchaseOrder',
+    sparse: true,
+  })
+  purchaseOrderId?: MongooseSchema.Types.ObjectId;
 
   @ApiProperty()
   @Prop()
