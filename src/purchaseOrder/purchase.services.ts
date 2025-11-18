@@ -1,0 +1,299 @@
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import {
+  PurchaseOrderSchemaClass,
+  PurchaseOrderStatusEnum,
+} from './schema/purchase.schema';
+import { CreatePurchaseOrderDto } from './dto/create-purchase.dto';
+import { UpdatePurchaseOrderDto } from './dto/update-purchase.dto';
+import {
+  sanitizeMongooseDocument,
+  convertIdToString,
+} from '../utils/convert-id';
+import { PurchaseOrderEntity } from './domain/purchase-order.entity';
+import { MailService } from '../mail/mail.service';
+import { PaymentService } from '../payment/payment.service';
+
+@Injectable()
+export class PurchaseOrderService {
+  constructor(
+    @InjectModel(PurchaseOrderSchemaClass.name)
+    private readonly purchaseOrderModel: Model<PurchaseOrderSchemaClass>,
+    private readonly mailService: MailService,
+    private readonly paymentService: PaymentService,
+  ) {}
+
+  private readonly purchaseOrderPopulate = [
+    { path: 'student', select: 'firstName lastName email' },
+    { path: 'financialContact', select: 'firstName lastName email' },
+    { path: 'course', select: 'title slug price currency' },
+  ];
+
+  private map(doc: any): PurchaseOrderEntity {
+    if (!doc) return undefined as any;
+
+    const sanitized = sanitizeMongooseDocument(doc);
+    if (!sanitized) return undefined as any;
+
+    return new PurchaseOrderEntity({
+      ...sanitized,
+      id: sanitized.id || convertIdToString(doc),
+      course:
+        typeof sanitized.course === 'string'
+          ? sanitized.course
+          : convertIdToString(sanitized.course) ??
+            convertIdToString(doc?.course),
+      student:
+        typeof sanitized.student === 'string'
+          ? sanitized.student
+          : convertIdToString(sanitized.student) ??
+            convertIdToString(doc?.student),
+      financialContact:
+        typeof sanitized.financialContact === 'string'
+          ? sanitized.financialContact
+          : convertIdToString(sanitized.financialContact) ??
+            convertIdToString(doc?.financialContact),
+      reviewedBy:
+        typeof sanitized.reviewedBy === 'string'
+          ? sanitized.reviewedBy
+          : convertIdToString(sanitized.reviewedBy),
+    });
+  }
+
+  private getUserFullName(user?: any): string | undefined {
+    if (!user) return undefined;
+    const first = (user.firstName || '').trim();
+    const last = (user.lastName || '').trim();
+    const combined = `${first} ${last}`.trim();
+    return combined || user.email || undefined;
+  }
+
+  private getUserEmail(user?: any): string | undefined {
+    return user?.email;
+  }
+
+  private getCourseTitle(course?: any): string | undefined {
+    if (!course) return undefined;
+    if (typeof course === 'string') {
+      return course;
+    }
+    return course.title || undefined;
+  }
+
+  private async sendSubmissionEmail(po: any): Promise<void> {
+    if (!po) return;
+    const financeEmail = this.getUserEmail(po.financialContact);
+    if (!financeEmail) {
+      return;
+    }
+
+    await this.mailService.purchaseOrderSubmitted({
+      to: financeEmail,
+      data: {
+        poNumber: po.poNumber,
+        studentName: this.getUserFullName(po.student),
+        courseTitle: this.getCourseTitle(po.course),
+        bankSlipUrl: po.bankSlipUrl,
+        submittedAt: po.submittedAt
+          ? new Date(po.submittedAt).toISOString()
+          : undefined,
+      },
+    });
+  }
+
+  private async sendDecisionEmail(po: any): Promise<void> {
+    if (!po) return;
+    const studentEmail = this.getUserEmail(po.student);
+    if (!studentEmail) {
+      return;
+    }
+
+    await this.mailService.purchaseOrderDecision({
+      to: studentEmail,
+      data: {
+        poNumber: po.poNumber,
+        courseTitle: this.getCourseTitle(po.course),
+        status: po.status,
+        decisionNotes: po.decisionNotes,
+        reviewedBy: this.getUserFullName(po.financialContact),
+      },
+    });
+  }
+
+  async create(dto: CreatePurchaseOrderDto) {
+    try {
+      const created = await this.purchaseOrderModel.create({
+        poNumber: dto.poNumber,
+        student: dto.studentId,
+        course: dto.courseId,
+        financialContact: dto.financialContactId,
+        bankSlipUrl: dto.bankSlipUrl,
+        submittedAt: dto.submittedAt
+          ? new Date(dto.submittedAt)
+          : new Date(),
+        status: PurchaseOrderStatusEnum.PENDING,
+      });
+
+      const populated = await this.purchaseOrderModel
+        .findById(created._id)
+        .populate(this.purchaseOrderPopulate)
+        .lean()
+        .exec();
+
+      if (populated) {
+        await this.sendSubmissionEmail(populated);
+        return this.map(populated);
+      }
+
+      return this.map(created.toObject());
+    } catch (error) {
+      if (error?.code === 11000) {
+        throw new BadRequestException('Purchase order number already exists');
+      }
+      throw error;
+    }
+  }
+
+  async findAll(status?: PurchaseOrderStatusEnum) {
+    const filter = status ? { status } : {};
+    const docs = await this.purchaseOrderModel
+      .find(filter)
+      .sort({ createdAt: -1 })
+      .lean()
+      .exec();
+
+    return docs.map((doc) => this.map(doc));
+  }
+
+  async findOne(id: string) {
+    const po = await this.purchaseOrderModel.findById(id).lean().exec();
+    if (!po) {
+      throw new NotFoundException('Purchase order not found');
+    }
+    return this.map(po);
+  }
+
+  async update(id: string, dto: UpdatePurchaseOrderDto) {
+    const payload: Record<string, unknown> = {};
+
+    if (dto.poNumber !== undefined) {
+      payload.poNumber = dto.poNumber;
+    }
+
+    if (dto.studentId !== undefined) {
+      payload.student = dto.studentId;
+    }
+
+    if (dto.courseId !== undefined) {
+      payload.course = dto.courseId;
+    }
+
+    if (dto.financialContactId !== undefined) {
+      payload.financialContact = dto.financialContactId;
+    }
+
+    if (dto.bankSlipUrl !== undefined) {
+      payload.bankSlipUrl = dto.bankSlipUrl;
+    }
+
+    if (dto.submittedAt !== undefined) {
+      payload.submittedAt = new Date(dto.submittedAt);
+    }
+
+    if (dto.status !== undefined) {
+      payload.status = dto.status;
+      if (dto.status !== PurchaseOrderStatusEnum.PENDING) {
+        payload.reviewedAt = dto.reviewedAt
+          ? new Date(dto.reviewedAt)
+          : new Date();
+      }
+    }
+
+    if (dto.reviewedBy !== undefined) {
+      payload.reviewedBy = dto.reviewedBy;
+    }
+
+    if (dto.reviewedAt !== undefined) {
+      payload.reviewedAt = new Date(dto.reviewedAt);
+    }
+
+    if (dto.decisionNotes !== undefined) {
+      payload.decisionNotes = dto.decisionNotes;
+    }
+
+    try {
+      const updated = await this.purchaseOrderModel
+        .findByIdAndUpdate(id, payload, { new: true })
+        .populate(this.purchaseOrderPopulate)
+        .lean()
+        .exec();
+
+      if (!updated) {
+        throw new NotFoundException('Purchase order not found');
+      }
+
+      if (
+        dto.status &&
+        dto.status !== PurchaseOrderStatusEnum.PENDING
+      ) {
+        await this.sendDecisionEmail(updated);
+
+        // If PO is approved, create payment and enrollment
+        if (dto.status === PurchaseOrderStatusEnum.APPROVED) {
+          try {
+            const course = updated.course as any;
+            const student = updated.student as any;
+            const courseId = convertIdToString(course) || course?._id?.toString();
+            const studentId = convertIdToString(student) || student?._id?.toString();
+            const poId = convertIdToString(updated) || updated._id?.toString();
+
+            if (courseId && studentId && poId) {
+              const amount = course?.price || 0;
+              const currency = course?.currency || 'usd';
+
+              await this.paymentService.createPaymentFromPurchaseOrder(
+                poId,
+                studentId,
+                courseId,
+                amount,
+                currency,
+              );
+            }
+          } catch (error) {
+            // Log error but don't fail the PO update
+            console.error(
+              'Failed to create payment from approved PO:',
+              error.message,
+            );
+          }
+        }
+      }
+
+      return this.map(updated);
+    } catch (error) {
+      if (error?.code === 11000) {
+        throw new BadRequestException('Purchase order number already exists');
+      }
+      throw error;
+    }
+  }
+
+  async remove(id: string) {
+    const result = await this.purchaseOrderModel
+      .findByIdAndDelete(id)
+      .lean()
+      .exec();
+
+    if (!result) {
+      throw new NotFoundException('Purchase order not found');
+    }
+
+    return { deleted: true };
+  }
+}
+

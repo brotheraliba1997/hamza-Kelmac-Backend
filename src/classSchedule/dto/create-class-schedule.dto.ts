@@ -21,6 +21,14 @@ export class CreateClassScheduleDto {
   @IsMongoId()
   course: string;
 
+  @ApiPropertyOptional({
+    example: '671018fabc123456789ef015',
+    description: 'Session ID from course.sessions array (required for session-based schedule creation)',
+  })
+  @IsString()
+  @IsOptional()
+  sessionId?: string;
+
   @ApiProperty({
     example: '671018fabc123456789ef014',
     description: 'Instructor assigned to this class',
@@ -29,27 +37,29 @@ export class CreateClassScheduleDto {
   instructor: string;
 
   @ApiProperty({
-    type: [String],
-    example: ['671018fabc123456789ef015', '671018fabc123456789ef016'],
+    type: String,
+    example: '671018fabc123456789ef015',
     description: 'List of student IDs attending this class',
   })
   @IsString()
   @IsMongoId({ each: true })
   students: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: '2025-11-05',
-    description: 'Date of the class (ISO format: YYYY-MM-DD)',
+    description: 'Date of the class (ISO format: YYYY-MM-DD). Not needed for session-based creation (comes from timeBlocks)',
   })
   @IsString()
-  date: string;
+  @IsOptional()
+  date?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: '15:30',
-    description: 'Time of the class (HH:mm in 24-hour format)',
+    description: 'Time of the class (HH:mm in 24-hour format). Not needed for session-based creation (comes from timeBlocks)',
   })
   @IsString()
-  time: string;
+  @IsOptional()
+  time?: string;
 
   @ApiProperty({
     example: 60,

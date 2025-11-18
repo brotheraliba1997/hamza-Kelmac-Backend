@@ -7,14 +7,6 @@ import { CategorySchemaClass } from '../../category';
 export type CourseSchemaDocument = HydratedDocument<CourseSchemaClass>;
 
 // Enums for better type safety
-export enum SessionTypeEnum {
-  LECTURE = 'lecture',
-  INTRODUCTION = 'introduction',
-  BREAK = 'break',
-  LUNCH = 'lunch',
-  END_OF_DAY = 'end_of_day',
-}
-
 export enum SkillLevelEnum {
   BEGINNER = 'Beginner',
   INTERMEDIATE = 'Intermediate',
@@ -69,85 +61,61 @@ const ClassDateOptionSchema = SchemaFactory.createForClass(
   ClassDateOptionSchemaClass,
 );
 
-// Topic Item Schema (Individual topics within a session)
+// Time Block Schema (detailed schedule entries)
 @Schema({
   timestamps: false,
   toJSON: { virtuals: true, getters: true },
   _id: false,
 })
-export class TopicItemSchemaClass {
+export class TimeBlockSchemaClass {
   @Prop({ type: String, required: true, trim: true })
-  title: string;
+  startDate: string;
 
-  @Prop({ type: String, default: '', trim: true })
-  description?: string;
+  @Prop({ type: String, required: true, trim: true })
+  endDate: string;
 
-  @Prop({ type: Boolean, default: false })
-  isCompleted: boolean;
+  @Prop({ type: String, required: true, trim: true })
+  startTime: string;
 
-  @Prop({ type: Number, min: 0 })
-  order?: number;
+  @Prop({ type: String, required: true, trim: true })
+  endTime: string;
+
+  @Prop({
+    type: String,
+    default: 'Eastern Time (GMT-5)',
+    trim: true,
+  })
+  timeZone: string;
 }
 
-const TopicItemSchema = SchemaFactory.createForClass(TopicItemSchemaClass);
+const TimeBlockSchema = SchemaFactory.createForClass(TimeBlockSchemaClass);
 
-// Session Schema (Lessons, Lectures, Breaks)
+export enum SessionFormatEnum {
+  FULL_WEEK = 'Full Week',
+  SPLIT_WEEK = 'Split Week',
+  WEEKEND = 'Weekend',
+  EVENING = 'Evening',
+}
+
+// Session Schema (High-level course session definition)
 @Schema({
   timestamps: true,
   toJSON: { virtuals: true, getters: true },
 })
 export class SessionSchemaClass {
-  @Prop({ type: String, required: true, trim: true })
-  title: string;
-
-  @Prop({ type: String, trim: true })
-  description?: string;
-
   @Prop({
     type: String,
-    enum: Object.values(SessionTypeEnum),
-    default: SessionTypeEnum.LECTURE,
+    enum: Object.values(SessionFormatEnum),
+    required: true,
+    trim: true,
   })
-  sessionType: string;
+  type: string;
 
-  @Prop({ type: String, match: /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/ })
-  startTime?: string; // Format: HH:MM (24-hour)
-
-  @Prop({ type: String, match: /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/ })
-  endTime?: string; // Format: HH:MM (24-hour)
-
-  @Prop({ type: String, trim: true })
-  videoUrl?: string;
-
-  @Prop({ type: String })
-  content?: string;
+  @Prop({ type: [TimeBlockSchema], default: [] })
+  timeBlocks: TimeBlockSchemaClass[];
 
   @Prop({ type: Number, default: 0, min: 0 })
-  duration: number; // Duration in minutes
-
-  @Prop({ type: Boolean, default: false })
-  isFree: boolean; // Free preview access
-
-  @Prop({ type: Boolean, default: false })
-  isBreak: boolean; // Break/lunch session
-
-  @Prop({ type: [TopicItemSchema], default: [] })
-  topics: TopicItemSchemaClass[];
-
-  @Prop({ type: [String], default: [] })
-  resources: string[]; // Resource URLs
-
-  @Prop({ type: String, match: /^#[0-9A-F]{6}$/i })
-  color?: string; // Hex color code
-
-  @Prop({ type: Number, default: 0, min: 0 })
-  order: number; // Display order
-
-  @Prop({ type: String, trim: true })
-  dayGroup?: string; // e.g., "DAY 01"
-
-  @Prop({ type: Number, min: 1 })
-  dayNumber?: number; // e.g., 1, 2, 3
+  seatsLeft: number;
 }
 
 const SessionSchema = SchemaFactory.createForClass(SessionSchemaClass);

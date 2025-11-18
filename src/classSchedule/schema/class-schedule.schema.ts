@@ -23,6 +23,14 @@ export class ClassScheduleSchemaClass extends EntityDocumentHelper {
   course: Types.ObjectId;
 
   @Prop({
+    type: String,
+    required: true,
+    description: 'Session ID from course.sessions array',
+    index: true,
+  })
+  sessionId: string;
+
+  @Prop({
     type: Types.ObjectId,
     ref: UserSchemaClass.name,
     required: true,

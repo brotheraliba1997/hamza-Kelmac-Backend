@@ -4,6 +4,7 @@ import databaseConfig from '../../database/config/database.config';
 import { DatabaseConfig } from '../../database/config/database-config.type';
 import { Types } from 'mongoose';
 import { User } from '../../users/domain/user';
+import { SessionFormatEnum } from '../schema/course.schema';
 
 // <database-block>
 const idType = (databaseConfig() as DatabaseConfig).isDocumentDatabase
@@ -11,92 +12,37 @@ const idType = (databaseConfig() as DatabaseConfig).isDocumentDatabase
   : Number;
 // </database-block>
 
-// Topic Item Entity
-export class TopicItemEntity {
-  @ApiProperty({ example: 'Introduction to Variables' })
-  title: string;
+// Time Block Entity
+export class TimeBlockEntity {
+  @ApiProperty({ example: '2025-01-06' })
+  startDate: string;
 
-  @ApiProperty({
-    example: 'Learn about variable declaration and types',
-    required: false,
-  })
-  description?: string;
+  @ApiProperty({ example: '2025-01-10' })
+  endDate: string;
 
-  @ApiProperty({ example: false })
-  isCompleted: boolean;
+  @ApiProperty({ example: '09:00' })
+  startTime: string;
 
-  @ApiProperty({ example: 1 })
-  order?: number;
+  @ApiProperty({ example: '17:00' })
+  endTime: string;
+
+  @ApiProperty({ example: 'Eastern Time (GMT-5)', required: false })
+  timeZone?: string;
 }
 
 // Session Entity
 export class SessionEntity {
-  @ApiProperty({ example: 'Introduction to Programming' })
-  title: string;
-
   @ApiProperty({
-    example: 'This session covers programming fundamentals',
-    required: false,
+    example: SessionFormatEnum.FULL_WEEK,
+    enum: SessionFormatEnum,
   })
-  description?: string;
+  type: SessionFormatEnum;
 
-  @ApiProperty({
-    example: 'lecture',
-    enum: ['lecture', 'introduction', 'break', 'lunch', 'end_of_day'],
-  })
-  sessionType: string;
+  @ApiProperty({ type: [TimeBlockEntity], default: [] })
+  timeBlocks: TimeBlockEntity[];
 
-  @ApiProperty({ example: '09:00', required: false })
-  startTime?: string;
-
-  @ApiProperty({ example: '10:30', required: false })
-  endTime?: string;
-
-  @ApiProperty({
-    example: 'https://example.com/videos/intro.mp4',
-    required: false,
-  })
-  videoUrl?: string;
-
-  @ApiProperty({ example: 'Detailed session content...', required: false })
-  content?: string;
-
-  @ApiProperty({ example: 90, description: 'Duration in minutes' })
-  duration: number;
-
-  @ApiProperty({ example: false })
-  isFree: boolean;
-
-  @ApiProperty({ example: false })
-  isBreak: boolean;
-
-  @ApiProperty({ type: [TopicItemEntity], default: [] })
-  topics: TopicItemEntity[];
-
-  @ApiProperty({
-    type: [String],
-    default: [],
-    example: ['https://example.com/resources/slides.pdf'],
-  })
-  resources: string[];
-
-  @ApiProperty({ example: '#FF5733', required: false })
-  color?: string;
-
-  @ApiProperty({ example: 1 })
-  order: number;
-
-  @ApiProperty({ example: 'DAY 01', required: false })
-  dayGroup?: string;
-
-  @ApiProperty({ example: 1, required: false })
-  dayNumber?: number;
-
-  @ApiProperty({ example: '2025-10-29T10:00:00.000Z', required: false })
-  createdAt?: Date;
-
-  @ApiProperty({ example: '2025-10-29T10:00:00.000Z', required: false })
-  updatedAt?: Date;
+  @ApiProperty({ example: 12 })
+  seatsLeft: number;
 }
 
 // FAQ Entity

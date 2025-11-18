@@ -4,7 +4,7 @@ import { AppModule } from '../../app.module';
 import { CoursesService } from '../../course/courses.service';
 import { CategoriesService } from '../../category/categories.service';
 import {
-  SessionTypeEnum,
+  SessionFormatEnum,
   SkillLevelEnum,
   CurrencyEnum,
 } from '../../course/schema/course.schema';
@@ -102,44 +102,30 @@ async function seedCoursesFromPricingPage() {
           'https://images.unsplash.com/photo-1552664730-d307ca884978',
         sessions: [
           {
-            title: 'Getting Started with Professional Development',
-            description:
-              'Introduction to the program and setting up your learning path',
-            sessionType: SessionTypeEnum.INTRODUCTION,
-            startTime: '09:00',
-            endTime: '10:00',
-            duration: 60,
-            isFree: true,
-            order: 1,
-            dayGroup: 'Week 1',
-            dayNumber: 1,
-            topics: [
-              { title: 'Program Overview', order: 1 },
-              { title: 'Setting Goals', order: 2 },
-              { title: 'Creating Your Learning Plan', order: 3 },
+            type: SessionFormatEnum.FULL_WEEK,
+            timeBlocks: [
+              {
+                startDate: '2025-01-06',
+                endDate: '2025-01-06',
+                startTime: '09:00',
+                endTime: '10:00',
+                timeZone: 'Eastern Time (GMT-5)',
+              },
             ],
-            color: '#3498db',
+            seatsLeft: 25,
           },
           {
-            title: 'Effective Communication Skills',
-            description: 'Master professional communication techniques',
-            sessionType: SessionTypeEnum.LECTURE,
-            startTime: '10:00',
-            endTime: '11:30',
-            duration: 90,
-            order: 2,
-            dayGroup: 'Week 1',
-            dayNumber: 1,
-            videoUrl: 'https://example.com/videos/communication.mp4',
-            resources: [
-              'https://example.com/resources/communication-guide.pdf',
+            type: SessionFormatEnum.WEEKEND,
+            timeBlocks: [
+              {
+                startDate: '2025-01-11',
+                endDate: '2025-01-11',
+                startTime: '10:00',
+                endTime: '11:30',
+                timeZone: 'Eastern Time (GMT-5)',
+              },
             ],
-            topics: [
-              { title: 'Verbal Communication', order: 1 },
-              { title: 'Written Communication', order: 2 },
-              { title: 'Active Listening', order: 3 },
-            ],
-            color: '#3498db',
+            seatsLeft: 25,
           },
         ],
         snapshot: {
@@ -226,50 +212,30 @@ async function seedCoursesFromPricingPage() {
           'https://images.unsplash.com/photo-1542744173-8e7e53415bb0',
         sessions: [
           {
-            title: 'Leadership Fundamentals',
-            description: 'Core principles of effective leadership',
-            sessionType: SessionTypeEnum.LECTURE,
-            startTime: '09:00',
-            endTime: '12:00',
-            duration: 180,
-            isFree: true,
-            order: 1,
-            dayGroup: 'Module 1',
-            dayNumber: 1,
-            videoUrl: 'https://example.com/videos/leadership-fundamentals.mp4',
-            resources: [
-              'https://example.com/resources/leadership-workbook.pdf',
-              'https://example.com/resources/leadership-templates.zip',
+            type: SessionFormatEnum.FULL_WEEK,
+            timeBlocks: [
+              {
+                startDate: '2025-02-03',
+                endDate: '2025-02-07',
+                startTime: '09:00',
+                endTime: '12:00',
+                timeZone: 'Eastern Time (GMT-5)',
+              },
             ],
-            topics: [
-              { title: 'Leadership Styles', order: 1 },
-              { title: 'Emotional Intelligence', order: 2 },
-              { title: 'Decision Making', order: 3 },
-              { title: 'Conflict Resolution', order: 4 },
-            ],
-            color: '#2c3e50',
+            seatsLeft: 18,
           },
           {
-            title: 'Team Building Strategies',
-            description: 'Build and manage high-performing teams',
-            sessionType: SessionTypeEnum.LECTURE,
-            startTime: '13:00',
-            endTime: '16:00',
-            duration: 180,
-            order: 2,
-            dayGroup: 'Module 1',
-            dayNumber: 1,
-            videoUrl: 'https://example.com/videos/team-building.mp4',
-            resources: [
-              'https://example.com/resources/team-building-guide.pdf',
+            type: SessionFormatEnum.EVENING,
+            timeBlocks: [
+              {
+                startDate: '2025-02-05',
+                endDate: '2025-02-05',
+                startTime: '13:00',
+                endTime: '16:00',
+                timeZone: 'Eastern Time (GMT-5)',
+              },
             ],
-            topics: [
-              { title: 'Team Dynamics', order: 1 },
-              { title: 'Motivation Techniques', order: 2 },
-              { title: 'Performance Management', order: 3 },
-              { title: 'Feedback and Coaching', order: 4 },
-            ],
-            color: '#2c3e50',
+            seatsLeft: 18,
           },
         ],
         snapshot: {
@@ -369,69 +335,43 @@ async function seedCoursesFromPricingPage() {
           'https://images.unsplash.com/photo-1521737711867-e3b97375f902',
         sessions: [
           {
-            title: 'Executive Leadership Masterclass',
-            description:
-              'Advanced leadership strategies for C-level executives',
-            sessionType: SessionTypeEnum.LECTURE,
-            startTime: '09:00',
-            endTime: '12:00',
-            duration: 180,
-            isFree: true,
-            order: 1,
-            dayGroup: 'Executive Track',
-            dayNumber: 1,
-            videoUrl: 'https://example.com/videos/executive-leadership.mp4',
-            resources: [
-              'https://example.com/resources/executive-playbook.pdf',
-              'https://example.com/resources/case-studies.zip',
+            type: SessionFormatEnum.SPLIT_WEEK,
+            timeBlocks: [
+              {
+                startDate: '2025-03-03',
+                endDate: '2025-03-04',
+                startTime: '09:00',
+                endTime: '12:00',
+                timeZone: 'Eastern Time (GMT-5)',
+              },
             ],
-            topics: [
-              { title: 'Visionary Leadership', order: 1 },
-              { title: 'Strategic Thinking', order: 2 },
-              { title: 'Organizational Culture', order: 3 },
-              { title: 'Crisis Management', order: 4 },
-              { title: 'Innovation Leadership', order: 5 },
-            ],
-            color: '#8e44ad',
+            seatsLeft: 10,
           },
           {
-            title: 'Digital Transformation Strategy',
-            description: 'Leading digital change in modern organizations',
-            sessionType: SessionTypeEnum.LECTURE,
-            startTime: '14:00',
-            endTime: '17:00',
-            duration: 180,
-            order: 2,
-            dayGroup: 'Executive Track',
-            dayNumber: 1,
-            videoUrl: 'https://example.com/videos/digital-transformation.mp4',
-            resources: [
-              'https://example.com/resources/digital-strategy-framework.pdf',
+            type: SessionFormatEnum.FULL_WEEK,
+            timeBlocks: [
+              {
+                startDate: '2025-03-05',
+                endDate: '2025-03-05',
+                startTime: '14:00',
+                endTime: '17:00',
+                timeZone: 'Eastern Time (GMT-5)',
+              },
             ],
-            topics: [
-              { title: 'Digital Trends', order: 1 },
-              { title: 'Technology Adoption', order: 2 },
-              { title: 'Change Management', order: 3 },
-              { title: 'ROI Measurement', order: 4 },
-            ],
-            color: '#8e44ad',
+            seatsLeft: 10,
           },
           {
-            title: 'One-on-One Executive Coaching Session',
-            description: 'Personalized coaching with senior advisor',
-            sessionType: SessionTypeEnum.LECTURE,
-            startTime: '10:00',
-            endTime: '11:00',
-            duration: 60,
-            order: 3,
-            dayGroup: 'Monthly Coaching',
-            dayNumber: 1,
-            topics: [
-              { title: 'Personalized Goal Setting', order: 1 },
-              { title: 'Challenge Resolution', order: 2 },
-              { title: 'Strategic Planning', order: 3 },
+            type: SessionFormatEnum.EVENING,
+            timeBlocks: [
+              {
+                startDate: '2025-03-06',
+                endDate: '2025-03-06',
+                startTime: '10:00',
+                endTime: '11:00',
+                timeZone: 'Eastern Time (GMT-5)',
+              },
             ],
-            color: '#8e44ad',
+            seatsLeft: 5,
           },
         ],
         snapshot: {
@@ -547,24 +487,32 @@ async function seedCoursesFromPricingPage() {
           'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40',
         sessions: [
           {
-            title: 'Complete Executive Orientation',
-            description: 'Comprehensive overview and personalized onboarding',
-            sessionType: SessionTypeEnum.INTRODUCTION,
-            startTime: '09:00',
-            endTime: '10:30',
-            duration: 90,
-            isFree: true,
-            order: 1,
-            dayGroup: 'Onboarding',
-            dayNumber: 1,
-            topics: [
-              { title: 'Program Overview', order: 1 },
-              { title: 'Personalized Assessment', order: 2 },
-              { title: 'Custom Learning Path Creation', order: 3 },
+            type: SessionFormatEnum.FULL_WEEK,
+            timeBlocks: [
+              {
+                startDate: '2025-04-07',
+                endDate: '2025-04-11',
+                startTime: '09:00',
+                endTime: '10:30',
+                timeZone: 'Eastern Time (GMT-5)',
+              },
             ],
-            color: '#c0392b',
+            seatsLeft: 8,
           },
-          // Include all sessions from previous tiers
+          {
+            type: SessionFormatEnum.SPLIT_WEEK,
+            timeBlocks: [
+              {
+                startDate: '2025-04-15',
+                endDate: '2025-04-16',
+                startTime: '13:00',
+                endTime: '16:00',
+                timeZone: 'Eastern Time (GMT-5)',
+              },
+            ],
+            seatsLeft: 8,
+          },
+          // Include all session formats from previous tiers via curriculum builder
         ],
         snapshot: {
           totalLectures: 250,

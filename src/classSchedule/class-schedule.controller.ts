@@ -37,9 +37,9 @@ export class ClassScheduleController {
   })
   create(@Body() dto: CreateClassScheduleDto) {
     dto.securityKey = randomUUID();
-     const accessToken = process.env.ACCESS_TOKEN;
+    const accessToken = process.env.ACCESS_TOKEN;
     const refreshToken = process.env.REFRESH_TOKEN;
-    return this.classScheduleService.create(dto , accessToken, refreshToken);
+    return this.classScheduleService.create(dto, accessToken, refreshToken);
   }
 
   // 📗 Get all classes (with filters + sorting)
