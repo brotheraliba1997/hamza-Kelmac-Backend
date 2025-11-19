@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import { ConfigService } from '@nestjs/config';
 import {
   PurchaseOrderSchemaClass,
   PurchaseOrderStatusEnum,
@@ -18,6 +19,8 @@ import {
 import { PurchaseOrderEntity } from './domain/purchase-order.entity';
 import { MailService } from '../mail/mail.service';
 import { PaymentService } from '../payment/payment.service';
+import { AllConfigType } from '../config/config.type';
+import { CourseSchemaClass } from '../course/schema/course.schema';
 
 @Injectable()
 export class PurchaseOrderService {
@@ -26,12 +29,15 @@ export class PurchaseOrderService {
     private readonly purchaseOrderModel: Model<PurchaseOrderSchemaClass>,
     private readonly mailService: MailService,
     private readonly paymentService: PaymentService,
+    private readonly configService: ConfigService<AllConfigType>,
+    @InjectModel(CourseSchemaClass.name)
+    private readonly courseModel: Model<CourseSchemaClass>,
   ) {}
 
   private readonly purchaseOrderPopulate = [
     { path: 'student', select: 'firstName lastName email' },
     { path: 'financialContact', select: 'firstName lastName email' },
-    { path: 'course', select: 'title slug price currency' },
+    { path: 'course', select: 'title slug price currency sessions details' },
   ];
 
   private map(doc: any): PurchaseOrderEntity {
@@ -113,6 +119,7 @@ export class PurchaseOrderService {
       return;
     }
 
+    // Send general decision email
     await this.mailService.purchaseOrderDecision({
       to: studentEmail,
       data: {
@@ -123,6 +130,96 @@ export class PurchaseOrderService {
         reviewedBy: this.getUserFullName(po.financialContact),
       },
     });
+
+    // If approved, send course materials email
+    if (po.status === PurchaseOrderStatusEnum.APPROVED) {
+      try {
+        let course = po.course as any;
+        const student = po.student as any;
+
+        // If course is not populated properly, fetch it
+        if (!course?.sessions) {
+          const courseId =
+            course?._id?.toString() ||
+            (typeof course === 'string' ? course : null) ||
+            po.course?.toString();
+
+          if (courseId) {
+            const fetchedCourse = await this.courseModel
+              .findById(courseId)
+              .select('title slug sessions details price currency')
+              .lean();
+
+            if (fetchedCourse) {
+              course = fetchedCourse;
+            }
+          }
+        }
+
+        // Generate course material link
+        const frontendDomain = this.configService.getOrThrow(
+          'app.frontendDomain',
+          { infer: true },
+        );
+        const courseMaterialLink = course?.slug
+          ? `${frontendDomain}/courses/${course.slug}/materials`
+          : `${frontendDomain}/courses/${course?._id?.toString() || po.course}/materials`;
+
+        // Prepare course materials list
+        const courseMaterials: Array<{
+          name: string;
+          type: string;
+          link?: string;
+        }> = [];
+
+        // Add sessions as materials
+        if (course?.sessions && Array.isArray(course.sessions)) {
+          course.sessions.forEach((session: any, index: number) => {
+            courseMaterials.push({
+              name: `Session ${index + 1} - ${session.type || 'Session'}`,
+              type: 'Session',
+              link: `${courseMaterialLink}#session-${index + 1}`,
+            });
+          });
+        }
+
+        // Add course details as materials if available
+        if (course?.details) {
+          if (course.details.features && course.details.features.length > 0) {
+            courseMaterials.push({
+              name: 'Course Features',
+              type: 'Documentation',
+              link: `${courseMaterialLink}#features`,
+            });
+          }
+        }
+
+        // Send course materials email
+        const studentName = this.getUserFullName(student) || 'Student';
+        const courseTitle = this.getCourseTitle(course) || 'Course';
+        const amount = course?.price || 0;
+        const currency = course?.currency?.toUpperCase() || 'USD';
+
+        await this.mailService.studentPaymentConfirmation({
+          to: studentEmail,
+          data: {
+            studentName,
+            courseTitle,
+            courseMaterialLink,
+            courseMaterials,
+            amount,
+            currency,
+            paymentDate: new Date().toISOString(),
+          },
+        });
+      } catch (error) {
+        // Log error but don't fail the email sending
+        console.error(
+          'Failed to send course materials email for approved PO:',
+          error.message,
+        );
+      }
+    }
   }
 
   async create(dto: CreatePurchaseOrderDto) {

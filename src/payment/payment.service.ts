@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
+import { ConfigService } from '@nestjs/config';
 import {
   Payment,
   PaymentDocument,
@@ -17,6 +18,7 @@ import { MailService } from '../mail/mail.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { CreateCheckoutDto } from './dto/create-checkout.dto';
 import { RefundPaymentDto } from './dto/refund-payment.dto';
+import { AllConfigType } from '../config/config.type';
 
 import { EnrollmentSchemaClass } from '../Enrollment/infrastructure/enrollments.schema';
 import {
@@ -44,6 +46,7 @@ export class PaymentService {
     private enrollmentModel: Model<EnrollmentSchemaClass>,
     private stripeService: StripeService,
     private mailService: MailService,
+    private configService: ConfigService<AllConfigType>,
   ) {}
 
   /**
@@ -117,14 +120,45 @@ export class PaymentService {
       // Update payment with Stripe details
       payment.stripePaymentIntentId = paymentIntent.paymentIntentId;
       payment.status = PaymentStatus.PROCESSING;
-      
+
       await payment.save();
-
-
 
       this.logger.log(
         `Payment intent created: ${paymentIntent.paymentIntentId} for user ${userId}`,
       );
+
+      // Send payment confirmation email to finance department
+      try {
+        const financeEmail =
+          this.configService.get('app.adminEmail', { infer: true }) ||
+          this.configService.get('mail.defaultEmail', { infer: true });
+
+        if (financeEmail) {
+          await this.mailService.paymentConfirmation({
+            to: financeEmail,
+            data: {
+              paymentId: payment._id.toString(),
+              paymentIntentId: paymentIntent.paymentIntentId,
+              studentName: `${user.firstName} ${user.lastName}`,
+              studentEmail: user.email,
+              courseTitle: course.title,
+              amount: paymentAmount,
+              currency: currency.toUpperCase(),
+              paymentMethod: 'stripe',
+              createdAt: new Date().toISOString(),
+            },
+          });
+
+          this.logger.log(
+            `Payment confirmation email sent to finance: ${financeEmail}`,
+          );
+        }
+      } catch (emailError) {
+        // Don't fail payment creation if email fails
+        this.logger.error(
+          `Failed to send payment confirmation email to finance: ${emailError.message}`,
+        );
+      }
 
       return {
         payment: payment.toObject(),
@@ -144,9 +178,12 @@ export class PaymentService {
 
   async confirmPayment(paymentIntentId: string) {
     // Find the payment by Stripe PaymentIntent ID
-    const payment = await this.paymentModel.findOne({
-      stripePaymentIntentId: paymentIntentId,
-    });
+    const payment = await this.paymentModel
+      .findOne({
+        stripePaymentIntentId: paymentIntentId,
+      })
+      .populate('userId', 'firstName lastName email')
+      .populate('courseId', 'title slug sessions details');
 
     if (!payment) {
       throw new NotFoundException('Payment not found');
@@ -154,9 +191,135 @@ export class PaymentService {
 
     // Update status to PAID
     payment.status = PaymentStatus.SUCCEEDED;
+    payment.paidAt = new Date();
     await payment.save();
 
-    return { success: true, message: 'Payment confirmed', payment };
+    // Get user and course details
+    let user = payment.userId as any;
+    let course = payment.courseId as any;
+
+    // If user is not populated properly (missing email), fetch it manually
+    if (!user?.email) {
+      const userId =
+        user?._id?.toString() ||
+        (typeof user === 'string' ? user : null) ||
+        payment.userId?.toString();
+
+      if (userId) {
+        const fetchedUser = await this.userModel
+          .findById(userId)
+          .select('firstName lastName email')
+          .lean();
+
+        if (fetchedUser) {
+          user = fetchedUser;
+        }
+      }
+    }
+
+    // If course is not populated properly (missing title), fetch it manually
+    if (!course?.title) {
+      const courseId =
+        course?._id?.toString() ||
+        (typeof course === 'string' ? course : null) ||
+        payment.courseId?.toString();
+
+      if (courseId) {
+        const fetchedCourse = await this.courseModel
+          .findById(courseId)
+          .select('title slug sessions details')
+          .lean();
+
+        if (fetchedCourse) {
+          course = fetchedCourse;
+        }
+      }
+    }
+
+    // Generate course material link
+    const frontendDomain = this.configService.getOrThrow('app.frontendDomain', {
+      infer: true,
+    });
+    const courseMaterialLink = course?.slug
+      ? `${frontendDomain}/courses/${course.slug}/materials`
+      : `${frontendDomain}/courses/${course?._id?.toString() || payment.courseId}/materials`;
+
+    // Prepare course materials list
+    const courseMaterials: Array<{
+      name: string;
+      type: string;
+      link?: string;
+    }> = [];
+
+    // Add sessions as materials
+    if (course?.sessions && Array.isArray(course.sessions)) {
+      course.sessions.forEach((session: any, index: number) => {
+        courseMaterials.push({
+          name: `Session ${index + 1} - ${session.type || 'Session'}`,
+          type: 'Session',
+          link: `${courseMaterialLink}#session-${index + 1}`,
+        });
+      });
+    }
+
+    // Add course details as materials if available
+    if (course?.details) {
+      if (course.details.features && course.details.features.length > 0) {
+        courseMaterials.push({
+          name: 'Course Features',
+          type: 'Documentation',
+          link: `${courseMaterialLink}#features`,
+        });
+      }
+    }
+
+    // Send confirmation email to student
+    try {
+      if (user?.email) {
+        await this.mailService.studentPaymentConfirmation({
+          to: user.email,
+          data: {
+            studentName:
+              `${user.firstName || ''} ${user.lastName || ''}`.trim() ||
+              'Student',
+            courseTitle: course?.title || 'Course',
+            courseMaterialLink,
+            courseMaterials,
+            amount: payment.amount,
+            currency: payment.currency?.toUpperCase() || 'USD',
+            paymentDate: new Date().toISOString(),
+          },
+        });
+
+        this.logger.log(
+          `Payment confirmation email sent to student: ${user.email}`,
+        );
+      }
+    } catch (emailError) {
+      // Don't fail payment confirmation if email fails
+      this.logger.error(
+        `Failed to send payment confirmation email to student: ${emailError.message}`,
+      );
+    }
+
+    return {
+      success: true,
+      message: 'Payment confirmed',
+      payment: {
+        id: payment._id.toString(),
+        status: payment.status,
+        amount: payment.amount,
+        currency: payment.currency,
+        paidAt: payment.paidAt,
+      },
+      course: {
+        id: course?._id?.toString() || payment.courseId,
+        title: course?.title,
+        slug: course?.slug,
+      },
+      courseMaterialLink,
+      courseMaterials,
+    };
   }
 
   /**
@@ -263,8 +426,8 @@ export class PaymentService {
   async handlePaymentSuccess(paymentIntentId: string) {
     const payment = await this.paymentModel
       .findOne({ stripePaymentIntentId: paymentIntentId })
-      .populate('user')
-      .populate('course');
+      .populate('userId')
+      .populate('courseId');
 
     if (!payment) {
       this.logger.warn(`Payment not found for intent: ${paymentIntentId}`);
@@ -365,8 +528,8 @@ export class PaymentService {
 
     const payment = await this.paymentModel
       .findById(paymentId)
-      .populate('user')
-      .populate('course')
+      .populate('userId')
+      .populate('courseId')
       .populate('enrollment');
 
     if (!payment) {
@@ -454,8 +617,8 @@ export class PaymentService {
   async getPayment(paymentId: string) {
     const payment = await this.paymentModel
       .findById(paymentId)
-      .populate('user', 'firstName lastName email')
-      .populate('course', 'title description price')
+      .populate('userId', 'firstName lastName email')
+      .populate('courseId', 'title description price')
       .populate('enrollment');
 
     if (!payment) {
@@ -473,14 +636,14 @@ export class PaymentService {
 
     const [payments, total] = await Promise.all([
       this.paymentModel
-        .find({ user: new Types.ObjectId(userId) })
-        .populate('course', 'title description price')
+        .find({ userId: new Types.ObjectId(userId) })
+        .populate('courseId', 'title description price')
         .populate('enrollment')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
         .lean(),
-      this.paymentModel.countDocuments({ user: new Types.ObjectId(userId) }),
+      this.paymentModel.countDocuments({ userId: new Types.ObjectId(userId) }),
     ]);
 
     return {
@@ -502,8 +665,8 @@ export class PaymentService {
 
     const [payments, total] = await Promise.all([
       this.paymentModel
-        .find({ course: new Types.ObjectId(courseId) })
-        .populate('user', 'firstName lastName email')
+        .find({ courseId: new Types.ObjectId(courseId) })
+        .populate('userId', 'firstName lastName email')
         .populate('enrollment')
         .sort({ createdAt: -1 })
         .skip(skip)
@@ -535,8 +698,8 @@ export class PaymentService {
     const [payments, total] = await Promise.all([
       this.paymentModel
         .find(filter)
-        .populate('user', 'firstName lastName email')
-        .populate('course', 'title description price')
+        .populate('userId', 'firstName lastName email')
+        .populate('courseId', 'title description price')
         .populate('enrollment')
         .sort({ createdAt: -1 })
         .skip(skip)

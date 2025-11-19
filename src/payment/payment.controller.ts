@@ -17,6 +17,7 @@ import {
   ApiResponse,
   ApiBearerAuth,
   ApiQuery,
+  ApiBody,
 } from '@nestjs/swagger';
 import { PaymentService } from './payment.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
@@ -40,9 +41,12 @@ export class PaymentController {
   @ApiResponse({ status: 404, description: 'Course or user not found' })
   async createPayment(
     @Body() createPaymentDto: CreatePaymentDto,
-    @Request() req: any,
   ) {
-    const userId = req?.body?.userId;
+    const userId = createPaymentDto.userId;
+
+    if (!userId) {
+      throw new NotFoundException('User ID is required');
+    }
 
     return this.paymentService.createPayment(userId, createPaymentDto);
   }
@@ -76,6 +80,62 @@ export class PaymentController {
   }
 
   @Post('confirm')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Confirm payment and send course materials',
+    description:
+      'Confirm a payment by PaymentIntent ID. This will update payment status, send confirmation email to student with course materials link, and return course materials in response.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Payment confirmed successfully with course materials',
+    schema: {
+      example: {
+        success: true,
+        message: 'Payment confirmed',
+        payment: {
+          id: '675f4aaf2b67a23d4c9f2941',
+          status: 'succeeded',
+          amount: 99.99,
+          currency: 'USD',
+          paidAt: '2025-11-19T12:00:00.000Z',
+        },
+        course: {
+          id: '675f4aaf2b67a23d4c9f2942',
+          title: 'Full Stack Web Development',
+          slug: 'full-stack-web-development',
+        },
+        courseMaterialLink:
+          'https://frontend.com/courses/full-stack-web-development/materials',
+        courseMaterials: [
+          {
+            name: 'Session 1 - Full Week',
+            type: 'Session',
+            link: 'https://frontend.com/courses/full-stack-web-development/materials#session-1',
+          },
+          {
+            name: 'Session 2 - Split Week',
+            type: 'Session',
+            link: 'https://frontend.com/courses/full-stack-web-development/materials#session-2',
+          },
+        ],
+      },
+    },
+  })
+  @ApiResponse({ status: 404, description: 'Payment not found' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['paymentIntentId'],
+      properties: {
+        paymentIntentId: {
+          type: 'string',
+          description: 'Stripe PaymentIntent ID (e.g., pi_xxx)',
+          example: 'pi_3QxYz1234567890abcdef',
+        },
+      },
+    },
+  })
   async confirmPayment(@Body() body: { paymentIntentId: string }) {
     const { paymentIntentId } = body;
 

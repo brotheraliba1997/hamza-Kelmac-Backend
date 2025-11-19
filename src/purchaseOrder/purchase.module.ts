@@ -4,6 +4,7 @@ import {
   PurchaseOrderSchema,
   PurchaseOrderSchemaClass,
 } from './schema/purchase.schema';
+import { CourseSchemaClass, CourseSchema } from '../course/schema/course.schema';
 import { PurchaseOrderService } from './purchase.services';
 import { PurchaseOrderController } from './purchase.controller';
 import { MailModule } from '../mail/mail.module';
@@ -15,6 +16,10 @@ import { PaymentModule } from '../payment/payment.module';
       {
         name: PurchaseOrderSchemaClass.name,
         schema: PurchaseOrderSchema,
+      },
+      {
+        name: CourseSchemaClass.name,
+        schema: CourseSchema,
       },
     ]),
     MailModule,
