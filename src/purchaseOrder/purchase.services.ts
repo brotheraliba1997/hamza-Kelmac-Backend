@@ -21,6 +21,8 @@ import { MailService } from '../mail/mail.service';
 import { PaymentService } from '../payment/payment.service';
 import { AllConfigType } from '../config/config.type';
 import { CourseSchemaClass } from '../course/schema/course.schema';
+import { IPaginationOptions } from '../utils/types/pagination-options';
+import { PaginationResult } from '../utils/mongoose-query-builder';
 
 @Injectable()
 export class PurchaseOrderService {
@@ -52,18 +54,18 @@ export class PurchaseOrderService {
       course:
         typeof sanitized.course === 'string'
           ? sanitized.course
-          : convertIdToString(sanitized.course) ??
-            convertIdToString(doc?.course),
+          : (convertIdToString(sanitized.course) ??
+            convertIdToString(doc?.course)),
       student:
         typeof sanitized.student === 'string'
           ? sanitized.student
-          : convertIdToString(sanitized.student) ??
-            convertIdToString(doc?.student),
+          : (convertIdToString(sanitized.student) ??
+            convertIdToString(doc?.student)),
       financialContact:
         typeof sanitized.financialContact === 'string'
           ? sanitized.financialContact
-          : convertIdToString(sanitized.financialContact) ??
-            convertIdToString(doc?.financialContact),
+          : (convertIdToString(sanitized.financialContact) ??
+            convertIdToString(doc?.financialContact)),
       reviewedBy:
         typeof sanitized.reviewedBy === 'string'
           ? sanitized.reviewedBy
@@ -230,9 +232,7 @@ export class PurchaseOrderService {
         course: dto.courseId,
         financialContact: dto.financialContactId,
         bankSlipUrl: dto.bankSlipUrl,
-        submittedAt: dto.submittedAt
-          ? new Date(dto.submittedAt)
-          : new Date(),
+        submittedAt: dto.submittedAt ? new Date(dto.submittedAt) : new Date(),
         status: PurchaseOrderStatusEnum.PENDING,
       });
 
@@ -256,15 +256,39 @@ export class PurchaseOrderService {
     }
   }
 
-  async findAll(status?: PurchaseOrderStatusEnum) {
+  async findAll(
+    status?: PurchaseOrderStatusEnum,
+    paginationOptions?: IPaginationOptions,
+  ): Promise<PaginationResult<PurchaseOrderEntity>> {
     const filter = status ? { status } : {};
-    const docs = await this.purchaseOrderModel
-      .find(filter)
-      .sort({ createdAt: -1 })
-      .lean()
-      .exec();
 
-    return docs.map((doc) => this.map(doc));
+    const page = paginationOptions?.page ?? 1;
+    const limit = paginationOptions?.limit ?? 10;
+    const skip = (page - 1) * limit;
+
+    const [docs, total] = await Promise.all([
+      this.purchaseOrderModel
+        .find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .populate(this.purchaseOrderPopulate)
+        .lean()
+        .exec(),
+      this.purchaseOrderModel.countDocuments(filter).exec(),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      data: docs.map((doc) => this.map(doc)),
+      totalItems: total,
+      totalPages,
+      currentPage: page,
+      limit,
+      hasNextPage: page < totalPages,
+      hasPreviousPage: page > 1,
+    };
   }
 
   async findOne(id: string) {
@@ -334,10 +358,7 @@ export class PurchaseOrderService {
         throw new NotFoundException('Purchase order not found');
       }
 
-      if (
-        dto.status &&
-        dto.status !== PurchaseOrderStatusEnum.PENDING
-      ) {
+      if (dto.status && dto.status !== PurchaseOrderStatusEnum.PENDING) {
         await this.sendDecisionEmail(updated);
 
         // If PO is approved, create payment and enrollment
@@ -345,8 +366,10 @@ export class PurchaseOrderService {
           try {
             const course = updated.course as any;
             const student = updated.student as any;
-            const courseId = convertIdToString(course) || course?._id?.toString();
-            const studentId = convertIdToString(student) || student?._id?.toString();
+            const courseId =
+              convertIdToString(course) || course?._id?.toString();
+            const studentId =
+              convertIdToString(student) || student?._id?.toString();
             const poId = convertIdToString(updated) || updated._id?.toString();
 
             if (courseId && studentId && poId) {
@@ -393,4 +416,3 @@ export class PurchaseOrderService {
     return { deleted: true };
   }
 }
-
