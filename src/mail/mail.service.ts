@@ -419,4 +419,110 @@ export class MailService {
       text,
     });
   }
+
+  async paymentConfirmation(
+    mailData: MailData<{
+      paymentId: string;
+      paymentIntentId?: string;
+      studentName?: string;
+      studentEmail?: string;
+      courseTitle?: string;
+      amount: number;
+      currency?: string;
+      paymentMethod?: string;
+      createdAt?: string;
+    }>,
+  ): Promise<void> {
+    const subject = `Payment Confirmation - ${mailData.data.paymentId}`;
+
+    const lines = [
+      `Payment ID: ${mailData.data.paymentId}`,
+      mailData.data.paymentIntentId
+        ? `Payment Intent ID: ${mailData.data.paymentIntentId}`
+        : undefined,
+      mailData.data.studentName
+        ? `Student: ${mailData.data.studentName}`
+        : undefined,
+      mailData.data.studentEmail
+        ? `Student Email: ${mailData.data.studentEmail}`
+        : undefined,
+      mailData.data.courseTitle
+        ? `Course: ${mailData.data.courseTitle}`
+        : undefined,
+      `Amount: ${mailData.data.amount} ${mailData.data.currency || 'USD'}`,
+      mailData.data.paymentMethod
+        ? `Payment Method: ${mailData.data.paymentMethod}`
+        : undefined,
+      mailData.data.createdAt
+        ? `Payment Date: ${mailData.data.createdAt}`
+        : undefined,
+    ].filter(Boolean);
+
+    const text = lines.join('\n');
+
+    await this.mailerService.sendMail({
+      to: mailData.to,
+      subject,
+      text,
+    });
+  }
+
+  async studentPaymentConfirmation(
+    mailData: MailData<{
+      studentName: string;
+      courseTitle: string;
+      courseMaterialLink: string;
+      courseMaterials?: Array<{
+        name: string;
+        type: string;
+        link?: string;
+      }>;
+      amount: number;
+      currency?: string;
+      paymentDate: string;
+    }>,
+  ): Promise<void> {
+    const subject = `Payment Confirmed - Access Your Course Materials`;
+
+    const frontendDomain = this.configService.getOrThrow(
+      'app.frontendDomain',
+      { infer: true },
+    );
+
+    const courseMaterialsList = mailData.data.courseMaterials
+      ?.map(
+        (material) =>
+          `- ${material.name} (${material.type})${material.link ? ` - ${material.link}` : ''}`,
+      )
+      .join('\n') || 'Course materials will be available in your dashboard.';
+
+    const text = `
+Dear ${mailData.data.studentName},
+
+Your payment has been successfully confirmed!
+
+Course: ${mailData.data.courseTitle}
+Amount: ${mailData.data.amount} ${mailData.data.currency || 'USD'}
+Payment Date: ${mailData.data.paymentDate}
+
+Access Your Course Materials:
+${mailData.data.courseMaterialLink}
+
+Course Materials:
+${courseMaterialsList}
+
+You can now access all course content, sessions, and materials through the link above.
+
+Thank you for your purchase!
+
+Best regards,
+${this.configService.get('app.name', { infer: true }) || 'Kelmac Team'}
+    `.trim();
+
+    await this.mailerService.sendMail({
+      to: mailData.to,
+      subject,
+      text,
+    });
+  }
 }
