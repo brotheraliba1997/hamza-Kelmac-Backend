@@ -28,7 +28,10 @@ import { AllConfigType } from '../config/config.type';
 import { CourseSchemaClass } from '../course/schema/course.schema';
 import { UserSchemaClass } from '../users/schema/user.schema';
 import { google } from 'googleapis';
-import { sanitizeMongooseDocument } from '../utils/convert-id';
+import {
+  sanitizeMongooseDocument,
+  convertIdToString,
+} from '../utils/convert-id';
 
 @Injectable()
 export class ClassScheduleService {
@@ -421,10 +424,20 @@ export class ClassScheduleService {
       paginationOptions: { page: 1, limit: 1000 }, // Large limit for "all"
     });
 
+    // Ensure all IDs are converted to strings
+    const mappedData = schedules.data.map((doc: any) => {
+      const mapped = this.map(doc);
+      // Ensure id is string
+      if (mapped && mapped.id) {
+        mapped.id = convertIdToString(mapped) || mapped.id?.toString() || mapped.id;
+      }
+      return mapped;
+    });
+
     return {
       message: 'Class schedules fetched successfully',
       total: schedules.totalItems,
-      data: schedules.data,
+      data: mappedData,
     };
   }
 
