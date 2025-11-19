@@ -3,31 +3,23 @@ import {
   Module,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import { FilesS3Controller } from './files.controller';
+import { FilesS3PresignedController } from './files.controller';
 import { MulterModule } from '@nestjs/platform-express';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { randomStringGenerator } from '@nestjs/common/utils/random-string-generator.util';
 import { S3Client } from '@aws-sdk/client-s3';
 import multerS3 from 'multer-s3';
-
-import { FilesS3Service } from './files.service';
-
-import { DocumentFilePersistenceModule } from '../../persistence/document/document-persistence.module';
-import { RelationalFilePersistenceModule } from '../../persistence/relational/relational-persistence.module';
-import { AllConfigType } from '../../../../config/config.type';
-import { DatabaseConfig } from '../../../../database/config/database-config.type';
-import databaseConfig from '../../../../database/config/database.config';
-
-// <database-block>
-const infrastructurePersistenceModule = (databaseConfig() as DatabaseConfig)
-  .isDocumentDatabase
-  ? DocumentFilePersistenceModule
-  : RelationalFilePersistenceModule;
-// </database-block>
+import { FilesS3PresignedService } from './files.service';
+import { AllConfigType } from '../../../config/config.type';
+import { FilesService } from '../../files.service';
+import { MongooseModule } from '@nestjs/mongoose';
+import { FileSchemaClass, FileSchema } from '../../schema/file.schema';
 
 @Module({
   imports: [
-    infrastructurePersistenceModule,
+    MongooseModule.forFeature([
+      { name: FileSchemaClass.name, schema: FileSchema },
+    ]),
     MulterModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -62,9 +54,8 @@ const infrastructurePersistenceModule = (databaseConfig() as DatabaseConfig)
           },
           storage: multerS3({
             s3: s3,
-            bucket: configService.getOrThrow('file.awsDefaultS3Bucket', {
-              infer: true,
-            }),
+            bucket: '',
+            acl: 'public-read',
             contentType: multerS3.AUTO_CONTENT_TYPE,
             key: (request, file, callback) => {
               callback(
@@ -83,8 +74,13 @@ const infrastructurePersistenceModule = (databaseConfig() as DatabaseConfig)
       },
     }),
   ],
-  controllers: [FilesS3Controller],
-  providers: [FilesS3Service],
-  exports: [FilesS3Service],
+  controllers: [FilesS3PresignedController],
+  providers: [
+    ConfigModule,
+    ConfigService,
+    FilesS3PresignedService,
+    FilesService,
+  ],
+  exports: [FilesS3PresignedService],
 })
-export class FilesS3Module {}
+export class FilesS3PresignedModule {}

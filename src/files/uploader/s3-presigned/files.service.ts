@@ -4,22 +4,21 @@ import {
   PayloadTooLargeException,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import { FileRepository } from '../../persistence/file.repository';
-
+import { FilesService } from '../../files.service';
 import { FileUploadDto } from './dto/file.dto';
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { randomStringGenerator } from '@nestjs/common/utils/random-string-generator.util';
 import { ConfigService } from '@nestjs/config';
-import { FileType } from '../../../domain/file';
-import { AllConfigType } from '../../../../config/config.type';
+import { FileType } from '../../domain/file';
+import { AllConfigType } from '../../../config/config.type';
 
 @Injectable()
 export class FilesS3PresignedService {
   private s3: S3Client;
 
   constructor(
-    private readonly fileRepository: FileRepository,
+    private readonly filesService: FilesService,
     private readonly configService: ConfigService<AllConfigType>,
   ) {
     this.s3 = new S3Client({
@@ -82,7 +81,7 @@ export class FilesS3PresignedService {
       ContentLength: file.fileSize,
     });
     const signedUrl = await getSignedUrl(this.s3, command, { expiresIn: 3600 });
-    const data = await this.fileRepository.create({
+    const data = await this.filesService.create({
       path: key,
     });
 
