@@ -18,11 +18,19 @@ async function bootstrap() {
 
   app.enableCors({
     origin: [
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'http://localhost:5000',
+      'http://127.0.0.1:3000',
+      'http://127.0.0.1:5000',
+      'http://127.0.0.1:3001',
+
+      // ==== Vercel Frontend Domains ====
       'https://kelmac-frontend-kelmac-dev.vercel.app',
       'https://kelmac-frontend.vercel.app',
       'http://localhost:3000',
-      'http://localhost:3001',
       'https://kelmac-dashboard-g33j.vercel.app',
+      'https://kelmac-frontend.vercel.app',
     ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: 'Content-Type, Authorization, x-custom-lang',
