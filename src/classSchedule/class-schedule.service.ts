@@ -50,19 +50,20 @@ export class ClassScheduleService {
   private map(doc: any) {
     if (!doc) return undefined;
     const id = typeof doc.id !== 'undefined' ? doc.id : doc._id?.toString?.();
+    const sanitizedDoc = sanitizeMongooseDocument(doc);
     return {
       id,
-      course: doc.course,
-      instructor: doc.instructor,
-      students: doc.students,
-      date: doc.date,
-      time: doc.time,
-      duration: doc.duration,
-      googleMeetLink: doc.googleMeetLink,
-      securityKey: doc.securityKey,
-      status: doc.status,
-      createdAt: doc.createdAt,
-      updatedAt: doc.updatedAt,
+      course: sanitizedDoc.course,
+      instructor: sanitizedDoc.instructor,
+      students: sanitizedDoc.students,
+      date: sanitizedDoc.date,
+      time: sanitizedDoc.time,
+      duration: sanitizedDoc.duration,
+      googleMeetLink: sanitizedDoc.googleMeetLink,
+      securityKey: sanitizedDoc.securityKey,
+      status: sanitizedDoc.status,
+      createdAt: sanitizedDoc.createdAt,
+      updatedAt: sanitizedDoc.updatedAt,
     };
   }
 
@@ -72,7 +73,6 @@ export class ClassScheduleService {
     refreshToken: string,
   ) {
     dto.securityKey = randomUUID();
-
     this.oauth2Client.setCredentials({
       access_token: accessToken,
       refresh_token: refreshToken,
@@ -121,7 +121,7 @@ export class ClassScheduleService {
 
     const studentId = dto.students;
 
-    let schedule = null;
+    let schedule: any = null;
 
     if (schedules) {
       if (schedules.students.includes(studentId)) {
@@ -145,9 +145,11 @@ export class ClassScheduleService {
 
     const populatedSchedule = await this.classScheduleModel
       .findById(schedule._id)
-      .populate('course')
-      .populate('instructor')
-      .populate('students')
+      .populate([
+        { path: 'course' },
+        { path: 'instructor' },
+        { path: 'students' },
+      ])
       .lean();
 
     if (populatedSchedule) {
@@ -202,157 +204,7 @@ export class ClassScheduleService {
     }
 
     // 🔹 Step 8: Return mapped response
-    return this.map(schedule);
-  }
-
-  /**
-   * Create class schedules from a specific course session (timeBlocks)
-   * All schedules will share the same Google Meet link
-   * @param sessionId - Required: Specific session ID from course.sessions array
-   */
-  async createSchedulesFromCourseSessions(
-    courseId: string,
-    sessionId: string,
-    instructorId: string,
-    studentIds: string[],
-    accessToken: string,
-    refreshToken: string,
-    defaultDuration: number = 60, // Default duration in minutes if not specified
-  ) {
-    // Fetch course with sessions
-    const course = await this.courseModel.findById(courseId).lean();
-    if (!course) {
-      throw new NotFoundException('Course not found');
-    }
-
-    if (!course.sessions || course.sessions.length === 0) {
-      throw new BadRequestException('Course has no sessions defined');
-    }
-
-    // Find specific session by sessionId
-    const session = course.sessions.find(
-      (s: any) => s._id?.toString() === sessionId || s.id === sessionId,
-    );
-
-    if (!session) {
-      throw new NotFoundException(
-        `Session with ID ${sessionId} not found in course`,
-      );
-    }
-
-    if (!session.timeBlocks || session.timeBlocks.length === 0) {
-      throw new BadRequestException(
-        `Session ${sessionId} has no time blocks defined`,
-      );
-    }
-
-    // Use only this session's timeBlocks
-    const allTimeBlocks: Array<{
-      startDate: string;
-      endDate: string;
-      startTime: string;
-      endTime: string;
-      timeZone?: string;
-    }> = session.timeBlocks;
-
-    // Setup Google OAuth
-    this.oauth2Client.setCredentials({
-      access_token: accessToken,
-      refresh_token: refreshToken,
-    });
-
-    const calendar = google.calendar({
-      version: 'v3',
-      auth: this.oauth2Client,
-    });
-
-    // Generate ONE Google Meet link (using first timeBlock's date/time)
-    const firstTimeBlock = allTimeBlocks[0];
-    const firstDateTime = `${firstTimeBlock.startDate}T${firstTimeBlock.startTime}:00Z`;
-    const firstEndDateTime = `${firstTimeBlock.endDate}T${firstTimeBlock.endTime}:00Z`;
-
-    const event = {
-      summary: `${course.title} - Class Schedule`,
-      description: `Auto-generated class schedules from course sessions. All classes share the same Google Meet link.`,
-      start: {
-        dateTime: firstDateTime,
-        timeZone: firstTimeBlock.timeZone || 'Asia/Karachi',
-      },
-      end: {
-        dateTime: firstEndDateTime,
-        timeZone: firstTimeBlock.timeZone || 'Asia/Karachi',
-      },
-      conferenceData: {
-        createRequest: {
-          requestId: randomUUID(),
-          conferenceSolutionKey: { type: 'hangoutsMeet' },
-        },
-      },
-    };
-
-    let sharedGoogleMeetLink = '';
-    let googleCalendarEventLink = '';
-
-    try {
-      const response = await calendar.events.insert({
-        calendarId: 'primary',
-        requestBody: event,
-        conferenceDataVersion: 1,
-      });
-
-      sharedGoogleMeetLink =
-        response.data.conferenceData?.entryPoints?.[0]?.uri || '';
-      googleCalendarEventLink = response.data.htmlLink || '';
-    } catch (error) {
-      this.logger.error(
-        `Failed to create Google Calendar event: ${error.message}`,
-      );
-      throw new BadRequestException(
-        `Failed to create Google Meet link: ${error.message}`,
-      );
-    }
-
-    // Create class schedule entries for each timeBlock
-    const createdSchedules = [];
-
-    for (const timeBlock of allTimeBlocks) {
-      // Calculate duration from start and end time
-      const startDateTime = new Date(
-        `${timeBlock.startDate}T${timeBlock.startTime}:00Z`,
-      );
-      const endDateTime = new Date(
-        `${timeBlock.endDate}T${timeBlock.endTime}:00Z`,
-      );
-      const durationMinutes = Math.round(
-        (endDateTime.getTime() - startDateTime.getTime()) / 60000,
-      );
-
-      const schedule = await this.classScheduleModel.create({
-        course: new Types.ObjectId(courseId),
-        sessionId: sessionId, // Store session ID from course.sessions
-        instructor: new Types.ObjectId(instructorId),
-        students: studentIds.map((id) => new Types.ObjectId(id)),
-        date: timeBlock.startDate,
-        time: timeBlock.startTime,
-        duration: durationMinutes || defaultDuration,
-        googleMeetLink: sharedGoogleMeetLink, // Same link for all
-        googleCalendarEventLink,
-        securityKey: randomUUID(),
-        status: 'scheduled',
-      });
-
-      createdSchedules.push(schedule);
-    }
-
-    this.logger.log(
-      `Created ${createdSchedules.length} class schedules from course ${courseId} sessions with shared Google Meet link`,
-    );
-
-    return {
-      message: `Created ${createdSchedules.length} class schedules`,
-      sharedGoogleMeetLink,
-      schedules: createdSchedules.map((s) => this.map(s)),
-    };
+    return this.map(schedule.toObject());
   }
 
   // 📗 GET all schedules with pagination (with filters + sorting)
@@ -445,43 +297,30 @@ export class ClassScheduleService {
   async findOne(id: string) {
     const schedule = await this.classScheduleModel
       .findById(id)
-      .populate('course') // Full course with sessions (sessions are embedded, so automatically included)
-      .populate('instructor', 'firstName lastName email')
-      .populate('students', 'firstName lastName email')
+      .populate([
+        { path: 'course', select: 'title price' },
+        { path: 'instructor', select: 'firstName lastName email' },
+        { path: 'students', select: 'firstName lastName email' },
+      ])
+      // .populate('course', 'title price')
+      // .populate('instructor', 'firstName lastName email')
+      // .populate('students', 'firstName lastName email')
       .lean();
 
     if (!schedule) throw new NotFoundException('Class schedule not found');
-    const sanitized = sanitizeMongooseDocument(schedule);
 
-    console.log(sanitized, 'sanitized');
-    // const sanitized = sanitizeMongooseDocument(doc);
-
-    if (!sanitized) return undefined as any;
-
-    return {
-      ...sanitized,
-      id,
-      course: sanitized.course,
-      instructor: sanitized.instructor,
-      students: sanitized.students,
-      date: sanitized.date,
-      time: sanitized.time,
-      duration: sanitized.duration,
-      googleMeetLink: sanitized.googleMeetLink,
-      securityKey: sanitized.securityKey,
-      status: sanitized.status,
-      createdAt: sanitized.createdAt,
-      updatedAt: sanitized.updatedAt,
-    };
+    return this.map(schedule);
   }
 
   // 🟡 UPDATE schedule details
   async update(id: string, dto: UpdateClassScheduleDto) {
     const updated = await this.classScheduleModel
       .findByIdAndUpdate(id, dto, { new: true })
-      .populate('course', 'title price')
-      .populate('instructor', 'firstName lastName email')
-      .populate('students', 'firstName lastName email')
+      .populate([
+        { path: 'course', select: 'title price' },
+        { path: 'instructor', select: 'firstName lastName email' },
+        { path: 'students', select: 'firstName lastName email' },
+      ])
       .lean();
 
     if (!updated) throw new NotFoundException('Class schedule not founds');

@@ -58,14 +58,34 @@ export class PurchaseOrderController {
     enum: PurchaseOrderStatusEnum,
     description: 'Filter purchase orders by workflow status',
   })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number (default: 1)',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Items per page (default: 10)',
+  })
   @ApiOkResponse({
-    description: 'List of purchase orders',
+    description: 'Paginated list of purchase orders',
     type: [PurchaseOrderEntity],
   })
   @Get()
   @HttpCode(HttpStatus.OK)
-  findAll(@Query('status') status?: PurchaseOrderStatusEnum) {
-    return this.purchaseOrderService.findAll(status);
+  findAll(
+    @Query('status') status?: PurchaseOrderStatusEnum,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    const paginationOptions = {
+      page: page ? Number(page) : 1,
+      limit: limit ? Number(limit) : 10,
+    };
+    return this.purchaseOrderService.findAll(status, paginationOptions);
   }
 
   @ApiOperation({
@@ -102,10 +122,7 @@ export class PurchaseOrderController {
   })
   @Patch(':id')
   @HttpCode(HttpStatus.OK)
-  update(
-    @Param('id') id: string,
-    @Body() dto: UpdatePurchaseOrderDto,
-  ) {
+  update(@Param('id') id: string, @Body() dto: UpdatePurchaseOrderDto) {
     return this.purchaseOrderService.update(id, dto);
   }
 
@@ -129,4 +146,3 @@ export class PurchaseOrderController {
     return this.purchaseOrderService.remove(id);
   }
 }
-

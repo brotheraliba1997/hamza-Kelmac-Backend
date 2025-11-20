@@ -3,12 +3,12 @@ import {
   Injectable,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import { FileRepository } from '../../persistence/file.repository';
-import { FileType } from '../../../domain/file';
+import { FilesService } from '../../files.service';
+import { FileType } from '../../domain/file';
 
 @Injectable()
 export class FilesS3Service {
-  constructor(private readonly fileRepository: FileRepository) {}
+  constructor(private readonly filesService: FilesService) {}
 
   async create(file: Express.MulterS3.File): Promise<{ file: FileType }> {
     if (!file) {
@@ -21,7 +21,7 @@ export class FilesS3Service {
     }
 
     return {
-      file: await this.fileRepository.create({
+      file: await this.filesService.create({
         path: file.key,
       }),
     };
