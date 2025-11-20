@@ -14,7 +14,22 @@ import { AllConfigType } from './config/config.type';
 import { ResolvePromisesInterceptor } from './utils/serializer.interceptor';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { cors: true });
+  const app = await NestFactory.create(AppModule);
+
+  app.enableCors({
+    origin: [
+      'https://kelmac-frontend-kelmac-dev.vercel.app',
+      'https://kelmac-frontend.vercel.app',
+      'http://localhost:3000',
+      'https://kelmac-dashboard-g33j.vercel.app',
+    ],
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    allowedHeaders: 'Content-Type, Authorization, x-custom-lang',
+    credentials: true,
+    preflightContinue: false,
+    optionsSuccessStatus: 200,
+  });
+
   useContainer(app.select(AppModule), { fallbackOnErrors: true });
   const configService = app.get(ConfigService<AllConfigType>);
 
