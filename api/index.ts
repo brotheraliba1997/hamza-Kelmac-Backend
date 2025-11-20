@@ -35,9 +35,10 @@ async function bootstrap() {
   const allowedOrigins = [
     'http://localhost:3000',
     'http://localhost:5000',
+    'http://localhost:3001',
     'http://127.0.0.1:3000',
     'http://127.0.0.1:5000',
-
+    'http://127.0.0.1:3001',
     // ==== Vercel Frontend Domains ====
     'https://kelmac-frontend-kelmac-dev.vercel.app',
     'https://kelmac-dashboard-g33j.vercel.app',
@@ -47,11 +48,17 @@ async function bootstrap() {
   // ===================================================
   // ✅ MUST HAVE: Preflight OPTIONS request always OK
   // ===================================================
-  expressApp.use((req:any, res:any, next) => {
+  expressApp.use((req: any, res: any, next) => {
     if (req.method === 'OPTIONS') {
       res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
-      res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,PATCH,OPTIONS');
-      res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-custom-lang');
+      res.header(
+        'Access-Control-Allow-Methods',
+        'GET,PUT,POST,DELETE,PATCH,OPTIONS',
+      );
+      res.header(
+        'Access-Control-Allow-Headers',
+        'Content-Type, Authorization, x-custom-lang',
+      );
       return res.sendStatus(200);
     }
     next();
@@ -61,7 +68,10 @@ async function bootstrap() {
   // 🔥 Production Safe CORS Handler
   // ================================
   app.enableCors({
-    origin: (origin, callback) => {
+    origin: (
+      origin: string | undefined,
+      callback: (err: Error | null, allow?: boolean) => void,
+    ) => {
       if (!origin) return callback(null, true); // mobile apps, curl, postman
 
       if (allowedOrigins.includes(origin)) {
