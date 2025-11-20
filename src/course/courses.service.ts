@@ -4,7 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
 import { CourseSchemaClass } from './schema/course.schema';
@@ -152,9 +152,7 @@ export class CoursesService {
     return duration * days;
   }
 
-  private calculateTotalSessionMinutes(
-    sessions?: SessionLike[],
-  ): number {
+  private calculateTotalSessionMinutes(sessions?: SessionLike[]): number {
     if (!Array.isArray(sessions) || sessions.length === 0) {
       return 0;
     }
@@ -294,7 +292,12 @@ export class CoursesService {
     // Build filter query using FilterQueryBuilder
     const filterQuery = new FilterQueryBuilder<CourseSchemaClass>()
       .addEqual('instructor' as any, filterOptions?.instructorId)
-      .addEqual('category' as any, filterOptions?.category)
+      .addEqual(
+        'category' as any,
+        filterOptions?.category
+          ? new Types.ObjectId(filterOptions.category)
+          : undefined,
+      )
       .addEqual('isPublished' as any, filterOptions?.isPublished)
       .addEqual('isFeatured' as any, filterOptions?.isFeatured)
       .addEqual('isBestseller' as any, filterOptions?.isBestseller)
@@ -569,9 +572,7 @@ export class CoursesService {
           title: course.title,
           hours: totalHours > 0 ? `${totalHours}+ Hours` : 'Flexible Schedule',
           lessons:
-            totalSessions > 0
-              ? `${totalSessions} Sessions`
-              : 'Schedule TBD',
+            totalSessions > 0 ? `${totalSessions} Sessions` : 'Schedule TBD',
           description: course.description || '',
         };
 

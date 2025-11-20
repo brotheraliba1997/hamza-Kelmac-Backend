@@ -180,7 +180,7 @@ export class CourseEntity {
 
   // Category & Classification
   @ApiProperty({ example: 'web-development' })
-  category: string;
+  category: Types.ObjectId;
 
   @ApiProperty({
     type: [String],
