@@ -23,9 +23,11 @@ async function bootstrap() {
       'http://localhost:3000',
       'https://kelmac-dashboard-g33j.vercel.app',
     ],
-    credentials: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: 'Content-Type, Authorization, x-custom-lang',
+    credentials: true,
+    preflightContinue: false,
+    optionsSuccessStatus: 200,
   });
 
   useContainer(app.select(AppModule), { fallbackOnErrors: true });
