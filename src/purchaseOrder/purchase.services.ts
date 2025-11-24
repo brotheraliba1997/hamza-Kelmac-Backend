@@ -51,25 +51,25 @@ export class PurchaseOrderService {
     return new PurchaseOrderEntity({
       ...sanitized,
       id: sanitized.id || convertIdToString(doc),
-      course:
-        typeof sanitized.course === 'string'
-          ? sanitized.course
-          : (convertIdToString(sanitized.course) ??
-            convertIdToString(doc?.course)),
-      student:
-        typeof sanitized.student === 'string'
-          ? sanitized.student
-          : (convertIdToString(sanitized.student) ??
-            convertIdToString(doc?.student)),
-      financialContact:
-        typeof sanitized.financialContact === 'string'
-          ? sanitized.financialContact
-          : (convertIdToString(sanitized.financialContact) ??
-            convertIdToString(doc?.financialContact)),
-      reviewedBy:
-        typeof sanitized.reviewedBy === 'string'
-          ? sanitized.reviewedBy
-          : convertIdToString(sanitized.reviewedBy),
+      // course:
+      //   typeof sanitized.course === 'string'
+      //     ? sanitized.course
+      //     : (convertIdToString(sanitized.course) ??
+      //       convertIdToString(doc?.course)),
+      // student:
+      //   typeof sanitized.student === 'string'
+      //     ? sanitized.student
+      //     : (convertIdToString(sanitized.student) ??
+      //       convertIdToString(doc?.student)),
+      // financialContact:
+      //   typeof sanitized.financialContact === 'string'
+      //     ? sanitized.financialContact
+      //     : (convertIdToString(sanitized.financialContact) ??
+      //       convertIdToString(doc?.financialContact)),
+      // reviewedBy:
+      //   typeof sanitized.reviewedBy === 'string'
+      //     ? sanitized.reviewedBy
+      //     : convertIdToString(sanitized.reviewedBy),
     });
   }
 
@@ -292,7 +292,12 @@ export class PurchaseOrderService {
   }
 
   async findOne(id: string) {
-    const po = await this.purchaseOrderModel.findById(id).lean().exec();
+    const po = await this.purchaseOrderModel
+      .findById(id)
+      .populate(this.purchaseOrderPopulate)
+      .lean()
+      .exec();
+
     if (!po) {
       throw new NotFoundException('Purchase order not found');
     }

@@ -40,9 +40,9 @@ export class UsersService {
     const id = typeof doc.id !== 'undefined' ? doc.id : doc._id?.toString?.();
     // Sanitize the document to convert all IDs and nested objects
     const sanitized = sanitizeMongooseDocument(doc);
-    console.log('User created SERVICE: 2', sanitized, doc);
     // Double-check sanitized is not null
     if (!sanitized) return undefined as any;
+
     return {
       id,
       email: sanitized.email,
@@ -57,6 +57,8 @@ export class UsersService {
       createdAt: sanitized.createdAt,
       updatedAt: sanitized.updatedAt,
       deletedAt: sanitized.deletedAt,
+      isDeleted: sanitized.isDeleted,
+      isActive: sanitized.isActive,
     };
   }
 
@@ -175,15 +177,34 @@ export class UsersService {
     paginationOptions: IPaginationOptions;
   }): Promise<PaginationResult<User>> {
     // Build filter query
+
+    console.log('Filter Options:', filterOptions);
     const filterQuery = new FilterQueryBuilder<UserSchemaClass>()
+      // .addCustom(
+      //   'role._id' as any,
+      //   filterOptions?.roles?.length
+      //     ? { $in: filterOptions.roles.map((role) => role.id.toString()) }
+      //     : undefined,
+      // )
       .addCustom(
-        'role._id' as any,
-        filterOptions?.roles?.length
-          ? { $in: filterOptions.roles.map((role) => role.id.toString()) }
-          : undefined,
+        'role.id' as any,
+        filterOptions?.role && Number(filterOptions?.role),
       )
+      .addEqual('isActive' as any, filterOptions?.isActive)
+      .addEqual('isDeleted' as any, filterOptions?.isDeleted)
+      .addEqual('country' as any, filterOptions?.country)
+      .addEqual('currency' as any, filterOptions?.currency)
       .build();
 
+    if (filterOptions?.search) {
+      // Use regex search for better compatibility
+      const searchRegex = new RegExp(filterOptions.search, 'i');
+      filterQuery.$or = [
+        { firstName: searchRegex },
+        { lastName: searchRegex },
+        { email: searchRegex },
+      ];
+    }
     // Convert sort options to match expected type
     const mappedSortOptions = sortOptions?.map((s) => ({
       orderBy: s.orderBy as string,

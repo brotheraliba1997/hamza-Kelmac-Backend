@@ -77,6 +77,12 @@ export class UserSchemaClass extends EntityDocumentHelper {
 
   @Prop()
   deletedAt: Date;
+
+  @Prop({ default: false })
+  isDeleted: boolean;
+
+  @Prop({ default: true })
+  isActive: boolean;
 }
 
 export const UserSchema = SchemaFactory.createForClass(UserSchemaClass);
