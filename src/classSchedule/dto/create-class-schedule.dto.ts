@@ -23,7 +23,8 @@ export class CreateClassScheduleDto {
 
   @ApiPropertyOptional({
     example: '671018fabc123456789ef015',
-    description: 'Session ID from course.sessions array (required for session-based schedule creation)',
+    description:
+      'Session ID from course.sessions array (required for session-based schedule creation)',
   })
   @IsString()
   @IsOptional()
@@ -47,7 +48,8 @@ export class CreateClassScheduleDto {
 
   @ApiPropertyOptional({
     example: '2025-11-05',
-    description: 'Date of the class (ISO format: YYYY-MM-DD). Not needed for session-based creation (comes from timeBlocks)',
+    description:
+      'Date of the class (ISO format: YYYY-MM-DD). Not needed for session-based creation (comes from timeBlocks)',
   })
   @IsString()
   @IsOptional()
@@ -55,7 +57,8 @@ export class CreateClassScheduleDto {
 
   @ApiPropertyOptional({
     example: '15:30',
-    description: 'Time of the class (HH:mm in 24-hour format). Not needed for session-based creation (comes from timeBlocks)',
+    description:
+      'Time of the class (HH:mm in 24-hour format). Not needed for session-based creation (comes from timeBlocks)',
   })
   @IsString()
   @IsOptional()

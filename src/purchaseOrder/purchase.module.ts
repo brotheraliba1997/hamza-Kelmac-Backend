@@ -4,11 +4,15 @@ import {
   PurchaseOrderSchema,
   PurchaseOrderSchemaClass,
 } from './schema/purchase.schema';
-import { CourseSchemaClass, CourseSchema } from '../course/schema/course.schema';
+import {
+  CourseSchemaClass,
+  CourseSchema,
+} from '../course/schema/course.schema';
 import { PurchaseOrderService } from './purchase.services';
 import { PurchaseOrderController } from './purchase.controller';
 import { MailModule } from '../mail/mail.module';
 import { PaymentModule } from '../payment/payment.module';
+import { ClassScheduleModule } from '../classSchedule/class-schedule.module';
 
 @Module({
   imports: [
@@ -24,10 +28,10 @@ import { PaymentModule } from '../payment/payment.module';
     ]),
     MailModule,
     PaymentModule,
+    ClassScheduleModule,
   ],
   controllers: [PurchaseOrderController],
   providers: [PurchaseOrderService],
   exports: [PurchaseOrderService],
 })
 export class PurchaseOrderModule {}
-

@@ -122,15 +122,33 @@ export class ClassScheduleService {
     const studentId = dto.students;
 
     let schedule: any = null;
+    //  for (const student of dto.students) {
+    // if (
+    //   schedules.students.some((s) => s.id.toString() === studentId.toString())
+    // ) {
+    //   throw new BadRequestException(
+    //     `Student ${studentId} is already added in schedule ${schedules._id}`,
+    //   );
+    // }
+    // schedules.students.push({
+    //   id: new Types.ObjectId(studentId),
+    //   status: 'pending',
+    // });
+    //  }
 
     if (schedules) {
-      if (schedules.students.includes(studentId)) {
+      if (
+        schedules.students.some((s) => s.id.toString() === studentId.toString())
+      ) {
         throw new BadRequestException(
-          `Student ${dto.students} is already added in schedule ${schedules._id}`,
+          `Student ${studentId} is already added in schedule ${schedules._id}`,
         );
       }
 
-      schedules.students.push(studentId);
+      schedules.students.push({
+        id: new Types.ObjectId(studentId),
+        status: 'pending',
+      });
       await schedules.save();
 
       console.log(`✅ Student added to schedule ${schedules._id}`);
@@ -139,7 +157,7 @@ export class ClassScheduleService {
       schedule = await this.classScheduleModel.create({
         ...dto,
         course: new Types.ObjectId(dto?.course),
-        students: [studentId],
+        students: [{ id: new Types.ObjectId(studentId), status: 'pending' }],
       });
     }
 
@@ -190,14 +208,6 @@ export class ClassScheduleService {
             data: emailData,
           });
         }
-        // for (const student of students) {
-        //   if (student?.email) {
-        //     await this.mailService.lessonScheduled({
-        //       to: student.email,
-        //       data: emailData,
-        //     });
-        //   }
-        // }
       } catch (error) {
         console.error('Failed to send lesson schedule emails:', error);
       }
@@ -281,7 +291,8 @@ export class ClassScheduleService {
       const mapped = this.map(doc);
       // Ensure id is string
       if (mapped && mapped.id) {
-        mapped.id = convertIdToString(mapped) || mapped.id?.toString() || mapped.id;
+        mapped.id =
+          convertIdToString(mapped) || mapped.id?.toString() || mapped.id;
       }
       return mapped;
     });
@@ -302,9 +313,6 @@ export class ClassScheduleService {
         { path: 'instructor', select: 'firstName lastName email' },
         { path: 'students', select: 'firstName lastName email' },
       ])
-      // .populate('course', 'title price')
-      // .populate('instructor', 'firstName lastName email')
-      // .populate('students', 'firstName lastName email')
       .lean();
 
     if (!schedule) throw new NotFoundException('Class schedule not found');
@@ -316,6 +324,31 @@ export class ClassScheduleService {
   async update(id: string, dto: UpdateClassScheduleDto) {
     const updated = await this.classScheduleModel
       .findByIdAndUpdate(id, dto, { new: true })
+      .populate([
+        { path: 'course', select: 'title price' },
+        { path: 'instructor', select: 'firstName lastName email' },
+        { path: 'students', select: 'firstName lastName email' },
+      ])
+      .lean();
+
+    if (!updated) throw new NotFoundException('Class schedule not founds');
+
+    return this.map(updated);
+  }
+
+  async updateUserStatus(id: string, userId: string, status: string) {
+    const schedule = await this.classScheduleModel
+      .findOne({ course: id })
+      .lean();
+    const updated = await this.classScheduleModel
+      .findByIdAndUpdate(
+        schedule._id,
+        { $set: { 'students.$[elem].status': status } },
+        {
+          new: true,
+          arrayFilters: [{ 'elem.id': userId }],
+        },
+      )
       .populate([
         { path: 'course', select: 'title price' },
         { path: 'instructor', select: 'firstName lastName email' },

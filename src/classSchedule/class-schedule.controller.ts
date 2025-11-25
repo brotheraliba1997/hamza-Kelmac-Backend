@@ -9,6 +9,7 @@ import {
   Query,
   HttpCode,
   HttpStatus,
+  Patch,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { randomUUID } from 'crypto';
@@ -155,6 +156,16 @@ export class ClassScheduleController {
   @ApiOperation({ summary: 'Update an existing class schedule' })
   update(@Param('id') id: string, @Body() dto: UpdateClassScheduleDto) {
     return this.classScheduleService.update(id, dto);
+  }
+
+  @Patch('updateUserStatusInSchedule/:id')
+  @ApiOperation({ summary: 'Update user status in a class schedule' })
+  updateUserStatus(
+    @Param('id') id: string,
+    @Body('userId') userId: string,
+    @Body('status') status: string,
+  ) {
+    return this.classScheduleService.updateUserStatus(id, userId, status);
   }
 
   // 🔴 Delete a class schedule

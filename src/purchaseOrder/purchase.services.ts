@@ -23,6 +23,7 @@ import { AllConfigType } from '../config/config.type';
 import { CourseSchemaClass } from '../course/schema/course.schema';
 import { IPaginationOptions } from '../utils/types/pagination-options';
 import { PaginationResult } from '../utils/mongoose-query-builder';
+import { ClassScheduleService } from '../classSchedule/class-schedule.service';
 
 @Injectable()
 export class PurchaseOrderService {
@@ -34,6 +35,7 @@ export class PurchaseOrderService {
     private readonly configService: ConfigService<AllConfigType>,
     @InjectModel(CourseSchemaClass.name)
     private readonly courseModel: Model<CourseSchemaClass>,
+    private readonly classScheduleService: ClassScheduleService,
   ) {}
 
   private readonly purchaseOrderPopulate = [
@@ -387,6 +389,12 @@ export class PurchaseOrderService {
                 courseId,
                 amount,
                 currency,
+              );
+
+              await this.classScheduleService.updateUserStatus(
+                studentId,
+                courseId,
+                'enrolled',
               );
             }
           } catch (error) {
