@@ -122,19 +122,6 @@ export class ClassScheduleService {
     const studentId = dto.students;
 
     let schedule: any = null;
-    //  for (const student of dto.students) {
-    // if (
-    //   schedules.students.some((s) => s.id.toString() === studentId.toString())
-    // ) {
-    //   throw new BadRequestException(
-    //     `Student ${studentId} is already added in schedule ${schedules._id}`,
-    //   );
-    // }
-    // schedules.students.push({
-    //   id: new Types.ObjectId(studentId),
-    //   status: 'pending',
-    // });
-    //  }
 
     if (schedules) {
       if (

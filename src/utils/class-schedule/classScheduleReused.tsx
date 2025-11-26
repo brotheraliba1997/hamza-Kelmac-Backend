@@ -25,13 +25,22 @@ export async function AddStudentToClassScheduleService(
   let schedule: any = null;
 
   if (existingSchedule) {
-    if (existingSchedule.students.includes(studentId)) {
+    if (
+      existingSchedule.students.length > 0 &&
+      existingSchedule.students.some(
+        (s) => s?.id?.toString() === studentId?.toString(),
+      )
+    ) {
       throw new BadRequestException(
         `Student ${studentId} is already added in schedule ${existingSchedule._id}`,
       );
     }
 
-    existingSchedule.students.push(studentId);
+    existingSchedule.students.push({
+      id: new Types.ObjectId(studentId),
+      status: 'pending',
+    });
+
     await existingSchedule.save();
 
     console.log(
