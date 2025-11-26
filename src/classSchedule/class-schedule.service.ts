@@ -72,48 +72,48 @@ export class ClassScheduleService {
     accessToken: string,
     refreshToken: string,
   ) {
-    dto.securityKey = randomUUID();
-    this.oauth2Client.setCredentials({
-      access_token: accessToken,
-      refresh_token: refreshToken,
-    });
+    // dto.securityKey = randomUUID();
+    // this.oauth2Client.setCredentials({
+    //   access_token: accessToken,
+    //   refresh_token: refreshToken,
+    // });
 
-    const calendar = google.calendar({
-      version: 'v3',
-      auth: this.oauth2Client,
-    });
+    // const calendar = google.calendar({
+    //   version: 'v3',
+    //   auth: this.oauth2Client,
+    // });
 
-    const event = {
-      summary: 'Scheduled Class',
-      description: 'Auto-generated class schedule with Google Meet link',
-      start: {
-        dateTime: `${dto.date}T${dto.time}:00Z`, // e.g., "2025-11-04T15:00:00Z"
-        timeZone: 'Asia/Karachi',
-      },
-      end: {
-        dateTime: new Date(
-          new Date(`${dto.date}T${dto.time}:00Z`).getTime() +
-            dto.duration * 60000,
-        ).toISOString(),
-        timeZone: 'Asia/Karachi',
-      },
-      conferenceData: {
-        createRequest: {
-          requestId: randomUUID(),
-          conferenceSolutionKey: { type: 'hangoutsMeet' },
-        },
-      },
-    };
+    // const event = {
+    //   summary: 'Scheduled Class',
+    //   description: 'Auto-generated class schedule with Google Meet link',
+    //   start: {
+    //     dateTime: `${dto.date}T${dto.time}:00Z`, // e.g., "2025-11-04T15:00:00Z"
+    //     timeZone: 'Asia/Karachi',
+    //   },
+    //   end: {
+    //     dateTime: new Date(
+    //       new Date(`${dto.date}T${dto.time}:00Z`).getTime() +
+    //         dto.duration * 60000,
+    //     ).toISOString(),
+    //     timeZone: 'Asia/Karachi',
+    //   },
+    //   conferenceData: {
+    //     createRequest: {
+    //       requestId: randomUUID(),
+    //       conferenceSolutionKey: { type: 'hangoutsMeet' },
+    //     },
+    //   },
+    // };
 
-    const response = await calendar.events.insert({
-      calendarId: 'primary',
-      requestBody: event,
-      conferenceDataVersion: 1,
-    });
+    // const response = await calendar.events.insert({
+    //   calendarId: 'primary',
+    //   requestBody: event,
+    //   conferenceDataVersion: 1,
+    // });
 
-    dto.googleMeetLink =
-      response.data.conferenceData?.entryPoints?.[0]?.uri || '';
-    dto.googleCalendarEventLink = response.data.htmlLink || '';
+    // dto.googleMeetLink =
+    //   response.data.conferenceData?.entryPoints?.[0]?.uri || '';
+    // dto.googleCalendarEventLink = response.data.htmlLink || '';
 
     const schedules = await this.classScheduleModel.findOne({
       course: new Types.ObjectId(dto.course),
@@ -143,67 +143,66 @@ export class ClassScheduleService {
       });
     }
 
-    const populatedSchedule = await this.classScheduleModel
-      .findById(schedule._id)
-      .populate([
-        { path: 'course' },
-        { path: 'instructor' },
-        { path: 'students' },
-      ])
-      .lean();
+    // const populatedSchedule = await this.classScheduleModel
+    //   .findById(schedule._id)
+    //   .populate([
+    //     { path: 'course' },
+    //     { path: 'instructor' },
+    //     { path: 'students' },
+    //   ])
+    //   .lean();
 
-    if (populatedSchedule) {
-      const course = populatedSchedule.course as any;
-      const instructor = populatedSchedule.instructor as any;
-      const students = populatedSchedule.students;
+    // if (populatedSchedule) {
+    //   const course = populatedSchedule.course as any;
+    //   const instructor = populatedSchedule.instructor as any;
+    //   const students = populatedSchedule.students;
 
-      const adminEmail = this.configService.get('app.adminEmail', {
-        infer: true,
-      });
+    //   const adminEmail = this.configService.get('app.adminEmail', {
+    //     infer: true,
+    //   });
 
-      const lessonDate = new Date(populatedSchedule.date).toLocaleDateString(
-        'en-US',
-        { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' },
-      );
+    // const lessonDate = new Date(populatedSchedule.date).toLocaleDateString(
+    //   'en-US',
+    //   { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' },
+    // );
 
-      const emailData = {
-        courseName: course?.title || 'Unknown Course',
-        instructorName: instructor?.firstName
-          ? `${instructor.firstName} ${instructor.lastName || ''}`
-          : instructor?.email || 'Unknown Instructor',
-        lessonDate,
-        lessonTime: populatedSchedule.time,
-        duration: populatedSchedule.duration,
-        googleMeetLink: populatedSchedule.googleMeetLink,
-      };
+    // const emailData = {
+    //   courseName: course?.title || 'Unknown Course',
+    //   instructorName: instructor?.firstName
+    //     ? `${instructor.firstName} ${instructor.lastName || ''}`
+    //     : instructor?.email || 'Unknown Instructor',
+    //   lessonDate,
+    //   // lessonTime: populatedSchedule.time,
+    //   // duration: populatedSchedule.duration,
+    //   // googleMeetLink: populatedSchedule.googleMeetLink,
+    // };
 
-      try {
-        if (adminEmail) {
-          await this.mailService.lessonScheduled({
-            to: adminEmail,
-            data: emailData,
-          });
-        }
-        if (instructor?.email) {
-          await this.mailService.lessonScheduled({
-            to: instructor.email,
-            data: emailData,
-          });
-        }
-        // for (const student of students) {
-        //   if (student?.email) {
-        //     await this.mailService.lessonScheduled({
-        //       to: student.email,
-        //       data: emailData,
-        //     });
-        //   }
-        // }
-      } catch (error) {
-        console.error('Failed to send lesson schedule emails:', error);
-      }
-    }
+    // try {
+    //   if (adminEmail) {
+    //     await this.mailService.lessonScheduled({
+    //       to: adminEmail,
+    //       data: emailData,
+    //     });
+    //   }
+    //   if (instructor?.email) {
+    //     await this.mailService.lessonScheduled({
+    //       to: instructor.email,
+    //       data: emailData,
+    //     });
+    //   }
+    //   // for (const student of students) {
+    //   //   if (student?.email) {
+    //   //     await this.mailService.lessonScheduled({
+    //   //       to: student.email,
+    //   //       data: emailData,
+    //   //     });
+    //   //   }
+    //   // }
+    // } catch (error) {
+    //   console.error('Failed to send lesson schedule emails:', error);
+    // }
+    // }
 
-    // 🔹 Step 8: Return mapped response
     return this.map(schedule.toObject());
   }
 
@@ -281,7 +280,8 @@ export class ClassScheduleService {
       const mapped = this.map(doc);
       // Ensure id is string
       if (mapped && mapped.id) {
-        mapped.id = convertIdToString(mapped) || mapped.id?.toString() || mapped.id;
+        mapped.id =
+          convertIdToString(mapped) || mapped.id?.toString() || mapped.id;
       }
       return mapped;
     });

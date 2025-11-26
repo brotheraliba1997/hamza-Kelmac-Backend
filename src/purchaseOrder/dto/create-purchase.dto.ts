@@ -30,6 +30,14 @@ export class CreatePurchaseOrderDto {
   @IsMongoId()
   courseId: string;
 
+  @ApiPropertyOptional({
+    description: 'Booking ID reference',
+    example: '670bbb9871fa82325d15dfad',
+  })
+  @IsOptional()
+  @IsMongoId()
+  BookingId?: string;
+
   @ApiProperty({
     description: 'Finance reviewer/contact user ID',
     example: '6841ca06ebdfea1c5e6a0e73',

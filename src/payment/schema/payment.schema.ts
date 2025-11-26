@@ -90,6 +90,16 @@ export class Payment {
   })
   purchaseOrderId?: MongooseSchema.Types.ObjectId;
 
+
+
+   @ApiProperty()
+  @Prop({
+    type: MongooseSchema.Types.ObjectId,
+    ref: 'Booking',
+    sparse: true,
+  })
+  BookingId?: MongooseSchema.Types.ObjectId;
+
   @ApiProperty()
   @Prop()
   stripeChargeId?: string;

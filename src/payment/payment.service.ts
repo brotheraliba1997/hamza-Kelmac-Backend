@@ -21,6 +21,7 @@ import { RefundPaymentDto } from './dto/refund-payment.dto';
 import { AllConfigType } from '../config/config.type';
 
 import { EnrollmentSchemaClass } from '../Enrollment/infrastructure/enrollments.schema';
+import { ClassScheduleHelperService } from '../utils/class-schedule/class-schedule-helper.service';
 import {
   CourseSchemaClass,
   CourseSchema,
@@ -28,7 +29,11 @@ import {
 
 import { UserSchemaClass } from '../users/schema/user.schema';
 import { Booking, BookingDocument } from '../booking/schema/booking.schema';
-import { BookingStatus } from '../booking/dto/create-booking.dto';
+import { 
+  BookingStatus, 
+  PaymentMethod as BookingPaymentMethod 
+} from '../booking/dto/create-booking.dto';
+
 
 @Injectable()
 export class PaymentService {
@@ -47,13 +52,14 @@ export class PaymentService {
     private stripeService: StripeService,
     private mailService: MailService,
     private configService: ConfigService<AllConfigType>,
+    private readonly classScheduleHelper: ClassScheduleHelperService, // ✅ Inject
   ) {}
 
   /**
    * Create a payment intent for a course purchase
    */
   async createPayment(userId: string, createPaymentDto: CreatePaymentDto) {
-    const { courseId, amount, currency = 'usd', metadata } = createPaymentDto;
+    const { courseId, amount, currency = 'usd', metadata, BookingId } = createPaymentDto;
 
     const course = await this.courseModel.findById(courseId);
 
@@ -97,6 +103,7 @@ export class PaymentService {
       currency,
       status: PaymentStatus.PENDING,
       description: `Payment for course: ${course.title}`,
+      ...(BookingId && { BookingId: new Types.ObjectId(BookingId) }), // ✅ Add BookingId if provided
       metadata: {
         ...metadata,
         courseName: course.title,
@@ -119,7 +126,38 @@ export class PaymentService {
 
       // Update payment with Stripe details
       payment.stripePaymentIntentId = paymentIntent.paymentIntentId;
-      payment.status = PaymentStatus.PROCESSING;
+      payment.status = PaymentStatus.SUCCEEDED;
+
+      const booking = await this.bookingModel.findOne({
+        studentId: new Types.ObjectId(payment.userId),
+        courseId: new Types.ObjectId(payment.courseId),
+      });
+
+      if (!booking) {
+        return {
+          statusCode: 400,
+          message: 'Booking not found',
+          error: 'Bad Request',
+        };
+      }
+
+      // Update booking status and payment method
+      booking.status = BookingStatus.CONFIRMED;
+      booking.paymentMethod = BookingPaymentMethod.STRIPE;
+      await booking.save();
+
+      try {
+        await this.classScheduleHelper.addStudentToSchedule(
+          booking.courseId.toString(),
+          booking.studentId.toString(),
+          {
+            timeTableId: booking.timeTableId,
+            sessionId: booking.SessionId,
+          } as any,
+        );
+      } catch (error) {
+        console.warn(`Failed to add student to schedule: ${error.message}`);
+      }
 
       await payment.save();
 
@@ -326,7 +364,7 @@ export class PaymentService {
    * Create a checkout session for a course purchase
    */
   async createCheckout(userId: string, createCheckoutDto: CreateCheckoutDto) {
-    const { courseId, successUrl, cancelUrl, metadata } = createCheckoutDto;
+    const { courseId, successUrl, cancelUrl, metadata, BookingId } = createCheckoutDto;
 
     // Validate course exists
     const course = await this.courseModel.findById(courseId);
@@ -367,6 +405,7 @@ export class PaymentService {
       currency: 'usd',
       status: PaymentStatus.PENDING,
       description: `Payment for course: ${course.title}`,
+      ...(BookingId && { BookingId: new Types.ObjectId(BookingId) }), // ✅ Add BookingId if provided
       metadata: {
         ...metadata,
         courseName: course.title,
@@ -437,18 +476,6 @@ export class PaymentService {
     // Update payment status
     payment.status = PaymentStatus.SUCCEEDED;
     payment.paidAt = new Date();
-
-    const booking = await this.bookingModel.findOne({
-      studentId: new Types.ObjectId(payment.userId),
-      courseId: new Types.ObjectId(payment.courseId),
-    });
-
-    console.log('Associated booking:', booking);
-
-    // if (booking) {
-    //   booking.status = BookingStatus.CONFIRMED;
-    //   await booking.save();
-    // }
 
     await payment.save();
 

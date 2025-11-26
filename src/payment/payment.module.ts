@@ -15,6 +15,7 @@ import { PaymentService } from './payment.service';
 import {  CourseSchema, CourseSchemaClass } from '../course/schema/course.schema';
 import { UserSchema, UserSchemaClass } from '../users/schema/user.schema';
 import { Booking, BookingSchema } from '../booking/schema/booking.schema';
+import { ClassScheduleModule } from '../classSchedule/class-schedule.module';
 
 
 
@@ -29,6 +30,7 @@ import { Booking, BookingSchema } from '../booking/schema/booking.schema';
     ]),
     StripeModule,
     MailModule,
+    ClassScheduleModule, // ✅ ClassScheduleHelperService use karne ke liye
   ],
   controllers: [PaymentController],
   providers: [PaymentService],

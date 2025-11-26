@@ -2,6 +2,7 @@
 import { Module } from '@nestjs/common';
 import { ClassScheduleController } from './class-schedule.controller';
 import { ClassScheduleService } from './class-schedule.service';
+import { ClassScheduleHelperService } from '../utils/class-schedule/class-schedule-helper.service';
 
 import { MongooseModule } from '@nestjs/mongoose';
 import {
@@ -27,7 +28,14 @@ import { GoogleOAuthProvider } from '../googleService/google.provider';
     MailModule,
   ],
   controllers: [ClassScheduleController],
-  providers: [ClassScheduleService, GoogleOAuthProvider],
-  exports: [ClassScheduleService],
+  providers: [
+    ClassScheduleService,
+    ClassScheduleHelperService,
+    GoogleOAuthProvider,
+  ],
+  exports: [
+    ClassScheduleService,
+    ClassScheduleHelperService,
+  ],
 })
 export class ClassScheduleModule {}

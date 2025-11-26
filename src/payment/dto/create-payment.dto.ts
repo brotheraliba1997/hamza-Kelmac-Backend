@@ -4,6 +4,7 @@ import {
   IsOptional,
   IsNumber,
   Min,
+  IsMongoId,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -17,6 +18,11 @@ export class CreatePaymentDto {
   @IsNotEmpty()
   @IsString()
   userId: string;
+
+  @ApiPropertyOptional({ description: 'Booking ID reference' })
+  @IsOptional()
+  @IsMongoId()
+  BookingId?: string;
 
   @ApiPropertyOptional({
     description: 'Custom amount (if different from course price)',
