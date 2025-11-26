@@ -23,7 +23,13 @@ import { AllConfigType } from '../config/config.type';
 import { CourseSchemaClass } from '../course/schema/course.schema';
 import { IPaginationOptions } from '../utils/types/pagination-options';
 import { PaginationResult } from '../utils/mongoose-query-builder';
-import { ClassScheduleService } from '../classSchedule/class-schedule.service';
+import { Types } from 'mongoose';
+import {
+  BookingStatus,
+  PaymentMethod as BookingPaymentMethod,
+} from '../booking/dto/create-booking.dto';
+import { Booking, BookingDocument } from '../booking/schema/booking.schema';
+import { ClassScheduleHelperService } from '../utils/class-schedule/class-schedule-helper.service';
 
 @Injectable()
 export class PurchaseOrderService {
@@ -32,10 +38,11 @@ export class PurchaseOrderService {
     private readonly purchaseOrderModel: Model<PurchaseOrderSchemaClass>,
     private readonly mailService: MailService,
     private readonly paymentService: PaymentService,
+    @InjectModel(Booking.name) private bookingModel: Model<BookingDocument>,
     private readonly configService: ConfigService<AllConfigType>,
     @InjectModel(CourseSchemaClass.name)
     private readonly courseModel: Model<CourseSchemaClass>,
-    private readonly classScheduleService: ClassScheduleService,
+    private readonly classScheduleHelper: ClassScheduleHelperService, // ✅ Inject
   ) {}
 
   private readonly purchaseOrderPopulate = [
@@ -236,7 +243,20 @@ export class PurchaseOrderService {
         bankSlipUrl: dto.bankSlipUrl,
         submittedAt: dto.submittedAt ? new Date(dto.submittedAt) : new Date(),
         status: PurchaseOrderStatusEnum.PENDING,
+        ...(dto.BookingId && { BookingId: new Types.ObjectId(dto.BookingId) }), // ✅ Add BookingId if provided
       });
+
+      const booking = await this.bookingModel.findOne({
+        studentId: new Types.ObjectId(dto.studentId),
+        courseId: new Types.ObjectId(dto.courseId),
+      });
+
+      if (booking) {
+        booking.status = BookingStatus.PENDING;
+        await booking.save();
+
+        // ✅ Student ko class schedule mein add karo
+      }
 
       const populated = await this.purchaseOrderModel
         .findById(created._id)
@@ -363,7 +383,17 @@ export class PurchaseOrderService {
 
       if (!updated) {
         throw new NotFoundException('Purchase order not found');
-      }
+      } 
+      
+      // else {
+      //   const course = updated.course as any;
+      //   const student = updated.student as any;
+      //   await this.classScheduleService.updateUserStatus(
+      //     course._id,
+      //     student._id,
+      //     'enrolled',
+      //   );
+      // }
 
       if (dto.status && dto.status !== PurchaseOrderStatusEnum.PENDING) {
         await this.sendDecisionEmail(updated);
@@ -391,11 +421,39 @@ export class PurchaseOrderService {
                 currency,
               );
 
-              await this.classScheduleService.updateUserStatus(
-                studentId,
-                courseId,
-                'enrolled',
-              );
+              const booking = await this.bookingModel.findOne({
+                studentId: new Types.ObjectId(dto.studentId),
+                courseId: new Types.ObjectId(dto.courseId),
+              });
+
+              if (!booking) {
+                return {
+                  statusCode: 400,
+                  message: 'Booking not found',
+                  error: 'Bad Request',
+                };
+              }
+
+              if (booking) {
+                booking.status = BookingStatus.CONFIRMED;
+                booking.paymentMethod = BookingPaymentMethod.PURCHASEORDER;
+                await booking.save();
+              }
+
+              try {
+                await this.classScheduleHelper.addStudentToSchedule(
+                  dto.courseId,
+                  dto.studentId,
+                  {
+                    timeTableId: booking.timeTableId,
+                    sessionId: booking.SessionId,
+                  } as any,
+                );
+              } catch (error) {
+                console.warn(
+                  `Failed to add student to schedule: ${error.message}`,
+                );
+              }
             }
           } catch (error) {
             // Log error but don't fail the PO update

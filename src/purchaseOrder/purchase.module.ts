@@ -12,6 +12,7 @@ import { PurchaseOrderService } from './purchase.services';
 import { PurchaseOrderController } from './purchase.controller';
 import { MailModule } from '../mail/mail.module';
 import { PaymentModule } from '../payment/payment.module';
+import { BookingsModule } from '../booking/booking.module';
 import { ClassScheduleModule } from '../classSchedule/class-schedule.module';
 
 @Module({
@@ -28,7 +29,8 @@ import { ClassScheduleModule } from '../classSchedule/class-schedule.module';
     ]),
     MailModule,
     PaymentModule,
-    ClassScheduleModule,
+    BookingsModule,
+    ClassScheduleModule, // ✅ ClassScheduleHelperService use karne ke liye
   ],
   controllers: [PurchaseOrderController],
   providers: [PurchaseOrderService],

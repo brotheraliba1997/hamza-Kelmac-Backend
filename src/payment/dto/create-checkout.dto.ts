@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsOptional } from 'class-validator';
+import { IsNotEmpty, IsString, IsOptional, IsMongoId } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateCheckoutDto {
@@ -6,6 +6,11 @@ export class CreateCheckoutDto {
   @IsNotEmpty()
   @IsString()
   courseId: string;
+
+  @ApiPropertyOptional({ description: 'Booking ID reference' })
+  @IsOptional()
+  @IsMongoId()
+  BookingId?: string;
 
   @ApiProperty({ description: 'Success redirect URL' })
   @IsNotEmpty()

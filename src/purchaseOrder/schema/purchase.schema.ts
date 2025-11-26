@@ -1,8 +1,9 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument, Types } from 'mongoose';
+import { HydratedDocument, Schema as MongooseSchema, Types } from 'mongoose';
 import { EntityDocumentHelper } from '../../utils/document-entity-helper';
 import { CourseSchemaClass } from '../../course/schema/course.schema';
 import { UserSchemaClass } from '../../users/schema/user.schema';
+import { ApiProperty } from '@nestjs/swagger';
 
 export type PurchaseOrderDocument =
   HydratedDocument<PurchaseOrderSchemaClass>;
@@ -55,6 +56,16 @@ export class PurchaseOrderSchemaClass extends EntityDocumentHelper {
     index: true,
   })
   status: PurchaseOrderStatusEnum;
+
+
+  
+  @ApiProperty()
+  @Prop({
+    type: MongooseSchema.Types.ObjectId,
+    ref: 'Booking',
+    sparse: true,
+  })
+  BookingId?: MongooseSchema.Types.ObjectId;
 
   @Prop({ type: Date, default: () => new Date(), index: true })
   submittedAt: Date;

@@ -4,6 +4,14 @@ import { AttendanceStatusEnum } from '../schema/attendance.schema';
 
 export class FilterAttendanceDto {
   @ApiPropertyOptional({
+    description: 'Filter by class schedule ID',
+    example: '675f4aaf2b67a23d4c9f2941',
+  })
+  @IsOptional()
+  @IsMongoId()
+  classScheduleId?: string;
+
+  @ApiPropertyOptional({
     description: 'Filter by course ID',
     example: '675f4aaf2b67a23d4c9f2941',
   })

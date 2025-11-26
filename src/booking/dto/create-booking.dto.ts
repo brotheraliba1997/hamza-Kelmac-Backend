@@ -7,6 +7,11 @@ export enum BookingStatus {
   CANCELLED = 'cancelled',
 }
 
+export enum PaymentMethod {
+  STRIPE = 'stripe',
+  PURCHASEORDER = 'purchase_order',
+}
+
 export class CreateBookingDto {
   @ApiProperty({ description: 'Student ID', example: '671a23f8abc123...' })
   @IsMongoId()
@@ -26,7 +31,23 @@ export class CreateBookingDto {
   @IsMongoId()
   timeTableId: string;
 
+  @ApiProperty({
+    description: 'Session ID from course.sessions array',
+    example: '671018fabc123456789ef015',
+  })
+  @IsMongoId()
+  SessionId: string;
 
+  @ApiProperty({
+    description: 'Payment method',
+    enum: PaymentMethod,
+    example: PaymentMethod.STRIPE,
+    required: false,
+    default: PaymentMethod.STRIPE,
+  })
+  @IsEnum(PaymentMethod)
+  @IsOptional()
+  paymentMethod?: PaymentMethod;
 
   @ApiProperty({
     description: 'Booking status',

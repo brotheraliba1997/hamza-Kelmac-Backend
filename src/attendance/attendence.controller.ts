@@ -25,6 +25,7 @@ import { FilterAttendanceDto, SortAttendanceDto } from './dto/query-attendance.d
 import { AttendanceStatusEnum } from './schema/attendance.schema';
 import { AttendanceEntity } from './domain/attendance.entity';
 import { AttendanceService } from './attendance.service';
+import { CheckPassFailDto, PassFailSummary } from './dto/check-pass-fail.dto';
 
 @ApiTags('Attendance')
 @Controller({
@@ -243,6 +244,71 @@ export class AttendanceController {
       studentId,
       sessionId,
     );
+  }
+
+  @ApiOperation({
+    summary: 'Check Pass/Fail status for all students in a class',
+    description:
+      'Determines pass/fail status for all students in a class schedule. ' +
+      'Students with ZERO absences = PASS. Students with ANY absence = FAIL. ' +
+      'Returns summary with counts and individual student results.',
+  })
+  @ApiQuery({
+    name: 'classScheduleId',
+    required: true,
+    type: String,
+    description: 'Class Schedule ID',
+  })
+  @ApiQuery({
+    name: 'courseId',
+    required: true,
+    type: String,
+    description: 'Course ID',
+  })
+  @ApiQuery({
+    name: 'sessionId',
+    required: true,
+    type: String,
+    description: 'Session ID from course.sessions array',
+  })
+  @ApiOkResponse({
+    description: 'Pass/Fail summary for all students',
+    type: PassFailSummary,
+    schema: {
+      example: {
+        classScheduleId: '675f4aaf2b67a23d4c9f2941',
+        courseId: '675f4aaf2b67a23d4c9f2942',
+        sessionId: '671018fabc123456789ef015',
+        totalStudents: 25,
+        passedStudents: 18,
+        failedStudents: 7,
+        results: [
+          {
+            studentId: '675f4aaf2b67a23d4c9f2945',
+            studentName: 'Ali Khan',
+            totalClasses: 20,
+            presentCount: 20,
+            absentCount: 0,
+            result: 'PASS',
+            certificateIssued: false,
+          },
+          {
+            studentId: '675f4aaf2b67a23d4c9f2946',
+            studentName: 'Sara Ahmed',
+            totalClasses: 20,
+            presentCount: 19,
+            absentCount: 1,
+            result: 'FAIL',
+            certificateIssued: false,
+          },
+        ],
+      },
+    },
+  })
+  @Get('pass-fail-check')
+  @HttpCode(HttpStatus.OK)
+  async checkPassFail(@Query() query: CheckPassFailDto) {
+    return await this.attendanceService.checkPassFailStatus(query);
   }
 
   @ApiOperation({

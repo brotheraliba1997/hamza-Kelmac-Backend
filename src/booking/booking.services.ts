@@ -55,6 +55,8 @@ export class BookingsService {
         studentId: new Types.ObjectId(createBookingDto.studentId),
         courseId: new Types.ObjectId(createBookingDto.courseId),
         timeTableId: new Types.ObjectId(createBookingDto.timeTableId),
+        SessionId: new Types.ObjectId(createBookingDto.SessionId),
+        paymentMethod: createBookingDto.paymentMethod || 'stripe',
         status: 'pending',
       });
 
@@ -75,7 +77,7 @@ export class BookingsService {
       .populate([
         { path: 'paymentId', select: 'amount currency status' },
         { path: 'studentId', select: 'name email' },
-        { path: 'courseId', select: 'title category' },
+        { path: 'courseId', select: 'title category sessions' },
         { path: 'timeTableId', select: 'date time' },
       ])
       .exec();
@@ -91,7 +93,7 @@ export class BookingsService {
       .populate([
         { path: 'paymentId', select: 'amount currency status' },
         { path: 'studentId', select: 'name email' },
-        { path: 'courseId', select: 'title category' },
+        { path: 'courseId', select: 'title category sessions' },
         { path: 'timeTableId', select: 'date time' },
       ])
       .exec();
@@ -105,12 +107,24 @@ export class BookingsService {
    * ✅ Update booking
    */
   async update(id: string, updateBookingDto: UpdateBookingDto) {
+    const updateData: any = { ...updateBookingDto };
+    
+    // Convert SessionId to ObjectId if provided
+    if (updateBookingDto.SessionId) {
+      updateData.SessionId = new Types.ObjectId(updateBookingDto.SessionId);
+    }
+
+    // Handle paymentMethod update
+    if (updateBookingDto.paymentMethod) {
+      updateData.paymentMethod = updateBookingDto.paymentMethod;
+    }
+
     const updated = await this.bookingModel
-      .findByIdAndUpdate(id, updateBookingDto, { new: true })
+      .findByIdAndUpdate(id, updateData, { new: true })
       .populate([
         { path: 'paymentId', select: 'amount currency status' },
         { path: 'studentId', select: 'name email' },
-        { path: 'courseId', select: 'title category' },
+        { path: 'courseId', select: 'title category sessions' },
         { path: 'timeTableId', select: 'date time' },
       ])
       .exec();

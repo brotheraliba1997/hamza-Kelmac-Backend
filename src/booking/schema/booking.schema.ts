@@ -17,10 +17,15 @@ export enum BookingStatus {
   CANCELLED = 'cancelled',
 }
 
+export enum PaymentMethod {
+  STRIPE = 'stripe',
+  PURCHASEORDER = 'purchase_order',
+}
+
 @Schema({ timestamps: true })
 export class Booking {
   @ApiProperty({ description: 'Student who booked the course' })
-  @Prop({ type: Types.ObjectId,   ref: UserSchemaClass.name, required: true })
+  @Prop({ type: Types.ObjectId, ref: UserSchemaClass.name, required: true })
   studentId: Types.ObjectId;
 
   @ApiProperty({ description: 'Course being booked' })
@@ -31,7 +36,17 @@ export class Booking {
   @Prop({ type: Types.ObjectId, ref: CourseSchemaClass.name, required: true })
   timeTableId: Types.ObjectId;
 
- 
+  @ApiProperty({ description: 'Selected class schedule or timetable' })
+  @Prop({ type: Types.ObjectId, ref: CourseSchemaClass.name, required: true })
+  SessionId: Types.ObjectId;
+
+  @ApiProperty({ enum: PaymentMethod, default: PaymentMethod.STRIPE })
+  @Prop({
+    type: String,
+    enum: PaymentMethod,
+    default: PaymentMethod.STRIPE,
+  })
+  paymentMethod: PaymentMethod;
 
   @ApiProperty({ enum: BookingStatus, default: BookingStatus.PENDING })
   @Prop({

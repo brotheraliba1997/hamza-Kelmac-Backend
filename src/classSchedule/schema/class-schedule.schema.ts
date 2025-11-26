@@ -42,6 +42,7 @@ export class ClassScheduleSchemaClass extends EntityDocumentHelper {
       {
         id: { type: Types.ObjectId, ref: UserSchemaClass.name, required: true },
         status: { type: String, required: true },
+        _id: false,
       },
     ],
     default: [],

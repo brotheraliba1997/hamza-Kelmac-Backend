@@ -27,6 +27,9 @@ import { BookingsService } from './booking.services';
   ],
   controllers: [BookingsController],
   providers: [BookingsService],
-  exports: [BookingsService],
+  exports: [
+    BookingsService,
+    MongooseModule, // ✅ Booking Model ko export karne ke liye
+  ],
 })
 export class BookingsModule {}

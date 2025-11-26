@@ -22,6 +22,11 @@ import {
   sanitizeMongooseDocument,
   convertIdToString,
 } from '../utils/convert-id';
+import {
+  CheckPassFailDto,
+  PassFailSummary,
+  StudentPassFailResult,
+} from './dto/check-pass-fail.dto';
 
 @Injectable()
 export class AttendanceService {
@@ -33,6 +38,14 @@ export class AttendanceService {
   ) {}
 
   private readonly attendancePopulate = [
+    {
+      path: 'classScheduleId',
+      select: 'date time duration status course instructor',
+      populate: [
+        { path: 'course', select: 'title slug' },
+        { path: 'instructor', select: 'firstName lastName email' },
+      ],
+    },
     {
       path: 'courseId',
       select: 'title slug sessions instructor',
@@ -57,6 +70,8 @@ export class AttendanceService {
 
     return {
       id: sanitized.id || convertIdToString(doc),
+      // classScheduleId: Class Schedule ID reference
+      classScheduleId: sanitized.classScheduleId,
       // courseId: If populated, will have { id, title, slug, sessions: [...], instructor: {...} }
       //           If not populated, will be just the ID string
       courseId: sanitized.courseId,
@@ -80,12 +95,11 @@ export class AttendanceService {
     dto: CreateAttendanceDto,
     instructorId: string,
   ): Promise<AttendanceEntity> {
-    // Check if attendance already exists for this courseId + student + sessionId combination
+    // Check if attendance already exists for this classScheduleId + student combination
     const existing = await this.attendanceModel
       .findOne({
-        courseId: new Types.ObjectId(dto.courseId),
+        classScheduleId: new Types.ObjectId(dto.classScheduleId),
         student: new Types.ObjectId(dto.studentId),
-        sessionId: new Types.ObjectId(dto.sessionId),
       })
       .lean();
 
@@ -95,6 +109,9 @@ export class AttendanceService {
         .findByIdAndUpdate(
           existing._id,
           {
+            classScheduleId: new Types.ObjectId(dto.classScheduleId),
+            courseId: new Types.ObjectId(dto.courseId),
+            sessionId: new Types.ObjectId(dto.sessionId),
             status: dto.status,
             notes: dto.notes,
             markedBy: new Types.ObjectId(instructorId),
@@ -110,6 +127,7 @@ export class AttendanceService {
 
     // Create new attendance record
     const created = await this.attendanceModel.create({
+      classScheduleId: new Types.ObjectId(dto.classScheduleId),
       courseId: new Types.ObjectId(dto.courseId),
       sessionId: new Types.ObjectId(dto.sessionId),
       student: new Types.ObjectId(dto.studentId),
@@ -152,9 +170,8 @@ export class AttendanceService {
       // Check if attendance already exists
       const existing = await this.attendanceModel
         .findOne({
-          courseId: courseId,
+          classScheduleId: new Types.ObjectId(dto.classScheduleId),
           student: studentId,
-          sessionId: new Types.ObjectId(dto.sessionId),
         })
         .lean();
 
@@ -164,6 +181,9 @@ export class AttendanceService {
           .findByIdAndUpdate(
             existing._id,
             {
+              classScheduleId: new Types.ObjectId(dto.classScheduleId),
+              courseId: courseId,
+              sessionId: new Types.ObjectId(dto.sessionId),
               status: studentAttendance.status,
               markedBy: new Types.ObjectId(instructorId),
               markedAt: new Date(),
@@ -180,6 +200,7 @@ export class AttendanceService {
       } else {
         // Create new record
         const created = await this.attendanceModel.create({
+          classScheduleId: new Types.ObjectId(dto.classScheduleId),
           courseId: courseId,
           sessionId: new Types.ObjectId(dto.sessionId),
           student: studentId,
@@ -210,6 +231,7 @@ export class AttendanceService {
 
   async findAll(filters?: FilterAttendanceDto): Promise<AttendanceEntity[]> {
     const filterQuery = new FilterQueryBuilder<AttendanceSchemaClass>()
+      .addEqual('classScheduleId' as any, filters?.classScheduleId)
       .addEqual('courseId' as any, filters?.courseId)
       .addEqual('sessionId' as any, filters?.sessionId ? new Types.ObjectId(filters.sessionId) : undefined)
       .addEqual('student' as any, filters?.studentId)
@@ -237,6 +259,7 @@ export class AttendanceService {
   }): Promise<PaginationResult<AttendanceEntity>> {
     // Build filter query
     const filterQuery = new FilterQueryBuilder<AttendanceSchemaClass>()
+      .addEqual('classScheduleId' as any, filterOptions?.classScheduleId)
       .addEqual('courseId' as any, filterOptions?.courseId)
       .addEqual('sessionId' as any, filterOptions?.sessionId ? new Types.ObjectId(filterOptions.sessionId) : undefined)
       .addEqual('student' as any, filterOptions?.studentId)
@@ -276,6 +299,10 @@ export class AttendanceService {
 
     if (dto.notes !== undefined) {
       updatePayload.notes = dto.notes;
+    }
+
+    if (dto.classScheduleId) {
+      updatePayload.classScheduleId = new Types.ObjectId(dto.classScheduleId);
     }
 
     if (dto.courseId) {
@@ -403,6 +430,105 @@ export class AttendanceService {
       presentCount,
       absentCount,
       attendancePercentage,
+    };
+  }
+
+  /**
+   * Check Pass/Fail status for all students in a class schedule
+   * Students with ZERO absences = PASS
+   * Students with ANY absence = FAIL
+   * 
+   * @param dto - CheckPassFailDto containing classScheduleId, courseId, sessionId
+   * @returns PassFailSummary with all students' pass/fail results
+   */
+  async checkPassFailStatus(
+    dto: CheckPassFailDto,
+  ): Promise<PassFailSummary> {
+    const { classScheduleId, courseId, sessionId } = dto;
+
+    // Get all unique students who have attendance records for this class schedule
+    const attendanceRecords = await this.attendanceModel
+      .find({
+        classScheduleId: new Types.ObjectId(classScheduleId),
+        courseId: new Types.ObjectId(courseId),
+        sessionId: new Types.ObjectId(sessionId),
+      })
+      .populate('student', 'firstName lastName email')
+      .lean();
+
+    if (!attendanceRecords || attendanceRecords.length === 0) {
+      throw new NotFoundException(
+        'No attendance records found for this class schedule',
+      );
+    }
+
+    // Group attendance by student
+    const studentAttendanceMap = new Map<string, any[]>();
+    
+    attendanceRecords.forEach((record: any) => {
+      const studentId = record.student?._id?.toString() || record.student?.toString();
+      if (!studentAttendanceMap.has(studentId)) {
+        studentAttendanceMap.set(studentId, []);
+      }
+      studentAttendanceMap.get(studentId)?.push(record);
+    });
+
+    // Calculate pass/fail for each student
+    const results: StudentPassFailResult[] = [];
+    let passedCount = 0;
+    let failedCount = 0;
+
+    for (const [studentId, records] of studentAttendanceMap.entries()) {
+      const student = records[0].student;
+      
+      // Count present and absent
+      const presentCount = records.filter(
+        (r: any) => r.status === 'present',
+      ).length;
+      const absentCount = records.filter(
+        (r: any) => r.status === 'absent',
+      ).length;
+      const totalClasses = records.length;
+
+      // Determine pass/fail: PASS only if absentCount === 0
+      const result = absentCount === 0 ? 'PASS' : 'FAIL';
+      
+      if (result === 'PASS') {
+        passedCount++;
+      } else {
+        failedCount++;
+      }
+
+      const studentName = student.firstName && student.lastName
+        ? `${student.firstName} ${student.lastName}`
+        : student.email || 'Unknown Student';
+
+      results.push({
+        studentId,
+        studentName,
+        totalClasses,
+        presentCount,
+        absentCount,
+        result,
+        certificateIssued: false,
+      });
+    }
+
+    // Sort results: PASS first, then FAIL
+    results.sort((a, b) => {
+      if (a.result === 'PASS' && b.result === 'FAIL') return -1;
+      if (a.result === 'FAIL' && b.result === 'PASS') return 1;
+      return 0;
+    });
+
+    return {
+      classScheduleId,
+      courseId,
+      sessionId,
+      totalStudents: studentAttendanceMap.size,
+      passedStudents: passedCount,
+      failedStudents: failedCount,
+      results,
     };
   }
 }
