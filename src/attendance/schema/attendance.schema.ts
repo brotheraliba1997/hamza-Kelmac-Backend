@@ -3,6 +3,7 @@ import { HydratedDocument, Types } from 'mongoose';
 import { EntityDocumentHelper } from '../../utils/document-entity-helper';
 import { CourseSchemaClass } from '../../course/schema/course.schema';
 import { UserSchemaClass } from '../../users/schema/user.schema';
+import { ClassScheduleSchemaClass } from '../../classSchedule/schema/class-schedule.schema';
 
 export type AttendanceDocument = HydratedDocument<AttendanceSchemaClass>;
 
@@ -17,6 +18,20 @@ export enum AttendanceStatusEnum {
   toJSON: { virtuals: true, getters: true },
 })
 export class AttendanceSchemaClass extends EntityDocumentHelper {
+
+
+
+  @Prop({
+    type: Types.ObjectId,
+    ref: ClassScheduleSchemaClass.name,
+    required: true,
+    index: true,
+    description: 'Class Schedule ID reference',
+  })
+  classScheduleId: Types.ObjectId;
+
+
+
   @Prop({
     type: Types.ObjectId,
     ref: CourseSchemaClass.name,
@@ -78,7 +93,8 @@ export const AttendanceSchema = SchemaFactory.createForClass(
 );
 
 // Indexes for performance
-AttendanceSchema.index({ courseId: 1, student: 1, sessionId: 1 }, { unique: true });
+AttendanceSchema.index({ classScheduleId: 1, student: 1 }, { unique: true });
+AttendanceSchema.index({ classScheduleId: 1 });
 AttendanceSchema.index({ courseId: 1 });
 AttendanceSchema.index({ student: 1 });
 AttendanceSchema.index({ markedBy: 1 });

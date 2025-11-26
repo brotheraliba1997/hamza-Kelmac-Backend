@@ -31,6 +31,14 @@ export class StudentAttendanceDto {
 
 export class BulkMarkAttendanceDto {
   @ApiProperty({
+    description: 'Class Schedule ID',
+    example: '675f4aaf2b67a23d4c9f2941',
+  })
+  @IsMongoId()
+  @IsNotEmpty()
+  classScheduleId: string;
+
+  @ApiProperty({
     description: 'Course ID - sessions array is inside course',
     example: '675f4aaf2b67a23d4c9f2941',
   })
