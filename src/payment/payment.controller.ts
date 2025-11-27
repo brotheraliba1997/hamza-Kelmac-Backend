@@ -18,6 +18,8 @@ import {
   ApiBearerAuth,
   ApiQuery,
   ApiBody,
+  ApiParam,
+  ApiOkResponse,
 } from '@nestjs/swagger';
 import { PaymentService } from './payment.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
@@ -39,9 +41,7 @@ export class PaymentController {
   })
   @ApiResponse({ status: 400, description: 'Bad request' })
   @ApiResponse({ status: 404, description: 'Course or user not found' })
-  async createPayment(
-    @Body() createPaymentDto: CreatePaymentDto,
-  ) {
+  async createPayment(@Body() createPaymentDto: CreatePaymentDto) {
     const userId = createPaymentDto.userId;
 
     if (!userId) {
@@ -184,6 +184,31 @@ export class PaymentController {
     @Query('limit') limit: number = 10,
   ) {
     return this.paymentService.getCoursePayments(courseId, page, limit);
+  }
+
+  @ApiOperation({
+    summary: 'Get purchase order by User and Course',
+  })
+  @ApiParam({
+    name: 'userId',
+    description: 'User MongoDB ObjectId',
+    type: String,
+  })
+  @ApiParam({
+    name: 'courseId',
+    description: 'Course MongoDB ObjectId',
+    type: String,
+  })
+  @ApiOkResponse({
+    description: 'Purchase order details',
+  })
+  @Get('UserAndCourse/:userId/course/:courseId')
+  @HttpCode(HttpStatus.OK)
+  findByUserAndCourse(
+    @Param('userId') userId: string,
+    @Param('courseId') courseId: string,
+  ) {
+    return this.paymentService.findByUserAndCourse(userId, courseId);
   }
 
   @Get()

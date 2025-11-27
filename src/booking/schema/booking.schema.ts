@@ -38,7 +38,7 @@ export class Booking {
 
   @ApiProperty({ description: 'Selected class schedule or timetable' })
   @Prop({ type: Types.ObjectId, ref: CourseSchemaClass.name, required: true })
-  SessionId: Types.ObjectId;
+  sessionId: Types.ObjectId;
 
   @ApiProperty({ enum: PaymentMethod, default: PaymentMethod.STRIPE })
   @Prop({

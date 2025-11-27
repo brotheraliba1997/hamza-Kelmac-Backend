@@ -155,7 +155,6 @@ export class PaymentService {
         };
       }
 
-  
       booking.status = BookingStatus.CONFIRMED;
       booking.paymentMethod = BookingPaymentMethod.STRIPE;
       await booking.save();
@@ -169,7 +168,7 @@ export class PaymentService {
               booking.courseId.toString(),
               booking.studentId.toString(),
               {
-                sessionId: booking.SessionId,
+                sessionId: booking.sessionId,
                 instructor: course?.instructor,
                 date: firstTimeBlock.startDate,
                 time: firstTimeBlock.startTime,
@@ -681,6 +680,25 @@ export class PaymentService {
     return payment;
   }
 
+  /**
+   * Get payment by ID
+   */
+  async findByUserAndCourse(userId: string, courseId: string) {
+    const payment = await this.paymentModel
+      .findOne({
+        userId: userId,
+        courseId: courseId,
+      })
+      .populate('userId', 'firstName lastName email')
+      .populate('courseId', 'title description price')
+      .populate('enrollment');
+
+    if (!payment) {
+      throw new NotFoundException('Payment not found');
+    }
+
+    return payment;
+  }
   /**
    * Get user's payment history
    */

@@ -336,6 +336,19 @@ export class PurchaseOrderService {
     return this.map(po);
   }
 
+  async findByUserAndCourse(userId: string, courseId: string) {
+    const po = await this.purchaseOrderModel
+      .findOne({ student: userId, course: courseId })
+      .populate(this.purchaseOrderPopulate)
+      .lean()
+      .exec();
+
+    if (!po) {
+      throw new NotFoundException('Purchase order not found');
+    }
+    return this.map(po);
+  }
+
   async update(id: string, dto: UpdatePurchaseOrderDto) {
     const payload: Record<string, unknown> = {};
 
@@ -459,7 +472,7 @@ export class PurchaseOrderService {
                       booking.courseId.toString(),
                       booking.studentId.toString(),
                       {
-                        sessionId: booking.SessionId,
+                        sessionId: booking.sessionId,
                         instructor: course?.instructor,
                         date: firstTimeBlock.startDate,
                         time: firstTimeBlock.startTime,

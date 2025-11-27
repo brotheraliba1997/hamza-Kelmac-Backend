@@ -107,6 +107,32 @@ export class PurchaseOrderController {
   }
 
   @ApiOperation({
+    summary: 'Get purchase order by User and Course',
+  })
+  @ApiParam({
+    name: 'userId',
+    description: 'User MongoDB ObjectId',
+    type: String,
+  })
+  @ApiParam({
+    name: 'courseId',
+    description: 'Course MongoDB ObjectId',
+    type: String,
+  })
+  @ApiOkResponse({
+    description: 'Purchase order details',
+    type: PurchaseOrderEntity,
+  })
+  @Get('UserAndCourse/:userId/course/:courseId')
+  @HttpCode(HttpStatus.OK)
+  findByUserAndCourse(
+    @Param('userId') userId: string,
+    @Param('courseId') courseId: string,
+  ) {
+    return this.purchaseOrderService.findByUserAndCourse(userId, courseId);
+  }
+
+  @ApiOperation({
     summary: 'Update / review purchase order',
     description:
       'Finance reviewers can approve/reject and add decision notes via this endpoint.',

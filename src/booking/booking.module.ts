@@ -14,6 +14,10 @@ import {
 import { Payment, PaymentSchema } from '../payment/schema/payment.schema';
 import { BookingsController } from './booking.controller';
 import { BookingsService } from './booking.services';
+import {
+  PurchaseOrderSchema,
+  PurchaseOrderSchemaClass,
+} from '../purchaseOrder/schema/purchase.schema';
 
 @Module({
   imports: [
@@ -23,6 +27,7 @@ import { BookingsService } from './booking.services';
       { name: UserSchemaClass.name, schema: UserSchema },
       { name: ClassScheduleSchemaClass.name, schema: ClassScheduleSchema },
       { name: Payment.name, schema: PaymentSchema },
+      { name: PurchaseOrderSchemaClass.name, schema: PurchaseOrderSchema },
     ]),
   ],
   controllers: [BookingsController],

@@ -12,6 +12,10 @@ import { UpdateBookingDto } from './dto/update-booking.dto';
 import { Booking, BookingDocument } from './schema/booking.schema';
 import { Payment, PaymentDocument } from '../payment/schema/payment.schema';
 import { sanitizeMongooseDocument } from '../utils/convert-id';
+import {
+  PurchaseOrderDocument,
+  PurchaseOrderSchemaClass,
+} from '../purchaseOrder/schema/purchase.schema';
 
 @Injectable()
 export class BookingsService {
@@ -20,6 +24,8 @@ export class BookingsService {
   constructor(
     @InjectModel(Booking.name) private bookingModel: Model<BookingDocument>,
     @InjectModel(Payment.name) private paymentModel: Model<PaymentDocument>,
+    @InjectModel(PurchaseOrderSchemaClass.name)
+    private purchaseOrderModel: Model<PurchaseOrderDocument>,
   ) {}
   async map(doc: any): Promise<Booking> {
     if (!doc) return undefined as any;
@@ -55,7 +61,7 @@ export class BookingsService {
         studentId: new Types.ObjectId(createBookingDto.studentId),
         courseId: new Types.ObjectId(createBookingDto.courseId),
         timeTableId: new Types.ObjectId(createBookingDto.timeTableId),
-        SessionId: new Types.ObjectId(createBookingDto.SessionId),
+        sessionId: new Types.ObjectId(createBookingDto.sessionId),
         paymentMethod: createBookingDto.paymentMethod || 'stripe',
         status: 'pending',
       });
@@ -75,11 +81,12 @@ export class BookingsService {
     const bookings = await this.bookingModel
       .find()
       .populate([
-        { path: 'paymentId', select: 'amount currency status' },
+        // { path: 'paymentId', select: 'amount currency status' },
         { path: 'studentId', select: 'name email' },
         { path: 'courseId', select: 'title category sessions' },
         { path: 'timeTableId', select: 'date time' },
       ])
+      .lean()
       .exec();
     return this.map(bookings);
   }
@@ -91,11 +98,17 @@ export class BookingsService {
     const booking = await this.bookingModel
       .findById(id)
       .populate([
-        { path: 'paymentId', select: 'amount currency status' },
-        { path: 'studentId', select: 'name email' },
-        { path: 'courseId', select: 'title category sessions' },
+        { path: 'studentId', select: 'firstName lastName email' },
+        {
+          path: 'courseId',
+          select: 'title category sessions price discountedPrice instructor',
+          populate: [
+            { path: 'instructor', select: 'firstName lastName email' },
+          ],
+        },
         { path: 'timeTableId', select: 'date time' },
       ])
+      .lean()
       .exec();
 
     if (!booking)
@@ -108,10 +121,10 @@ export class BookingsService {
    */
   async update(id: string, updateBookingDto: UpdateBookingDto) {
     const updateData: any = { ...updateBookingDto };
-    
-    // Convert SessionId to ObjectId if provided
-    if (updateBookingDto.SessionId) {
-      updateData.SessionId = new Types.ObjectId(updateBookingDto.SessionId);
+
+    // Convert sessionId to ObjectId if provided
+    if (updateBookingDto.sessionId) {
+      updateData.sessionId = new Types.ObjectId(updateBookingDto.sessionId);
     }
 
     // Handle paymentMethod update
@@ -122,11 +135,12 @@ export class BookingsService {
     const updated = await this.bookingModel
       .findByIdAndUpdate(id, updateData, { new: true })
       .populate([
-        { path: 'paymentId', select: 'amount currency status' },
+        // { path: 'paymentId', select: 'amount currency status' },
         { path: 'studentId', select: 'name email' },
         { path: 'courseId', select: 'title category sessions' },
         { path: 'timeTableId', select: 'date time' },
       ])
+      .lean()
       .exec();
 
     if (!updated)

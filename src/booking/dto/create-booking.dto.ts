@@ -36,7 +36,7 @@ export class CreateBookingDto {
     example: '671018fabc123456789ef015',
   })
   @IsMongoId()
-  SessionId: string;
+  sessionId: string;
 
   @ApiProperty({
     description: 'Payment method',
