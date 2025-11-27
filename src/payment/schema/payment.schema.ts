@@ -104,6 +104,9 @@ export class Payment {
   @Prop()
   stripeChargeId?: string;
 
+
+
+
   @ApiProperty()
   @Prop()
   receiptUrl?: string;

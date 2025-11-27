@@ -62,8 +62,15 @@ export class ClassScheduleService {
       googleMeetLink: sanitizedDoc.googleMeetLink,
       securityKey: sanitizedDoc.securityKey,
       status: sanitizedDoc.status,
+      progress: sanitizedDoc.progress,
+      startedAt: sanitizedDoc.startedAt,
+      endedAt: sanitizedDoc.endedAt,
+      isCompleted: sanitizedDoc.isCompleted,
+      ClassLeftList: sanitizedDoc.ClassLeftList,
+      googleCalendarEventLink: sanitizedDoc.googleCalendarEventLink,
       createdAt: sanitizedDoc.createdAt,
       updatedAt: sanitizedDoc.updatedAt,
+      deletedAt: sanitizedDoc.deletedAt,
     };
   }
 
@@ -135,10 +142,7 @@ export class ClassScheduleService {
         );
       }
 
-      schedules.students.push({
-        id: new Types.ObjectId(studentId),
-        status: 'pending',
-      });
+      schedules.students.push( new Types.ObjectId(studentId));
 
       await schedules.save();
 

@@ -46,9 +46,9 @@ export class AttendanceController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() dto: CreateAttendanceDto) {
-    // TODO: Get instructorId from authenticated user (auth guard) instead of DTO
+    // TODO: Get instructorId from authenticated user (auth guard) instead of DTO             
     // For now, instructorId comes from request body
-    return await this.attendanceService.create(dto, dto.markedBy);
+    return await this.attendanceService.create(dto, dto.markedBy); 
   }
 
   @ApiOperation({

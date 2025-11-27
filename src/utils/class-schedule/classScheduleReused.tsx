@@ -36,10 +36,7 @@ export async function AddStudentToClassScheduleService(
       );
     }
 
-    existingSchedule.students.push({
-      id: new Types.ObjectId(studentId),
-      status: 'pending',
-    });
+    existingSchedule.students.push(new Types.ObjectId(studentId));
 
     await existingSchedule.save();
 

@@ -29,11 +29,10 @@ import {
 
 import { UserSchemaClass } from '../users/schema/user.schema';
 import { Booking, BookingDocument } from '../booking/schema/booking.schema';
-import { 
-  BookingStatus, 
-  PaymentMethod as BookingPaymentMethod 
+import {
+  BookingStatus,
+  PaymentMethod as BookingPaymentMethod,
 } from '../booking/dto/create-booking.dto';
-
 
 @Injectable()
 export class PaymentService {
@@ -59,7 +58,13 @@ export class PaymentService {
    * Create a payment intent for a course purchase
    */
   async createPayment(userId: string, createPaymentDto: CreatePaymentDto) {
-    const { courseId, amount, currency = 'usd', metadata, BookingId } = createPaymentDto;
+    const {
+      courseId,
+      amount,
+      currency = 'usd',
+      metadata,
+      BookingId,
+    } = createPaymentDto;
 
     const course = await this.courseModel.findById(courseId);
 
@@ -74,7 +79,16 @@ export class PaymentService {
       throw new NotFoundException('User not found');
     }
 
-    // Check if user already enrolled
+    const existingPayment = await this.paymentModel.findOne({
+      userId: userId,
+      courseId: courseId,
+      status: { $in: [PaymentStatus.SUCCEEDED, PaymentStatus.PROCESSING] },
+    });
+
+    if (existingPayment) {
+      throw new BadRequestException('You have already paid for this course');
+    }
+
     const existingEnrollment = await this.enrollmentModel.findOne({
       user: user,
       course: course,
@@ -141,20 +155,31 @@ export class PaymentService {
         };
       }
 
-      // Update booking status and payment method
+  
       booking.status = BookingStatus.CONFIRMED;
       booking.paymentMethod = BookingPaymentMethod.STRIPE;
       await booking.save();
 
       try {
-        await this.classScheduleHelper.addStudentToSchedule(
-          booking.courseId.toString(),
-          booking.studentId.toString(),
-          {
-            timeTableId: booking.timeTableId,
-            sessionId: booking.SessionId,
-          } as any,
-        );
+        for (const session of course?.sessions) {
+          if (session.timeBlocks && session.timeBlocks.length > 0) {
+            const firstTimeBlock = session.timeBlocks[0];
+
+            await this.classScheduleHelper.addStudentToSchedule(
+              booking.courseId.toString(),
+              booking.studentId.toString(),
+              {
+                sessionId: booking.SessionId,
+                instructor: course?.instructor,
+                date: firstTimeBlock.startDate,
+                time: firstTimeBlock.startTime,
+                duration: 60,
+                timeTableId: booking.timeTableId,
+              } as any,
+            );
+            console.log('✅ Student added to schedule successfully');
+          }
+        }
       } catch (error) {
         console.warn(`Failed to add student to schedule: ${error.message}`);
       }
@@ -364,7 +389,8 @@ export class PaymentService {
    * Create a checkout session for a course purchase
    */
   async createCheckout(userId: string, createCheckoutDto: CreateCheckoutDto) {
-    const { courseId, successUrl, cancelUrl, metadata, BookingId } = createCheckoutDto;
+    const { courseId, successUrl, cancelUrl, metadata, BookingId } =
+      createCheckoutDto;
 
     // Validate course exists
     const course = await this.courseModel.findById(courseId);

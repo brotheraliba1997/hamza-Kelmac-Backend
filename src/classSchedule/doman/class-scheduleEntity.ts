@@ -104,6 +104,21 @@ export class ClassScheduleEntity {
   endedAt?: Date;
 
   @ApiPropertyOptional({
+    example: false,
+    description: 'Overall completion status - true when all timeBlocks complete',
+  })
+  @Allow()
+  isCompleted?: boolean;
+
+  @ApiPropertyOptional({
+    type: [Boolean],
+    example: [true, true, false, false, false],
+    description: 'Tracks which timeBlocks are completed (true = done, false = pending)',
+  })
+  @Allow()
+  ClassLeftList?: boolean[];
+
+  @ApiPropertyOptional({
     example: '2025-11-05T15:32:00.000Z',
     description: 'When students joined (if tracking join time)',
   })

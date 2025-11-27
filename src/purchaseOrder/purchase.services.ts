@@ -246,6 +246,16 @@ export class PurchaseOrderService {
         ...(dto.BookingId && { BookingId: new Types.ObjectId(dto.BookingId) }), // ✅ Add BookingId if provided
       });
 
+      const existingpurchaseOrder = await this.purchaseOrderModel.findOne({
+        student: dto.studentId,
+        course: dto.courseId,
+        status: PurchaseOrderStatusEnum.PENDING,
+      });
+
+      if (existingpurchaseOrder) {
+        throw new BadRequestException('You have already paid for this course');
+      }
+
       const booking = await this.bookingModel.findOne({
         studentId: new Types.ObjectId(dto.studentId),
         courseId: new Types.ObjectId(dto.courseId),
@@ -383,8 +393,8 @@ export class PurchaseOrderService {
 
       if (!updated) {
         throw new NotFoundException('Purchase order not found');
-      } 
-      
+      }
+
       // else {
       //   const course = updated.course as any;
       //   const student = updated.student as any;
@@ -441,14 +451,25 @@ export class PurchaseOrderService {
               }
 
               try {
-                await this.classScheduleHelper.addStudentToSchedule(
-                  dto.courseId,
-                  dto.studentId,
-                  {
-                    timeTableId: booking.timeTableId,
-                    sessionId: booking.SessionId,
-                  } as any,
-                );
+                for (const session of course?.sessions) {
+                  if (session.timeBlocks && session.timeBlocks.length > 0) {
+                    const firstTimeBlock = session.timeBlocks[0];
+
+                    await this.classScheduleHelper.addStudentToSchedule(
+                      booking.courseId.toString(),
+                      booking.studentId.toString(),
+                      {
+                        sessionId: booking.SessionId,
+                        instructor: course?.instructor,
+                        date: firstTimeBlock.startDate,
+                        time: firstTimeBlock.startTime,
+                        duration: 60,
+                        timeTableId: booking.timeTableId,
+                      } as any,
+                    );
+                    console.log('✅ Student added to schedule successfully');
+                  }
+                }
               } catch (error) {
                 console.warn(
                   `Failed to add student to schedule: ${error.message}`,

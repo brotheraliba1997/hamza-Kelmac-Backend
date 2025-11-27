@@ -38,16 +38,10 @@ export class ClassScheduleSchemaClass extends EntityDocumentHelper {
   instructor: Types.ObjectId;
 
   @Prop({
-    type: [
-      {
-        id: { type: Types.ObjectId, ref: UserSchemaClass.name, required: true },
-        status: { type: String, required: true },
-        _id: false,
-      },
-    ],
+    type: [{ type: Types.ObjectId, ref: UserSchemaClass.name }],
     default: [],
   })
-  students: Array<{ id: Types.ObjectId; status: string }>;
+  students: Types.ObjectId[];
 
   @Prop({
     type: String,
@@ -112,6 +106,12 @@ export class ClassScheduleSchemaClass extends EntityDocumentHelper {
     description: 'Timestamp when the class ended',
   })
   endedAt?: Date;
+
+  @Prop({ unique: true, sparse: true })
+  isCompleted?: boolean;
+
+  @Prop({ unique: true, sparse: true })
+  ClassLeftList?: boolean[];
 
   @Prop({
     type: String,

@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { ClassScheduleSchemaClass } from '../../classSchedule/schema/class-schedule.schema';
 import { CreateClassScheduleDto } from '../../classSchedule/dto/create-class-schedule.dto';
+import { CourseSchemaClass } from '../../course/schema/course.schema';
 
 /**
  * 🔄 Class Schedule Helper Service
@@ -15,6 +16,8 @@ export class ClassScheduleHelperService {
   constructor(
     @InjectModel(ClassScheduleSchemaClass.name)
     private readonly classScheduleModel: Model<ClassScheduleSchemaClass>,
+    @InjectModel(CourseSchemaClass.name)
+    private readonly courseModel: Model<CourseSchemaClass>,
   ) {}
 
   /**
@@ -26,6 +29,7 @@ export class ClassScheduleHelperService {
     studentId: string,
     scheduleData?: Partial<CreateClassScheduleDto>,
   ) {
+    console.log('courseId', courseId);
     const existingSchedule = await this.classScheduleModel.findOne({
       course: new Types.ObjectId(courseId),
     });
@@ -33,10 +37,11 @@ export class ClassScheduleHelperService {
     let schedule: any = null;
 
     if (existingSchedule) {
+      // Check if student already exists in schedule
       if (
         existingSchedule.students.length > 0 &&
         existingSchedule.students.some(
-          (s) => s?.id?.toString() === studentId?.toString(),
+          (s) => s?.toString() === studentId?.toString(),
         )
       ) {
         throw new BadRequestException(
@@ -44,19 +49,7 @@ export class ClassScheduleHelperService {
         );
       }
 
-      existingSchedule.students.push({
-        id: new Types.ObjectId(studentId),
-        status: 'pending',
-      });
-
-      // if (existingSchedule.students.includes(studentId)) {
-      //   throw new BadRequestException(
-      //     `Student ${studentId} is already added in schedule ${existingSchedule._id}`,
-      //   );
-      // }
-
-      // existingSchedule.students.push(studentId);
-
+      existingSchedule.students.push(new Types.ObjectId(studentId));
       await existingSchedule.save();
 
       this.logger.log(
@@ -64,10 +57,37 @@ export class ClassScheduleHelperService {
       );
       schedule = existingSchedule;
     } else {
+      // Initialize ClassLeftList based on session's timeBlocks
+      let classLeftList: boolean[] = [];
+
+      if (scheduleData?.sessionId) {
+        try {
+          const course = await this.courseModel.findById(courseId).lean();
+          if (course && course.sessions) {
+            for (const session of course?.sessions) {
+              if (session && session.timeBlocks) {
+                const timeBlocksCount = session.timeBlocks.length;
+                console.log('timeBlocksCount', timeBlocksCount);
+                classLeftList = Array(timeBlocksCount).fill(false);
+                this.logger.log(
+                  `📋 ClassLeftList initialized with ${timeBlocksCount} timeBlocks`,
+                );
+              }
+            }
+          }
+        } catch (error) {
+          this.logger.warn(
+            `⚠️ Could not initialize ClassLeftList: ${error.message}`,
+          );
+        }
+      }
+
       schedule = await this.classScheduleModel.create({
         ...scheduleData,
         course: new Types.ObjectId(courseId),
-        students: [studentId],
+        students: [new Types.ObjectId(studentId)],
+        ClassLeftList: classLeftList.length > 0 ? classLeftList : undefined,
+        isCompleted: false,
       });
 
       this.logger.log(`✅ New schedule created with student ${studentId}`);
