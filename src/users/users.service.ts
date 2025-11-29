@@ -44,6 +44,7 @@ export class UsersService {
     if (!sanitized) return undefined as any;
 
     return {
+      ...sanitized,
       id,
       email: sanitized.email,
       password: sanitized.password,
@@ -152,6 +153,7 @@ export class UsersService {
     const created = await this.userModel.create({
       // Do not remove comment below.
       // <creating-property-payload />
+      ...createUserDto,
       firstName: createUserDto.firstName,
       lastName: createUserDto.lastName,
       email: email,
@@ -224,12 +226,14 @@ export class UsersService {
 
   async findById(id: User['id']): Promise<NullableType<User>> {
     const doc = await this.userModel.findById(id).lean();
-    return doc ? this.map(doc) : null;
+    const { password, ...sanitized } = doc || {};
+    return doc ? this.map(sanitized) : null;
   }
 
   async findByIds(ids: User['id'][]): Promise<User[]> {
     const docs = await this.userModel.find({ _id: { $in: ids } }).lean();
-    return docs.map((doc: any) => this.map(doc));
+    const sanitizedDocs = docs.map(({ password, ...rest }) => rest);
+    return sanitizedDocs.map((doc: any) => this.map(doc));
   }
 
   async findByEmail(email: User['email']): Promise<NullableType<User>> {
@@ -354,6 +358,7 @@ export class UsersService {
         {
           // Do not remove comment below.
           // <updating-property-payload />
+          ...updateUserDto,
           firstName: updateUserDto.firstName,
           lastName: updateUserDto.lastName,
           email,

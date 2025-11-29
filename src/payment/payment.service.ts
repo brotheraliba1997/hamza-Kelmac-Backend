@@ -33,6 +33,12 @@ import {
   BookingStatus,
   PaymentMethod as BookingPaymentMethod,
 } from '../booking/dto/create-booking.dto';
+import {
+  convertIdToString,
+  sanitizeMongooseDocument,
+} from '../utils/convert-id';
+import { PurchaseOrderEntity } from '../purchaseOrder/domain/purchase-order.entity';
+import { PaymentEntity } from './domain/payment.entity';
 
 @Injectable()
 export class PaymentService {
@@ -53,6 +59,18 @@ export class PaymentService {
     private configService: ConfigService<AllConfigType>,
     private readonly classScheduleHelper: ClassScheduleHelperService, // ✅ Inject
   ) {}
+
+  private map(doc: any): PaymentEntity {
+    if (!doc) return undefined as any;
+
+    const sanitized = sanitizeMongooseDocument(doc);
+    if (!sanitized) return undefined as any;
+
+    return {
+      ...sanitized,
+      id: sanitized.id || convertIdToString(doc),
+    };
+  }
 
   /**
    * Create a payment intent for a course purchase
@@ -747,15 +765,15 @@ export class PaymentService {
         course: new Types.ObjectId(courseId),
       }),
     ]);
-
+    let totalPages = Math.ceil(total / limit);
     return {
-      data: payments,
-      pagination: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
+      data: payments.map((doc) => this.map(doc)),
+      limit,
+      totalItems: total,
+      totalPages,
+      currentPage: page,
+      hasNextPage: page < totalPages,
+      hasPreviousPage: page > 1,
     };
   }
 
@@ -778,15 +796,16 @@ export class PaymentService {
         .lean(),
       this.paymentModel.countDocuments(filter),
     ]);
+    let totalPages = Math.ceil(total / limit);
 
     return {
-      data: payments,
-      pagination: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
+      data: payments.map((doc) => this.map(doc)),
+      limit,
+      totalItems: total,
+      totalPages,
+      currentPage: page,
+      hasNextPage: page < totalPages,
+      hasPreviousPage: page > 1,
     };
   }
 

@@ -415,10 +415,11 @@ export class CoursesService {
     // Validate new category if provided
     if (
       dto.category &&
-      dto.category !== existingCourse.category._id.toString()
+      (dto.category !== existingCourse?.category?.toString() ||
+        dto.category !== existingCourse?.category?._id?.toString())
     ) {
       try {
-        const category = await this.categoriesService.findBySlug(dto.category);
+        const category = await this.categoriesService.findOne(dto.category);
         if (!category || !category.isActive) {
           throw new BadRequestException(
             `Category "${dto.category}" not found or is inactive`,
