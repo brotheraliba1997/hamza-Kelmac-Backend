@@ -3,6 +3,7 @@ import { now, HydratedDocument, Types } from 'mongoose';
 import { EntityDocumentHelper } from '../../utils/document-entity-helper';
 import { UserSchemaClass } from '../../users/schema/user.schema';
 import { CategorySchemaClass } from '../../category';
+import { LocationSchemaClass } from '../../location/schema/location.schema';
 
 export type CourseSchemaDocument = HydratedDocument<CourseSchemaClass>;
 
@@ -111,6 +112,25 @@ export class SessionSchemaClass {
   })
   type: string;
 
+  @Prop({
+    type: Types.ObjectId,
+    ref: LocationSchemaClass.name,
+    required: true,
+    index: true,
+  })
+  location: Types.ObjectId;
+
+  @Prop({ type: String, default: 0, min: 0, enum: ['online', 'in-person'] })
+  mode: 'online' | 'in-person';
+
+  @Prop({
+    type: Types.ObjectId,
+    ref: UserSchemaClass.name,
+    required: true,
+    index: true,
+  })
+  instructor: Types.ObjectId;
+
   @Prop({ type: [TimeBlockSchema], default: [] })
   timeBlocks: TimeBlockSchemaClass[];
 
@@ -209,15 +229,6 @@ export class CourseSchemaClass extends EntityDocumentHelper {
   @Prop({ type: String })
   description?: string;
 
-  @Prop({
-    type: Types.ObjectId,
-    ref: UserSchemaClass.name,
-    required: true,
-    index: true,
-  })
-  instructor: Types.ObjectId;
-
-  // ===== Category & Classification =====
   @Prop({
     type: Types.ObjectId,
     ref: CategorySchemaClass.name,

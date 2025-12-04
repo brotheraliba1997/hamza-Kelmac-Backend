@@ -73,6 +73,19 @@ export class SessionDto {
   @Min(0)
   @IsOptional()
   seatsLeft?: number;
+
+  @ApiPropertyOptional({ example: '68fdf94006e63abc0d5a12e4' })
+  @IsString()
+  @IsMongoId()
+  instructor: string;
+
+  @ApiPropertyOptional({ example: '6931b6648080a892831ad338' })
+  @IsMongoId()
+  location: string;
+
+  @ApiPropertyOptional({ enum: ['online', 'in-person'] })
+  @IsEnum(['online', 'in-person'])
+  mode: 'online' | 'in-person';
 }
 
 // FAQ DTO
@@ -234,8 +247,6 @@ export class CreateCourseDto {
     description: 'The MongoDB ID of the instructor',
     example: '507f1f77bcf86cd799439011',
   })
-  @IsMongoId()
-  instructor: string;
 
   // ===== Category & Classification =====
   @ApiProperty({
@@ -244,6 +255,20 @@ export class CreateCourseDto {
   })
   @IsMongoId()
   category: string;
+
+  @ApiProperty({
+    description: 'The mode of the course',
+    example: 'online',
+  })
+  @IsEnum(['online', 'in-person'])
+  mode: 'online' | 'in-person';
+
+  @ApiProperty({
+    description: 'The location of the course',
+    example: '690bc43d8ddd23690d42287e',
+  })
+  @IsMongoId()
+  location: string;
 
   @ApiPropertyOptional({
     description: 'Array of subcategory names',

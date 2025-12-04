@@ -70,7 +70,7 @@ export class AttendanceService {
 
     return {
       id: sanitized.id || convertIdToString(doc),
-      // classScheduleId: Class Schedule ID reference
+      // classScheduleId: Class Schedule ID reference 
       classScheduleId: sanitized.classScheduleId,
       // courseId: If populated, will have { id, title, slug, sessions: [...], instructor: {...} }
       //           If not populated, will be just the ID string
