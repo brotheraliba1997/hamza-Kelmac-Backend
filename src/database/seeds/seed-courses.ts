@@ -43,9 +43,8 @@ async function seedCourses() {
     }
 
     try {
-      businessTrainingCategory = await categoriesService.findBySlug(
-        'business-training',
-      );
+      businessTrainingCategory =
+        await categoriesService.findBySlug('business-training');
     } catch (error) {
       // Category doesn't exist, create it
       businessTrainingCategory = await categoriesService.create({
@@ -63,8 +62,12 @@ async function seedCourses() {
     }
 
     // Get category IDs using convertIdToString utility
-    const professionalDevCategoryId = convertIdToString(professionalDevCategory);
-    const businessTrainingCategoryId = convertIdToString(businessTrainingCategory);
+    const professionalDevCategoryId = convertIdToString(
+      professionalDevCategory,
+    );
+    const businessTrainingCategoryId = convertIdToString(
+      businessTrainingCategory,
+    );
 
     if (!professionalDevCategoryId || !businessTrainingCategoryId) {
       console.error('Category objects:', {
@@ -82,6 +85,7 @@ async function seedCourses() {
 
     // IMPORTANT: Replace with actual instructor ID from your database
     const instructorId = '690ca50a894467cca53ecb92'; // REPLACE THIS!
+    const locationId = '6931b6698080a892831ad377'; // REPLACE THIS!
 
     // 20 Courses Data
     const courses = [
@@ -93,10 +97,16 @@ async function seedCourses() {
           'Master advanced leadership techniques and strategies to lead high-performing teams and drive organizational success.',
         category: professionalDevCategoryId,
         subcategories: ['Leadership', 'Management'],
-        topics: ['Strategic Leadership', 'Team Building', 'Decision Making', 'Conflict Resolution'],
+        topics: [
+          'Strategic Leadership',
+          'Team Building',
+          'Decision Making',
+          'Conflict Resolution',
+        ],
         overview:
           'Comprehensive leadership program designed for senior managers and executives looking to enhance their leadership capabilities.',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1552664730-d307ca884978',
+        thumbnailUrl:
+          'https://images.unsplash.com/photo-1552664730-d307ca884978',
         sessions: [
           {
             type: SessionFormatEnum.FULL_WEEK,
@@ -109,6 +119,7 @@ async function seedCourses() {
                 timeZone: 'Eastern Time (GMT-5)',
               },
             ],
+            mode: 'online',
             seatsLeft: 20,
           },
           {
@@ -122,6 +133,8 @@ async function seedCourses() {
                 timeZone: 'Eastern Time (GMT-5)',
               },
             ],
+            instructor: instructorId,
+            location: locationId ,
             seatsLeft: 20,
           },
         ],
@@ -141,14 +154,22 @@ async function seedCourses() {
             'Building high-performance teams',
             'Change management strategies',
           ],
-          requirements: ['5+ years management experience', 'Commitment to learning'],
+          requirements: [
+            '5+ years management experience',
+            'Commitment to learning',
+          ],
           targetAudience: ['Senior Managers', 'Executives', 'Team Leaders'],
-          features: ['Lifetime access', 'Certificate', '1-on-1 coaching sessions'],
+          features: [
+            'Lifetime access',
+            'Certificate',
+            '1-on-1 coaching sessions',
+          ],
         },
         faqs: [
           {
             question: 'Is this course suitable for beginners?',
-            answer: 'This course is designed for experienced managers and leaders.',
+            answer:
+              'This course is designed for experienced managers and leaders.',
           },
         ],
         price: 499.0,
@@ -166,8 +187,10 @@ async function seedCourses() {
         category: businessTrainingCategoryId,
         subcategories: ['Marketing'],
         topics: ['SEO', 'Social Media', 'Content Marketing', 'Analytics'],
-        overview: 'Complete guide to digital marketing for businesses and marketers.',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f',
+        overview:
+          'Complete guide to digital marketing for businesses and marketers.',
+        thumbnailUrl:
+          'https://images.unsplash.com/photo-1460925895917-afdab827c52f',
         sessions: [
           {
             type: SessionFormatEnum.SPLIT_WEEK,
@@ -187,7 +210,10 @@ async function seedCourses() {
                 timeZone: 'Eastern Time (GMT-5)',
               },
             ],
+            instructor: instructorId,
+            location: locationId ,
             seatsLeft: 25,
+            mode: 'online',
           },
         ],
         snapshot: {
@@ -207,8 +233,16 @@ async function seedCourses() {
             'Marketing analytics and reporting',
           ],
           requirements: ['Basic computer skills', 'Internet connection'],
-          targetAudience: ['Marketing Professionals', 'Business Owners', 'Entrepreneurs'],
-          features: ['Practical exercises', 'Real-world case studies', 'Certificate'],
+          targetAudience: [
+            'Marketing Professionals',
+            'Business Owners',
+            'Entrepreneurs',
+          ],
+          features: [
+            'Practical exercises',
+            'Real-world case studies',
+            'Certificate',
+          ],
         },
         price: 299.0,
         currency: CurrencyEnum.USD,
@@ -224,9 +258,16 @@ async function seedCourses() {
           'Comprehensive project management training covering PMP exam preparation and real-world project execution.',
         category: professionalDevCategoryId,
         subcategories: ['Management'],
-        topics: ['Project Planning', 'Risk Management', 'Stakeholder Management', 'Agile'],
-        overview: 'Prepare for PMP certification while learning practical project management skills.',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40',
+        topics: [
+          'Project Planning',
+          'Risk Management',
+          'Stakeholder Management',
+          'Agile',
+        ],
+        overview:
+          'Prepare for PMP certification while learning practical project management skills.',
+        thumbnailUrl:
+          'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40',
         sessions: [
           {
             type: SessionFormatEnum.EVENING,
@@ -239,7 +280,10 @@ async function seedCourses() {
                 timeZone: 'Eastern Time (GMT-5)',
               },
             ],
+            instructor: instructorId,
+            location: locationId ,
             seatsLeft: 15,
+            mode: 'online',
           },
         ],
         snapshot: {
@@ -276,9 +320,16 @@ async function seedCourses() {
           'Learn to analyze financial statements, create reports, and make data-driven financial decisions.',
         category: businessTrainingCategoryId,
         subcategories: ['Finance'],
-        topics: ['Financial Statements', 'Ratio Analysis', 'Budgeting', 'Forecasting'],
-        overview: 'Comprehensive financial analysis course for business professionals.',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71',
+        topics: [
+          'Financial Statements',
+          'Ratio Analysis',
+          'Budgeting',
+          'Forecasting',
+        ],
+        overview:
+          'Comprehensive financial analysis course for business professionals.',
+        thumbnailUrl:
+          'https://images.unsplash.com/photo-1551288049-bebda4e38f71',
         sessions: [
           {
             type: SessionFormatEnum.FULL_WEEK,
@@ -291,7 +342,10 @@ async function seedCourses() {
                 timeZone: 'Eastern Time (GMT-5)',
               },
             ],
+            instructor: instructorId,
+            location: locationId ,
             seatsLeft: 18,
+            mode: 'online',
           },
         ],
         snapshot: {
@@ -328,9 +382,15 @@ async function seedCourses() {
           'Learn data science fundamentals including Python, statistics, machine learning, and data visualization.',
         category: businessTrainingCategoryId,
         subcategories: ['Strategy'],
-        topics: ['Python', 'Statistics', 'Machine Learning', 'Data Visualization'],
+        topics: [
+          'Python',
+          'Statistics',
+          'Machine Learning',
+          'Data Visualization',
+        ],
         overview: 'Complete introduction to data science for beginners.',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71',
+        thumbnailUrl:
+          'https://images.unsplash.com/photo-1551288049-bebda4e38f71',
         sessions: [
           {
             type: SessionFormatEnum.WEEKEND,
@@ -350,7 +410,10 @@ async function seedCourses() {
                 timeZone: 'Eastern Time (GMT-5)',
               },
             ],
+            instructor: instructorId,
+            location: locationId ,
             seatsLeft: 22,
+            mode: 'online',
           },
         ],
         snapshot: {
@@ -370,7 +433,11 @@ async function seedCourses() {
             'Data visualization with Python',
           ],
           requirements: ['Basic programming knowledge helpful'],
-          targetAudience: ['Aspiring Data Scientists', 'Analysts', 'Developers'],
+          targetAudience: [
+            'Aspiring Data Scientists',
+            'Analysts',
+            'Developers',
+          ],
           features: ['Hands-on projects', 'Jupyter notebooks', 'Certificate'],
         },
         price: 449.0,
@@ -387,9 +454,15 @@ async function seedCourses() {
           'Enhance your communication skills for better workplace relationships and career success.',
         category: professionalDevCategoryId,
         subcategories: ['Corporate Training'],
-        topics: ['Public Speaking', 'Written Communication', 'Active Listening', 'Negotiation'],
+        topics: [
+          'Public Speaking',
+          'Written Communication',
+          'Active Listening',
+          'Negotiation',
+        ],
         overview: 'Comprehensive communication training for professionals.',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1521737604893-d14cc237f11d',
+        thumbnailUrl:
+          'https://images.unsplash.com/photo-1521737604893-d14cc237f11d',
         sessions: [
           {
             type: SessionFormatEnum.EVENING,
@@ -402,7 +475,10 @@ async function seedCourses() {
                 timeZone: 'Eastern Time (GMT-5)',
               },
             ],
+            instructor: instructorId,
+            location: locationId ,
             seatsLeft: 30,
+            mode: 'online',
           },
         ],
         snapshot: {
@@ -439,9 +515,15 @@ async function seedCourses() {
           'Learn to create comprehensive business plans and strategic roadmaps for organizational success.',
         category: businessTrainingCategoryId,
         subcategories: ['Strategy'],
-        topics: ['Business Planning', 'Strategic Analysis', 'Goal Setting', 'Execution'],
+        topics: [
+          'Business Planning',
+          'Strategic Analysis',
+          'Goal Setting',
+          'Execution',
+        ],
         overview: 'Master the art of strategic business planning.',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1556761175-5973dc0f32e7',
+        thumbnailUrl:
+          'https://images.unsplash.com/photo-1556761175-5973dc0f32e7',
         sessions: [
           {
             type: SessionFormatEnum.FULL_WEEK,
@@ -454,7 +536,10 @@ async function seedCourses() {
                 timeZone: 'Eastern Time (GMT-5)',
               },
             ],
+            instructor: instructorId,
+            location: locationId ,
             seatsLeft: 16,
+            mode: 'online',
           },
         ],
         snapshot: {
@@ -491,9 +576,15 @@ async function seedCourses() {
           'Master Agile methodologies and Scrum framework for effective project delivery.',
         category: professionalDevCategoryId,
         subcategories: ['Management'],
-        topics: ['Agile Principles', 'Scrum Framework', 'Sprint Planning', 'Retrospectives'],
+        topics: [
+          'Agile Principles',
+          'Scrum Framework',
+          'Sprint Planning',
+          'Retrospectives',
+        ],
         overview: 'Complete Agile and Scrum certification course.',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1551434678-e076c223a692',
+        thumbnailUrl:
+          'https://images.unsplash.com/photo-1551434678-e076c223a692',
         sessions: [
           {
             type: SessionFormatEnum.SPLIT_WEEK,
@@ -513,7 +604,10 @@ async function seedCourses() {
                 timeZone: 'Eastern Time (GMT-5)',
               },
             ],
+            instructor: instructorId,
+            location: locationId ,
             seatsLeft: 20,
+            mode: 'online',
           },
         ],
         snapshot: {
@@ -550,9 +644,15 @@ async function seedCourses() {
           'Learn to provide exceptional customer service and build lasting customer relationships.',
         category: businessTrainingCategoryId,
         subcategories: ['Operations'],
-        topics: ['Customer Relations', 'Problem Solving', 'Service Recovery', 'CRM'],
+        topics: [
+          'Customer Relations',
+          'Problem Solving',
+          'Service Recovery',
+          'CRM',
+        ],
         overview: 'Comprehensive customer service training program.',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1556761175-4b46a572b786',
+        thumbnailUrl:
+          'https://images.unsplash.com/photo-1556761175-4b46a572b786',
         sessions: [
           {
             type: SessionFormatEnum.EVENING,
@@ -565,7 +665,10 @@ async function seedCourses() {
                 timeZone: 'Eastern Time (GMT-5)',
               },
             ],
+            instructor: instructorId,
+            location: locationId ,
             seatsLeft: 35,
+            mode: 'online',
           },
         ],
         snapshot: {
@@ -585,7 +688,11 @@ async function seedCourses() {
             'CRM system usage',
           ],
           requirements: ['None'],
-          targetAudience: ['Customer Service Reps', 'Support Staff', 'Managers'],
+          targetAudience: [
+            'Customer Service Reps',
+            'Support Staff',
+            'Managers',
+          ],
           features: ['Role-playing exercises', 'Case studies', 'Certificate'],
         },
         price: 149.0,
@@ -602,9 +709,15 @@ async function seedCourses() {
           'Master supply chain management principles, logistics, and optimization strategies.',
         category: businessTrainingCategoryId,
         subcategories: ['Operations'],
-        topics: ['Logistics', 'Inventory Management', 'Procurement', 'Distribution'],
+        topics: [
+          'Logistics',
+          'Inventory Management',
+          'Procurement',
+          'Distribution',
+        ],
         overview: 'Complete supply chain management course.',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d',
+        thumbnailUrl:
+          'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d',
         sessions: [
           {
             type: SessionFormatEnum.FULL_WEEK,
@@ -617,7 +730,10 @@ async function seedCourses() {
                 timeZone: 'Eastern Time (GMT-5)',
               },
             ],
+            instructor: instructorId,
+            location: locationId ,
             seatsLeft: 18,
+            mode: 'online',
           },
         ],
         snapshot: {
@@ -637,8 +753,16 @@ async function seedCourses() {
             'Distribution network design',
           ],
           requirements: ['Business background helpful'],
-          targetAudience: ['Operations Managers', 'Logistics Professionals', 'Procurement'],
-          features: ['Industry case studies', 'Tools and templates', 'Certificate'],
+          targetAudience: [
+            'Operations Managers',
+            'Logistics Professionals',
+            'Procurement',
+          ],
+          features: [
+            'Industry case studies',
+            'Tools and templates',
+            'Certificate',
+          ],
         },
         price: 429.0,
         currency: CurrencyEnum.USD,
@@ -654,9 +778,15 @@ async function seedCourses() {
           'Learn proven time management techniques to increase productivity and achieve work-life balance.',
         category: professionalDevCategoryId,
         subcategories: ['Corporate Training'],
-        topics: ['Productivity', 'Prioritization', 'Goal Setting', 'Work-Life Balance'],
+        topics: [
+          'Productivity',
+          'Prioritization',
+          'Goal Setting',
+          'Work-Life Balance',
+        ],
         overview: 'Transform your time management skills.',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b',
+        thumbnailUrl:
+          'https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b',
         sessions: [
           {
             type: SessionFormatEnum.WEEKEND,
@@ -669,7 +799,10 @@ async function seedCourses() {
                 timeZone: 'Eastern Time (GMT-5)',
               },
             ],
+            instructor: instructorId,
+            location: locationId ,
             seatsLeft: 40,
+            mode: 'online',
           },
         ],
         snapshot: {
@@ -706,9 +839,15 @@ async function seedCourses() {
           'Learn advanced sales techniques, negotiation skills, and business development strategies.',
         category: businessTrainingCategoryId,
         subcategories: ['Marketing'],
-        topics: ['Sales Techniques', 'Negotiation', 'Relationship Building', 'Closing'],
+        topics: [
+          'Sales Techniques',
+          'Negotiation',
+          'Relationship Building',
+          'Closing',
+        ],
         overview: 'Comprehensive sales and business development training.',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1556761175-5973dc0f32e7',
+        thumbnailUrl:
+          'https://images.unsplash.com/photo-1556761175-5973dc0f32e7',
         sessions: [
           {
             type: SessionFormatEnum.SPLIT_WEEK,
@@ -728,7 +867,10 @@ async function seedCourses() {
                 timeZone: 'Eastern Time (GMT-5)',
               },
             ],
+            instructor: instructorId,
+            location: locationId ,
             seatsLeft: 25,
+            mode: 'online',
           },
         ],
         snapshot: {
@@ -748,7 +890,11 @@ async function seedCourses() {
             'Closing techniques',
           ],
           requirements: ['Sales experience helpful'],
-          targetAudience: ['Sales Professionals', 'Business Developers', 'Account Managers'],
+          targetAudience: [
+            'Sales Professionals',
+            'Business Developers',
+            'Account Managers',
+          ],
           features: ['Role-playing exercises', 'Sales scripts', 'Certificate'],
         },
         price: 379.0,
@@ -765,9 +911,15 @@ async function seedCourses() {
           'Master HR management including recruitment, employee relations, performance management, and compliance.',
         category: professionalDevCategoryId,
         subcategories: ['Management'],
-        topics: ['Recruitment', 'Employee Relations', 'Performance Management', 'HR Compliance'],
+        topics: [
+          'Recruitment',
+          'Employee Relations',
+          'Performance Management',
+          'HR Compliance',
+        ],
         overview: 'Comprehensive HR management training program.',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1521737604893-d14cc237f11d',
+        thumbnailUrl:
+          'https://images.unsplash.com/photo-1521737604893-d14cc237f11d',
         sessions: [
           {
             type: SessionFormatEnum.FULL_WEEK,
@@ -780,7 +932,10 @@ async function seedCourses() {
                 timeZone: 'Eastern Time (GMT-5)',
               },
             ],
+            instructor: instructorId,
+            location: locationId ,
             seatsLeft: 20,
+            mode: 'online',
           },
         ],
         snapshot: {
@@ -817,9 +972,15 @@ async function seedCourses() {
           'Learn to analyze business data, create dashboards, and make data-driven business decisions.',
         category: businessTrainingCategoryId,
         subcategories: ['Strategy'],
-        topics: ['Data Analysis', 'Business Intelligence', 'Dashboards', 'Reporting'],
+        topics: [
+          'Data Analysis',
+          'Business Intelligence',
+          'Dashboards',
+          'Reporting',
+        ],
         overview: 'Master business analytics and intelligence tools.',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71',
+        thumbnailUrl:
+          'https://images.unsplash.com/photo-1551288049-bebda4e38f71',
         sessions: [
           {
             type: SessionFormatEnum.EVENING,
@@ -832,7 +993,10 @@ async function seedCourses() {
                 timeZone: 'Eastern Time (GMT-5)',
               },
             ],
+            instructor: instructorId,
+            location: locationId ,
             seatsLeft: 22,
+            mode: 'online',
           },
         ],
         snapshot: {
@@ -869,9 +1033,16 @@ async function seedCourses() {
           'Learn effective conflict resolution and mediation techniques for the workplace.',
         category: professionalDevCategoryId,
         subcategories: ['Corporate Training'],
-        topics: ['Conflict Management', 'Mediation', 'Negotiation', 'Communication'],
-        overview: 'Master conflict resolution skills for better workplace harmony.',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1552664730-d307ca884978',
+        topics: [
+          'Conflict Management',
+          'Mediation',
+          'Negotiation',
+          'Communication',
+        ],
+        overview:
+          'Master conflict resolution skills for better workplace harmony.',
+        thumbnailUrl:
+          'https://images.unsplash.com/photo-1552664730-d307ca884978',
         sessions: [
           {
             type: SessionFormatEnum.WEEKEND,
@@ -884,7 +1055,10 @@ async function seedCourses() {
                 timeZone: 'Eastern Time (GMT-5)',
               },
             ],
+            instructor: instructorId,
+            location: locationId ,
             seatsLeft: 28,
+            mode: 'online',
           },
         ],
         snapshot: {
@@ -921,9 +1095,15 @@ async function seedCourses() {
           'Learn to optimize business operations, improve efficiency, and reduce costs.',
         category: businessTrainingCategoryId,
         subcategories: ['Operations'],
-        topics: ['Process Optimization', 'Quality Management', 'Lean Principles', 'Six Sigma'],
+        topics: [
+          'Process Optimization',
+          'Quality Management',
+          'Lean Principles',
+          'Six Sigma',
+        ],
         overview: 'Comprehensive operations management training.',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d',
+        thumbnailUrl:
+          'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d',
         sessions: [
           {
             type: SessionFormatEnum.FULL_WEEK,
@@ -936,7 +1116,10 @@ async function seedCourses() {
                 timeZone: 'Eastern Time (GMT-5)',
               },
             ],
+            instructor: instructorId,
+            location: locationId ,
             seatsLeft: 18,
+            mode: 'online',
           },
         ],
         snapshot: {
@@ -956,7 +1139,11 @@ async function seedCourses() {
             'Operations strategy',
           ],
           requirements: ['Operations experience recommended'],
-          targetAudience: ['Operations Managers', 'Process Engineers', 'Quality Managers'],
+          targetAudience: [
+            'Operations Managers',
+            'Process Engineers',
+            'Quality Managers',
+          ],
           features: ['Process templates', 'Case studies', 'Certificate'],
         },
         price: 549.0,
@@ -973,9 +1160,15 @@ async function seedCourses() {
           'Learn to build, motivate, and manage high-performing teams for organizational success.',
         category: professionalDevCategoryId,
         subcategories: ['Leadership'],
-        topics: ['Team Building', 'Collaboration', 'Motivation', 'Team Dynamics'],
+        topics: [
+          'Team Building',
+          'Collaboration',
+          'Motivation',
+          'Team Dynamics',
+        ],
         overview: 'Master team building and collaboration strategies.',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c',
+        thumbnailUrl:
+          'https://images.unsplash.com/photo-1522071820081-009f0129c71c',
         sessions: [
           {
             type: SessionFormatEnum.SPLIT_WEEK,
@@ -995,7 +1188,10 @@ async function seedCourses() {
                 timeZone: 'Eastern Time (GMT-5)',
               },
             ],
+            instructor: instructorId,
+            location: locationId ,
             seatsLeft: 24,
+            mode: 'online',
           },
         ],
         snapshot: {
@@ -1032,9 +1228,16 @@ async function seedCourses() {
           'Learn the fundamentals of entrepreneurship including business planning, funding, and growth strategies.',
         category: businessTrainingCategoryId,
         subcategories: ['Strategy'],
-        topics: ['Business Planning', 'Funding', 'Marketing', 'Growth Strategies'],
-        overview: 'Complete entrepreneurship course for aspiring business owners.',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1556761175-4b46a572b786',
+        topics: [
+          'Business Planning',
+          'Funding',
+          'Marketing',
+          'Growth Strategies',
+        ],
+        overview:
+          'Complete entrepreneurship course for aspiring business owners.',
+        thumbnailUrl:
+          'https://images.unsplash.com/photo-1556761175-4b46a572b786',
         sessions: [
           {
             type: SessionFormatEnum.WEEKEND,
@@ -1054,7 +1257,10 @@ async function seedCourses() {
                 timeZone: 'Eastern Time (GMT-5)',
               },
             ],
+            instructor: instructorId,
+            location: locationId ,
             seatsLeft: 30,
+            mode: 'online',
           },
         ],
         snapshot: {
@@ -1074,8 +1280,16 @@ async function seedCourses() {
             'Growth and scaling techniques',
           ],
           requirements: ['None'],
-          targetAudience: ['Aspiring Entrepreneurs', 'Startup Founders', 'Business Owners'],
-          features: ['Business plan templates', 'Funding guides', 'Certificate'],
+          targetAudience: [
+            'Aspiring Entrepreneurs',
+            'Startup Founders',
+            'Business Owners',
+          ],
+          features: [
+            'Business plan templates',
+            'Funding guides',
+            'Certificate',
+          ],
         },
         price: 299.0,
         currency: CurrencyEnum.USD,
@@ -1091,9 +1305,15 @@ async function seedCourses() {
           'Learn to effectively lead and manage organizational change initiatives.',
         category: professionalDevCategoryId,
         subcategories: ['Management'],
-        topics: ['Change Leadership', 'Change Planning', 'Stakeholder Management', 'Resistance'],
+        topics: [
+          'Change Leadership',
+          'Change Planning',
+          'Stakeholder Management',
+          'Resistance',
+        ],
         overview: 'Master change management for organizational transformation.',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1551434678-e076c223a692',
+        thumbnailUrl:
+          'https://images.unsplash.com/photo-1551434678-e076c223a692',
         sessions: [
           {
             type: SessionFormatEnum.EVENING,
@@ -1106,7 +1326,10 @@ async function seedCourses() {
                 timeZone: 'Eastern Time (GMT-5)',
               },
             ],
+            instructor: instructorId,
+            location: locationId ,
             seatsLeft: 20,
+            mode: 'online',
           },
         ],
         snapshot: {
@@ -1143,9 +1366,15 @@ async function seedCourses() {
           'Learn quality management systems, ISO standards, and quality assurance processes.',
         category: businessTrainingCategoryId,
         subcategories: ['Operations'],
-        topics: ['ISO Standards', 'Quality Assurance', 'Quality Control', 'Auditing'],
+        topics: [
+          'ISO Standards',
+          'Quality Assurance',
+          'Quality Control',
+          'Auditing',
+        ],
         overview: 'Comprehensive quality management training.',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40',
+        thumbnailUrl:
+          'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40',
         sessions: [
           {
             type: SessionFormatEnum.FULL_WEEK,
@@ -1158,7 +1387,10 @@ async function seedCourses() {
                 timeZone: 'Eastern Time (GMT-5)',
               },
             ],
+            instructor: instructorId,
+            location: locationId ,
             seatsLeft: 16,
+            mode: 'online',
           },
         ],
         snapshot: {
@@ -1178,7 +1410,11 @@ async function seedCourses() {
             'Internal auditing techniques',
           ],
           requirements: ['Quality experience helpful'],
-          targetAudience: ['Quality Managers', 'Auditors', 'Operations Managers'],
+          targetAudience: [
+            'Quality Managers',
+            'Auditors',
+            'Operations Managers',
+          ],
           features: ['ISO templates', 'Audit checklists', 'Certificate'],
         },
         price: 479.0,
@@ -1210,11 +1446,8 @@ async function seedCourses() {
           continue;
         }
 
-        // Create course with instructor ID
-        const course = await coursesService.create({
-          ...courseData,
-          instructor: instructorId,
-        });
+        // Create course (instructor is already in sessions, not at course level)
+        const course = await coursesService.create(courseData as any);
 
         console.log(`✅ Created: ${course.title} (ID: ${course.id})`);
         createdCount++;
@@ -1229,10 +1462,16 @@ async function seedCourses() {
           error: error.message,
           errorStack: error.stack,
         });
-        
+
         // If it's a category error, show more details
-        if (error.message?.includes('Category') || error.message?.includes('category')) {
-          console.error('   Category validation failed. Category ID:', courseData.category);
+        if (
+          error.message?.includes('Category') ||
+          error.message?.includes('category')
+        ) {
+          console.error(
+            '   Category validation failed. Category ID:',
+            courseData.category,
+          );
         }
       }
     }
@@ -1251,4 +1490,3 @@ async function seedCourses() {
 }
 
 void seedCourses();
-

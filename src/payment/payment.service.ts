@@ -159,29 +159,29 @@ export class PaymentService {
       booking.paymentMethod = BookingPaymentMethod.STRIPE;
       await booking.save();
 
-      try {
-        for (const session of course?.sessions) {
-          if (session.timeBlocks && session.timeBlocks.length > 0) {
-            const firstTimeBlock = session.timeBlocks[0];
+      // try {
+      //   for (const session of course?.sessions) {
+      //     if (session.timeBlocks && session.timeBlocks.length > 0) {
+      //       const firstTimeBlock = session.timeBlocks[0];
 
-            await this.classScheduleHelper.addStudentToSchedule(
-              booking.courseId.toString(),
-              booking.studentId.toString(),
-              {
-                sessionId: booking.sessionId,
-                instructor: course?.instructor,
-                date: firstTimeBlock.startDate,
-                time: firstTimeBlock.startTime,
-                duration: 60,
-                timeTableId: booking.timeTableId,
-              } as any,
-            );
-            console.log('✅ Student added to schedule successfully');
-          }
-        }
-      } catch (error) {
-        console.warn(`Failed to add student to schedule: ${error.message}`);
-      }
+      //       await this.classScheduleHelper.addStudentToSchedule(
+      //         booking.courseId.toString(),
+      //         booking.studentId.toString(),
+      //         {
+      //           sessionId: booking.sessionId,
+      //           instructor: course?.instructor,
+      //           date: firstTimeBlock.startDate,
+      //           time: firstTimeBlock.startTime,
+      //           duration: 60,
+      //           timeTableId: booking.timeTableId,
+      //         } as any,
+      //       );
+      //       console.log('✅ Student added to schedule successfully');
+      //     }
+      //   }
+      // } catch (error) {
+      //   console.warn(`Failed to add student to schedule: ${error.message}`);
+      // }
 
       await payment.save();
 

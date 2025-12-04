@@ -67,6 +67,10 @@ export class CoursesController {
   @HttpCode(HttpStatus.CREATED)
   @Post()
   create(@Body() dto: CreateCourseDto) {
+    // return {
+    //   message: 'Course created successfully',
+    //   data: dto?.sessions,
+    // };
     return this.service.create(dto);
   }
 

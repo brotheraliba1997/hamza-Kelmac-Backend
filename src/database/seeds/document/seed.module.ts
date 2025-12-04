@@ -4,6 +4,7 @@ import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 
 import { UserSeedModule } from './user/user-seed.module';
+import { LocationSeedModule } from './location/location-seed.module';
 import appConfig from '../../../config/app.config';
 import databaseConfig from '../../config/database.config';
 import { MongooseConfigService } from '../../mongoose-config.service';
@@ -11,6 +12,7 @@ import { MongooseConfigService } from '../../mongoose-config.service';
 @Module({
   imports: [
     UserSeedModule,
+    LocationSeedModule,
     ConfigModule.forRoot({
       isGlobal: true,
       load: [databaseConfig, appConfig],

@@ -231,44 +231,65 @@ export class CoursesService {
       }
     }
 
-    // Populate instructor for email
+    // Populate sessions with instructor for email
     const populatedCourse = await this.courseModel
       .findById(created._id)
-      .populate('instructor')
+      .populate('sessions.instructor')
       .lean();
 
     if (populatedCourse) {
-      const instructor = populatedCourse.instructor as any;
-      const adminEmail = this.configService.get('app.adminEmail', {
-        infer: true,
-      });
+      for (const session of populatedCourse.sessions) {
+        const instructor = session.instructor as any;
 
-      const emailData = {
-        courseTitle: populatedCourse.title,
-        instructorName: instructor?.firstName
-          ? `${instructor.firstName} ${instructor.lastName || ''}`
-          : instructor?.email || 'Unknown Instructor',
-        description: populatedCourse.description,
-        price: populatedCourse.price,
-        courseUrl: `${this.configService.get('app.frontendDomain', { infer: true })}/courses/${created._id}`,
-      };
+        const emailData = {
+          courseTitle: populatedCourse.title,
+          instructorName: instructor?.firstName
+            ? `${instructor.firstName} ${instructor.lastName || ''}`
+            : instructor?.email || 'Unknown Instructor',
+          description: populatedCourse.description,
+          price: populatedCourse.price,
+          courseUrl: `${this.configService.get('app.frontendDomain', { infer: true })}/courses/${created._id}`,
+        };
 
-      try {
-        // Send email to admin
-        if (adminEmail) {
-          await this.mailService.courseCreated({
-            to: adminEmail,
-            data: emailData,
-          });
-        }
-
-        // Send email to instructor (course creator)
         if (instructor?.email) {
           await this.mailService.courseCreated({
             to: instructor.email,
             data: emailData,
           });
         }
+      }
+      // const instructor = populatedCourse.sessions[0].instructor as any;
+
+      // const adminEmail = this.configService.get('app.adminEmail', {
+      //   infer: true,
+      // });
+
+      // const emailData = {
+      //   courseTitle: populatedCourse.title,
+      //   // instructorName: instructor?.firstName
+      //   //   ? `${instructor.firstName} ${instructor.lastName || ''}`
+      //   //   : instructor?.email || 'Unknown Instructor',
+      //   description: populatedCourse.description,
+      //   price: populatedCourse.price,
+      //   courseUrl: `${this.configService.get('app.frontendDomain', { infer: true })}/courses/${created._id}`,
+      // };
+
+      try {
+        // Send email to admin
+        // if (adminEmail) {
+        //   await this.mailService.courseCreated({
+        //     to: adminEmail,
+        //     data: emailData,
+        //   });
+        // }
+
+        // Send email to instructor (course creator)
+        // if (instructor?.email) {
+        //   await this.mailService.courseCreated({
+        //     to: instructor.email,
+        //     data: emailData,
+        //   });
+        // }
       } catch (error) {
         // Log error but don't fail course creation
         console.error('Failed to send course creation emails:', error);
@@ -448,7 +469,7 @@ export class CoursesService {
 
     const doc = await this.courseModel
       .findByIdAndUpdate(id, dto, { new: true })
-      .populate('instructor', 'lastName firstName email')
+      .populate('sessions.instructor', 'lastName firstName email')
       .populate('category', 'name slug description icon color')
       .lean();
     return doc ? this.map(doc) : null;

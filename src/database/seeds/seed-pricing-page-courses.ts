@@ -617,7 +617,7 @@ async function seedCoursesFromPricingPage() {
     for (const courseData of courses) {
       try {
         // Replace category slug with actual ObjectId
-        let categoryId: string;
+        let categoryId: '690c53dc3a55cec55661052d';
         if (courseData.category === 'professional-development') {
           categoryId = professionalDevCategory.id;
         } else if (courseData.category === 'business-training') {
@@ -626,11 +626,7 @@ async function seedCoursesFromPricingPage() {
           throw new Error(`Unknown category: ${courseData.category}`);
         }
 
-        const course = await coursesService.create({
-          ...courseData,
-          category: categoryId,
-          instructor: instructorId,
-        });
+        const course = await coursesService.create({ ...(courseData as any) });
         console.log(`✅ Created course: ${courseData.title}`);
         console.log(`   Slug: ${course.slug}`);
         console.log(`   Price: $${courseData.price} ${courseData.currency}`);

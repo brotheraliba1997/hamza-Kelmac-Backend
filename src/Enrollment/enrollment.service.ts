@@ -91,7 +91,7 @@ export class EnrollmentService {
         {
           path: 'course',
           select: 'title price',
-          populate: { path: 'instructor', select: 'lastName firstName email' },
+          populate: { path: 'sessions.instructor', select: 'lastName firstName email' },
         },
       ],
       mapper: (doc) => this.map(doc),
