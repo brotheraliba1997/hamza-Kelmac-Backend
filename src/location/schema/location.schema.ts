@@ -14,14 +14,15 @@ export class LocationSchemaClass extends EntityDocumentHelper {
 
   @Prop({ type: String, trim: true, index: true })
   countryCode?: string;
+
+  @Prop({ type: String, trim: true, index: true, default: 'usd' })
+  currency?: string;
 }
 
 export const LocationSchema = SchemaFactory.createForClass(LocationSchemaClass);
 
-
 LocationSchema.index({ country: 1 });
 LocationSchema.index({ countryCode: 1 });
-
 
 LocationSchema.index({
   country: 'text',

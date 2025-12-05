@@ -40,6 +40,7 @@ import { GoogleModule } from './googleService/google.module';
 import { BookingsModule } from './booking/booking.module';
 import { PurchaseOrderModule } from './purchaseOrder/purchase.module';
 import { AttendanceModule } from './attendance/attendence.module';
+import { LocationModule } from './location/location.module';
 
 // <database-block>
 const infrastructureDatabaseModule = (databaseConfig() as DatabaseConfig)
@@ -118,7 +119,7 @@ const infrastructureDatabaseModule = (databaseConfig() as DatabaseConfig)
     BookingsModule,
     PurchaseOrderModule,
     AttendanceModule,
-    
+    LocationModule,
   ],
 })
 export class AppModule {}

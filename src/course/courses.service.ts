@@ -282,7 +282,6 @@ export class CoursesService {
         //     data: emailData,
         //   });
         // }
-
         // Send email to instructor (course creator)
         // if (instructor?.email) {
         //   await this.mailService.courseCreated({
@@ -373,7 +372,10 @@ export class CoursesService {
       sortOptions,
       paginationOptions,
       populateFields: [
-        { path: 'instructor', select: 'lastName firstName email' },
+        { path: 'sessions.instructor', select: 'lastName firstName email' },
+        {
+          path: 'sessions.location',
+        },
         { path: 'category', select: 'name slug description icon color' },
       ],
       mapper: (doc) => this.map(doc),
@@ -384,11 +386,11 @@ export class CoursesService {
     const doc = await this.courseModel
       .findById(id)
       .populate([
-        { path: 'instructor', select: 'lastName firstName email' },
-        { path: 'category', select: 'name slug description icon color' },
+        { path: 'sessions.instructor', select: 'lastName firstName email' },
         {
-          path: 'timeTable',
+          path: 'sessions.location',
         },
+        { path: 'category', select: 'name slug description icon color' },
       ])
       .lean({ virtuals: false, getters: false });
     return doc ? this.map(doc) : null;
@@ -401,7 +403,13 @@ export class CoursesService {
     const doc = await this.courseModel
       .findOne({ slug })
       .populate([
-        { path: 'instructor', select: 'lastName firstName email' },
+        {
+          path: 'sessions.instructor',
+          select: 'lastName firstName email',
+        },
+        {
+          path: 'sessions.location',
+        },
         { path: 'category', select: 'name slug description icon color' },
         {
           path: 'timeTable',
@@ -471,6 +479,7 @@ export class CoursesService {
     const doc = await this.courseModel
       .findByIdAndUpdate(id, dto, { new: true })
       .populate('sessions.instructor', 'lastName firstName email')
+      .populate('sessions.location')
       .populate('category', 'name slug description icon color')
       .lean();
     return doc ? this.map(doc) : null;

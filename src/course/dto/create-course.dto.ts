@@ -256,19 +256,19 @@ export class CreateCourseDto {
   @IsMongoId()
   category: string;
 
-  @ApiProperty({
-    description: 'The mode of the course',
-    example: 'online',
-  })
-  @IsEnum(['online', 'in-person'])
-  mode: 'online' | 'in-person';
+  // @ApiProperty({
+  //   description: 'The mode of the course',
+  //   example: 'online',
+  // })
+  // @IsEnum(['online', 'in-person'])
+  // mode: 'online' | 'in-person';
 
-  @ApiProperty({
-    description: 'The location of the course',
-    example: '690bc43d8ddd23690d42287e',
-  })
-  @IsMongoId()
-  location: string;
+  // @ApiProperty({
+  //   description: 'The location of the course',
+  //   example: '690bc43d8ddd23690d42287e',
+  // })
+  // @IsMongoId()
+  // location: string;
 
   @ApiPropertyOptional({
     description: 'Array of subcategory names',
