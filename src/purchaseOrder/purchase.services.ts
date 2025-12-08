@@ -483,7 +483,7 @@ export class PurchaseOrderService {
                           timeTableId: booking.timeTableId,
                         } as any,
                       );
-                      console.log('✅ Student added to schedule successfully');
+                      console.log('✅ Student added to schedules successfully');
                     }
                   }
                 }
