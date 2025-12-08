@@ -489,7 +489,7 @@ export class PurchaseOrderService {
                 }
               } catch (error) {
                 console.warn(
-                  `Failed to add student to schedule: ${error.message}`,
+                  `Failed to add student to schedules: ${error.message}`,
                 );
               }
             }
