@@ -33,12 +33,6 @@ import {
   BookingStatus,
   PaymentMethod as BookingPaymentMethod,
 } from '../booking/dto/create-booking.dto';
-import {
-  convertIdToString,
-  sanitizeMongooseDocument,
-} from '../utils/convert-id';
-import { PurchaseOrderEntity } from '../purchaseOrder/domain/purchase-order.entity';
-import { PaymentEntity } from './domain/payment.entity';
 
 @Injectable()
 export class PaymentService {
@@ -59,18 +53,6 @@ export class PaymentService {
     private configService: ConfigService<AllConfigType>,
     private readonly classScheduleHelper: ClassScheduleHelperService, // ✅ Inject
   ) {}
-
-  private map(doc: any): PaymentEntity {
-    if (!doc) return undefined as any;
-
-    const sanitized = sanitizeMongooseDocument(doc);
-    if (!sanitized) return undefined as any;
-
-    return {
-      ...sanitized,
-      id: sanitized.id || convertIdToString(doc),
-    };
-  }
 
   /**
    * Create a payment intent for a course purchase
@@ -163,43 +145,51 @@ export class PaymentService {
       const booking = await this.bookingModel.findOne({
         studentId: new Types.ObjectId(payment.userId),
         courseId: new Types.ObjectId(payment.courseId),
+        // sessionId: new Types.ObjectId(payment.sessionId),
       });
 
       if (!booking) {
         return {
           statusCode: 400,
           message: 'Booking not found',
-          error: 'Bad Request',
+          error: 'Bad Reques',
         };
       }
+
+      console.log(booking, 'working');
 
       booking.status = BookingStatus.CONFIRMED;
       booking.paymentMethod = BookingPaymentMethod.STRIPE;
       await booking.save();
 
-      // try {
-      //   for (const session of course?.sessions) {
-      //     if (session.timeBlocks && session.timeBlocks.length > 0) {
-      //       const firstTimeBlock = session.timeBlocks[0];
+      try {
+        for (const session of course?.sessions) {
+          const sessionId = (session as any)?._id?.toString();
+          const bookingSessionId = booking?.sessionId?.toString();
 
-      //       await this.classScheduleHelper.addStudentToSchedule(
-      //         booking.courseId.toString(),
-      //         booking.studentId.toString(),
-      //         {
-      //           sessionId: booking.sessionId,
-      //           instructor: course?.instructor,
-      //           date: firstTimeBlock.startDate,
-      //           time: firstTimeBlock.startTime,
-      //           duration: 60,
-      //           timeTableId: booking.timeTableId,
-      //         } as any,
-      //       );
-      //       console.log('✅ Student added to schedule successfully');
-      //     }
-      //   }
-      // } catch (error) {
-      //   console.warn(`Failed to add student to schedule: ${error.message}`);
-      // }
+          if (sessionId === bookingSessionId) {
+            if (session.timeBlocks && session.timeBlocks.length > 0) {
+              const firstTimeBlock = session.timeBlocks[0];
+
+              await this.classScheduleHelper.addStudentToSchedule(
+                booking.courseId.toString(),
+                booking.studentId.toString(),
+                {
+                  sessionId: sessionId,
+                  instructor: session?.instructor,
+                  date: firstTimeBlock.startDate,
+                  time: firstTimeBlock.startTime,
+                  duration: 60,
+                  timeTableId: booking.timeTableId,
+                } as any,
+              );
+              console.log('✅ Student added to schedule successfully');
+            }
+          }
+        }
+      } catch (error) {
+        console.warn(`Failed to add student to schedule: ${error.message}`);
+      }
 
       await payment.save();
 
@@ -765,15 +755,15 @@ export class PaymentService {
         course: new Types.ObjectId(courseId),
       }),
     ]);
-    let totalPages = Math.ceil(total / limit);
+
     return {
-      data: payments.map((doc) => this.map(doc)),
-      limit,
-      totalItems: total,
-      totalPages,
-      currentPage: page,
-      hasNextPage: page < totalPages,
-      hasPreviousPage: page > 1,
+      data: payments,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
     };
   }
 
@@ -796,16 +786,15 @@ export class PaymentService {
         .lean(),
       this.paymentModel.countDocuments(filter),
     ]);
-    let totalPages = Math.ceil(total / limit);
 
     return {
-      data: payments.map((doc) => this.map(doc)),
-      limit,
-      totalItems: total,
-      totalPages,
-      currentPage: page,
-      hasNextPage: page < totalPages,
-      hasPreviousPage: page > 1,
+      data: payments,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
     };
   }
 
