@@ -27,6 +27,15 @@ import {
   PassFailSummary,
   StudentPassFailResult,
 } from './dto/check-pass-fail.dto';
+import {
+  PassFailRecordSchemaClass,
+} from './schema/pass-fail-record.schema';
+import { PassFailRecordEntity } from './domain/pass-fail-record.entity';
+import {
+  ApprovePassFailDto,
+  GetPassFailRecordsDto,
+} from './dto/approve-pass-fail.dto';
+import { PassFailStatusEnum } from './schema/pass-fail-record.schema';
 
 @Injectable()
 export class AttendanceService {
@@ -35,6 +44,8 @@ export class AttendanceService {
     private readonly attendanceModel: Model<AttendanceSchemaClass>,
     @InjectModel(CourseSchemaClass.name)
     private readonly courseModel: Model<CourseSchemaClass>,
+    @InjectModel(PassFailRecordSchemaClass.name)
+    private readonly passFailRecordModel: Model<PassFailRecordSchemaClass>,
   ) {}
 
   private readonly attendancePopulate = [
@@ -81,7 +92,7 @@ export class AttendanceService {
       //          If not populated, will be just the ID string
       student: sanitized.student,
       // markedBy: If populated, will have { id, firstName, lastName, email }
-      //           If not populated, will be just the ID string
+      //           If not populated, will be just the ID strings
       markedBy: sanitized.markedBy,
       status: sanitized.status,
       notes: sanitized.notes,
@@ -434,31 +445,68 @@ export class AttendanceService {
   }
 
   /**
-   * Check Pass/Fail status for all students in a class schedule
+   * Map PassFailRecord document to entity
+   */
+  private mapPassFailRecord(doc: any): PassFailRecordEntity {
+    if (!doc) return undefined as any;
+
+    const sanitized = sanitizeMongooseDocument(doc);
+    if (!sanitized) return undefined as any;
+
+    return {
+      id: sanitized.id || convertIdToString(doc),
+      studentId: sanitized.studentId,
+      courseId: sanitized.courseId,
+      sessionId: sanitized.sessionId,
+      classScheduleId: sanitized.classScheduleId,
+      status: sanitized.status,
+      totalClasses: sanitized.totalClasses,
+      presentCount: sanitized.presentCount,
+      absentCount: sanitized.absentCount,
+      attendancePercentage: sanitized.attendancePercentage,
+      isApproved: sanitized.isApproved,
+      approvedBy: sanitized.approvedBy,
+      approvedAt: sanitized.approvedAt,
+      certificateIssued: sanitized.certificateIssued,
+      certificateId: sanitized.certificateId,
+      certificateUrl: sanitized.certificateUrl,
+      notes: sanitized.notes,
+      determinedAt: sanitized.determinedAt,
+      createdAt: sanitized.createdAt,
+      updatedAt: sanitized.updatedAt,
+    } as PassFailRecordEntity;
+  }
+
+  /**
+   * Check Pass/Fail status for all students in a course session
    * Students with ZERO absences = PASS
    * Students with ANY absence = FAIL
    * 
-   * @param dto - CheckPassFailDto containing classScheduleId, courseId, sessionId
+   * This function calculates pass/fail based on ALL attendance records for the course/session
+   * and saves the results to the database for operator review.
+   * 
+   * @param dto - CheckPassFailDto containing courseId, sessionId (classScheduleId is optional)
    * @returns PassFailSummary with all students' pass/fail results
    */
   async checkPassFailStatus(
     dto: CheckPassFailDto,
   ): Promise<PassFailSummary> {
-    const { classScheduleId, courseId, sessionId } = dto;
+    const { courseId, sessionId } = dto;
 
-    // Get all unique students who have attendance records for this class schedule
+    // Get all attendance records for this course and session (across all class schedules)
+    const query: any = {
+      courseId: new Types.ObjectId(courseId),
+      sessionId: new Types.ObjectId(sessionId),
+    };
+
     const attendanceRecords = await this.attendanceModel
-      .find({
-        classScheduleId: new Types.ObjectId(classScheduleId),
-        courseId: new Types.ObjectId(courseId),
-        sessionId: new Types.ObjectId(sessionId),
-      })
+      .find(query)
       .populate('student', 'firstName lastName email')
       .lean();
 
     if (!attendanceRecords || attendanceRecords.length === 0) {
       throw new NotFoundException(
-        'No attendance records found for this class schedule',
+        'No attendance records found for this course and session',
       );
     }
 
@@ -473,7 +521,7 @@ export class AttendanceService {
       studentAttendanceMap.get(studentId)?.push(record);
     });
 
-    // Calculate pass/fail for each student
+    // Calculate pass/fail for each student and save to database
     const results: StudentPassFailResult[] = [];
     let passedCount = 0;
     let failedCount = 0;
@@ -489,11 +537,14 @@ export class AttendanceService {
         (r: any) => r.status === 'absent',
       ).length;
       const totalClasses = records.length;
+      const attendancePercentage = totalClasses > 0 
+        ? Math.round((presentCount / totalClasses) * 100) 
+        : 0;
 
       // Determine pass/fail: PASS only if absentCount === 0
-      const result = absentCount === 0 ? 'PASS' : 'FAIL';
+      const result = absentCount === 0 ? PassFailStatusEnum.PASS : PassFailStatusEnum.FAIL;
       
-      if (result === 'PASS') {
+      if (result === PassFailStatusEnum.PASS) {
         passedCount++;
       } else {
         failedCount++;
@@ -503,14 +554,59 @@ export class AttendanceService {
         ? `${student.firstName} ${student.lastName}`
         : student.email || 'Unknown Student';
 
+      // Save or update pass/fail record in database
+      const existingRecord = await this.passFailRecordModel.findOne({
+        studentId: new Types.ObjectId(studentId),
+        courseId: new Types.ObjectId(courseId),
+        sessionId: new Types.ObjectId(sessionId),
+      });
+
+      const passFailData = {
+        studentId: new Types.ObjectId(studentId),
+        courseId: new Types.ObjectId(courseId),
+        sessionId: new Types.ObjectId(sessionId),
+        status: result,
+        totalClasses,
+        presentCount,
+        absentCount,
+        attendancePercentage,
+        determinedAt: new Date(),
+      };
+
+      let savedRecord;
+      if (existingRecord) {
+        // Update existing record (preserve approval status if already approved)
+        savedRecord = await this.passFailRecordModel.findByIdAndUpdate(
+          existingRecord._id,
+          {
+            ...passFailData,
+            // Don't overwrite approval if already approved
+            isApproved: existingRecord.isApproved,
+            approvedBy: existingRecord.approvedBy,
+            approvedAt: existingRecord.approvedAt,
+            // Don't overwrite certificate info if already issued
+            certificateIssued: existingRecord.certificateIssued,
+            certificateId: existingRecord.certificateId,
+          },
+          { new: true },
+        ).lean();
+      } else {
+        // Create new record
+        savedRecord = await this.passFailRecordModel.create(passFailData);
+        savedRecord = await this.passFailRecordModel.findById(savedRecord._id).lean();
+      }
+
+      // Get certificate issued status from saved record
+      const certificateIssued = savedRecord?.certificateIssued || false;
+
       results.push({
         studentId,
         studentName,
         totalClasses,
         presentCount,
         absentCount,
-        result,
-        certificateIssued: false,
+        result: result as 'PASS' | 'FAIL',
+        certificateIssued,
       });
     }
 
@@ -522,7 +618,7 @@ export class AttendanceService {
     });
 
     return {
-      classScheduleId,
+      classScheduleId: dto.classScheduleId || '',
       courseId,
       sessionId,
       totalStudents: studentAttendanceMap.size,
@@ -531,5 +627,176 @@ export class AttendanceService {
       results,
     };
   }
+
+  /**
+   * Get pass/fail records for a course session (for operator dashboard)
+   * @param dto - GetPassFailRecordsDto with filters
+   * @returns List of pass/fail records
+   */
+  async getPassFailRecords(
+    dto: GetPassFailRecordsDto,
+  ): Promise<PassFailRecordEntity[]> {
+    const { courseId, sessionId, status, isApproved, certificateIssued } = dto;
+
+    const query: any = {
+      courseId: new Types.ObjectId(courseId),
+      sessionId: new Types.ObjectId(sessionId),
+    };
+
+    if (status) {
+      query.status = status;
+    }
+
+    if (isApproved !== undefined) {
+      query.isApproved = isApproved;
+    }
+
+    if (certificateIssued !== undefined) {
+      query.certificateIssued = certificateIssued;
+    }
+
+    const records = await this.passFailRecordModel
+      .find(query)
+      .populate('studentId', 'firstName lastName email')
+      .populate('approvedBy', 'firstName lastName email')
+      .sort({ status: 1, determinedAt: -1 })
+      .lean();
+
+    return records.map((doc) => this.mapPassFailRecord(doc));
+  }
+
+  /**
+   * Approve or reject pass/fail status (operator action)
+   * If approve=true, PASS status, and certificateUrl provided, certificate will be issued automatically
+   * @param dto - ApprovePassFailDto with recordId, approve flag, and optional certificateUrl
+   * @param operatorId - ID of the operator approving
+   * @returns Updated pass/fail record
+   */
+  async approvePassFailStatus(
+    dto: ApprovePassFailDto,
+    operatorId: string,
+  ): Promise<PassFailRecordEntity> {
+    const { recordId, approve, notes, certificateUrl } = dto;
+
+    const record = await this.passFailRecordModel.findById(recordId).lean();
+    if (!record) {
+      throw new NotFoundException('Pass/Fail record not found');
+    }
+
+    const updateData: any = {
+      isApproved: approve,
+    };
+
+    if (approve) {
+      updateData.approvedBy = new Types.ObjectId(operatorId);
+      updateData.approvedAt = new Date();
+
+      // If PASS status and certificateUrl provided, automatically issue certificate
+      if (record.status === PassFailStatusEnum.PASS && certificateUrl && !record.certificateIssued) {
+        updateData.certificateIssued = true;
+        updateData.certificateUrl = certificateUrl;
+      }
+    } else {
+      // If rejecting, clear approval data
+      updateData.approvedBy = null;
+      updateData.approvedAt = null;
+    }
+
+    if (notes !== undefined) {
+      updateData.notes = notes;
+    }
+
+    const updated = await this.passFailRecordModel
+      .findByIdAndUpdate(recordId, updateData, { new: true })
+      .populate('studentId', 'firstName lastName email')
+      .populate('approvedBy', 'firstName lastName email')
+      .lean();
+
+    return this.mapPassFailRecord(updated);
+  }
+
+  /**
+   * Get pass/fail record by ID
+   * @param id - Pass/Fail record ID
+   * @returns Pass/fail record
+   */
+  async getPassFailRecordById(id: string): Promise<PassFailRecordEntity | undefined> {
+    const record = await this.passFailRecordModel
+      .findById(id)
+      .populate('studentId', 'firstName lastName email')
+      .populate('approvedBy', 'firstName lastName email')
+      .lean();
+
+    return record ? this.mapPassFailRecord(record) : undefined;
+  }
+
+  /**
+   * Get approved pass/fail records ready for certificate issuance
+   * @param courseId - Course ID
+   * @param sessionId - Session ID
+   * @returns List of approved PASS records that haven't been issued certificates
+   */
+  async getApprovedPassRecordsForCertificates(
+    courseId: string,
+    sessionId: string,
+  ): Promise<PassFailRecordEntity[]> {
+    const records = await this.passFailRecordModel
+      .find({
+        courseId: new Types.ObjectId(courseId),
+        sessionId: new Types.ObjectId(sessionId),
+        status: PassFailStatusEnum.PASS,
+        isApproved: true,
+        certificateIssued: false,
+      })
+      .populate('studentId', 'firstName lastName email')
+      .sort({ determinedAt: -1 })
+      .lean();
+
+    return records.map((doc) => this.mapPassFailRecord(doc));
+  }
+
+  /**
+   * Mark certificate as issued for a pass/fail record
+   * @param recordId - Pass/Fail record ID
+   * @param certificateId - Certificate ID
+   * @returns Updated pass/fail record
+   */
+  async markCertificateIssued(
+    recordId: string,
+    certificateId: string,
+  ): Promise<PassFailRecordEntity> {
+    // First check if record exists and is eligible
+    const record = await this.passFailRecordModel.findById(recordId).lean();
+    if (!record) {
+      throw new NotFoundException('Pass/Fail record not found');
+    }
+
+    if (record.status !== PassFailStatusEnum.PASS) {
+      throw new BadRequestException('Only PASS records can have certificates issued');
+    }
+
+    if (!record.isApproved) {
+      throw new BadRequestException('Record must be approved before certificate can be issued');
+    }
+
+    if (record.certificateIssued) {
+      throw new BadRequestException('Certificate already issued for this record');
+    }
+
+    const updated = await this.passFailRecordModel
+      .findByIdAndUpdate(
+        recordId,
+        {
+          certificateIssued: true,
+          certificateId: new Types.ObjectId(certificateId),
+        },
+        { new: true },
+      )
+      .populate('studentId', 'firstName lastName email')
+      .lean();
+
+    return this.mapPassFailRecord(updated);
+  }
+
 }
 

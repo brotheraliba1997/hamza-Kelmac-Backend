@@ -2,13 +2,13 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsMongoId, IsNotEmpty, IsOptional, IsBoolean } from 'class-validator';
 
 export class CheckPassFailDto {
-  @ApiProperty({
-    description: 'Class Schedule ID',
+  @ApiPropertyOptional({
+    description: 'Class Schedule ID (optional - for reference only)',
     example: '675f4aaf2b67a23d4c9f2941',
   })
+  @IsOptional()
   @IsMongoId()
-  @IsNotEmpty()
-  classScheduleId: string;
+  classScheduleId?: string;
 
   @ApiProperty({
     description: 'Course ID',

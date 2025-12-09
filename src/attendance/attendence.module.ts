@@ -2,6 +2,10 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AttendanceSchemaClass, AttendanceSchema } from './schema/attendance.schema';
 import { CourseSchemaClass, CourseSchema } from '../course/schema/course.schema';
+import {
+  PassFailRecordSchemaClass,
+  PassFailRecordSchema,
+} from './schema/pass-fail-record.schema';
 import { AttendanceService } from './attendance.service';
 import { AttendanceController } from './attendence.controller';
 
@@ -10,6 +14,7 @@ import { AttendanceController } from './attendence.controller';
     MongooseModule.forFeature([
       { name: AttendanceSchemaClass.name, schema: AttendanceSchema },
       { name: CourseSchemaClass.name, schema: CourseSchema },
+      { name: PassFailRecordSchemaClass.name, schema: PassFailRecordSchema },
     ]),
   ],
   controllers: [AttendanceController],

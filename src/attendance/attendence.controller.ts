@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -26,6 +27,11 @@ import { AttendanceStatusEnum } from './schema/attendance.schema';
 import { AttendanceEntity } from './domain/attendance.entity';
 import { AttendanceService } from './attendance.service';
 import { CheckPassFailDto, PassFailSummary } from './dto/check-pass-fail.dto';
+import {
+  ApprovePassFailDto,
+  GetPassFailRecordsDto,
+} from './dto/approve-pass-fail.dto';
+import { PassFailRecordEntity } from './domain/pass-fail-record.entity';
 
 @ApiTags('Attendance')
 @Controller({
@@ -309,6 +315,124 @@ export class AttendanceController {
   @HttpCode(HttpStatus.OK)
   async checkPassFail(@Query() query: CheckPassFailDto) {
     return await this.attendanceService.checkPassFailStatus(query);
+  }
+
+  @ApiOperation({
+    summary: 'Get pass/fail records for operator dashboard',
+    description:
+      'Get all pass/fail records for a course session. Operator can filter by status, approval, and certificate issuance.',
+  })
+  @ApiQuery({
+    name: 'courseId',
+    required: true,
+    type: String,
+    description: 'Course ID',
+  })
+  @ApiQuery({
+    name: 'sessionId',
+    required: true,
+    type: String,
+    description: 'Session ID from course.sessions array',
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: ['PASS', 'FAIL'],
+    description: 'Filter by pass/fail status',
+  })
+  @ApiQuery({
+    name: 'isApproved',
+    required: false,
+    type: Boolean,
+    description: 'Filter by approval status',
+  })
+  @ApiQuery({
+    name: 'certificateIssued',
+    required: false,
+    type: Boolean,
+    description: 'Filter by certificate issued status',
+  })
+  @ApiOkResponse({
+    description: 'List of pass/fail records',
+    type: [PassFailRecordEntity],
+  })
+  @Get('pass-fail-records')
+  @HttpCode(HttpStatus.OK)
+  async getPassFailRecords(@Query() query: GetPassFailRecordsDto) {
+    return await this.attendanceService.getPassFailRecords(query);
+  }
+
+  @ApiOperation({
+    summary: 'Approve or reject pass/fail status',
+    description:
+      'Operator approves or rejects a pass/fail record. If approve=true, status is PASS, and certificateUrl is provided, certificate will be issued automatically.',
+  })
+  @ApiOkResponse({
+    description: 'Pass/fail record updated successfully',
+    type: PassFailRecordEntity,
+  })
+  @Post('pass-fail-approve')
+  @HttpCode(HttpStatus.OK)
+  async approvePassFail(
+    @Body() dto: ApprovePassFailDto,
+    // TODO: Get operatorId from authenticated user (auth guard) instead of DTO
+  ) {
+    if (!dto.operatorId) {
+      throw new BadRequestException('Operator ID is required');
+    }
+    return await this.attendanceService.approvePassFailStatus(dto, dto.operatorId);
+  }
+
+  @ApiOperation({
+    summary: 'Get approved pass records ready for certificate issuance',
+    description:
+      'Get all approved PASS records that are ready for certificate issuance (not yet issued).',
+  })
+  @ApiQuery({
+    name: 'courseId',
+    required: true,
+    type: String,
+    description: 'Course ID',
+  })
+  @ApiQuery({
+    name: 'sessionId',
+    required: true,
+    type: String,
+    description: 'Session ID from course.sessions array',
+  })
+  @ApiOkResponse({
+    description: 'List of approved pass records ready for certificates',
+    type: [PassFailRecordEntity],
+  })
+  @Get('pass-fail-records/certificate-ready')
+  @HttpCode(HttpStatus.OK)
+  async getCertificateReadyRecords(
+    @Query('courseId') courseId: string,
+    @Query('sessionId') sessionId: string,
+  ) {
+    return await this.attendanceService.getApprovedPassRecordsForCertificates(
+      courseId,
+      sessionId,
+    );
+  }
+
+  @ApiOperation({
+    summary: 'Get pass/fail record by ID',
+    description: 'Fetch a single pass/fail record by its MongoDB ObjectId.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Pass/Fail record MongoDB ObjectId',
+    type: String,
+  })
+  @ApiOkResponse({
+    description: 'Pass/fail record details',
+    type: PassFailRecordEntity,
+  })
+  @Get('pass-fail-records/:id')
+  @HttpCode(HttpStatus.OK)
+  async getPassFailRecordById(@Param('id') id: string) {
+    return await this.attendanceService.getPassFailRecordById(id);
   }
 
   @ApiOperation({
