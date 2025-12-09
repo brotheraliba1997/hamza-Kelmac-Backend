@@ -42,6 +42,7 @@ async function bootstrap() {
     // ==== Vercel Frontend Domains ====
     'https://kelmac-frontend-kelmac-dev.vercel.app',
     'https://kelmac-dashboard-g33j.vercel.app',
+    'https://kelmac-dashboard.vercel.app',
     'https://kelmac-frontend.vercel.app',
   ];
 

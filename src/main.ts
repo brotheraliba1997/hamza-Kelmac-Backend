@@ -30,6 +30,7 @@ async function bootstrap() {
       'https://kelmac-frontend.vercel.app',
       'http://localhost:3000',
       'https://kelmac-dashboard-g33j.vercel.app',
+      'https://kelmac-dashboard.vercel.app',
       'https://kelmac-frontend.vercel.app',
     ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
