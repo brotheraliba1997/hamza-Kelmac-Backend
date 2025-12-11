@@ -54,6 +54,7 @@ export class ClassScheduleService {
     return {
       id,
       course: sanitizedDoc.course,
+      sessionId: sanitizedDoc.sessionId,
       instructor: sanitizedDoc.instructor,
       students: sanitizedDoc.students,
       date: sanitizedDoc.date,
@@ -142,7 +143,7 @@ export class ClassScheduleService {
         );
       }
 
-      schedules.students.push( new Types.ObjectId(studentId));
+      schedules.students.push(new Types.ObjectId(studentId));
 
       await schedules.save();
 
@@ -311,7 +312,7 @@ export class ClassScheduleService {
     const schedule = await this.classScheduleModel
       .findById(id)
       .populate([
-        { path: 'course', select: 'title price' },
+        { path: 'course' },
         { path: 'instructor', select: 'firstName lastName email' },
         { path: 'students', select: 'firstName lastName email' },
       ])
