@@ -93,7 +93,8 @@ export const AttendanceSchema = SchemaFactory.createForClass(
 );
 
 // Indexes for performance
-AttendanceSchema.index({ classScheduleId: 1, student: 1 }, { unique: true });
+// Allow multiple attendance records per student/classSchedule (no unique constraint)
+AttendanceSchema.index({ classScheduleId: 1, student: 1 });
 AttendanceSchema.index({ classScheduleId: 1 });
 AttendanceSchema.index({ courseId: 1 });
 AttendanceSchema.index({ student: 1 });

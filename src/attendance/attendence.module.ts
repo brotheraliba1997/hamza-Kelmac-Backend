@@ -6,6 +6,7 @@ import {
   PassFailRecordSchemaClass,
   PassFailRecordSchema,
 } from './schema/pass-fail-record.schema';
+import { ClassScheduleSchemaClass, ClassScheduleSchema } from '../classSchedule/schema/class-schedule.schema';
 import { AttendanceService } from './attendance.service';
 import { AttendanceController } from './attendence.controller';
 
@@ -15,6 +16,7 @@ import { AttendanceController } from './attendence.controller';
       { name: AttendanceSchemaClass.name, schema: AttendanceSchema },
       { name: CourseSchemaClass.name, schema: CourseSchema },
       { name: PassFailRecordSchemaClass.name, schema: PassFailRecordSchema },
+      { name: ClassScheduleSchemaClass.name, schema: ClassScheduleSchema },
     ]),
   ],
   controllers: [AttendanceController],

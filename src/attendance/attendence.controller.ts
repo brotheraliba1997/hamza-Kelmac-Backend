@@ -311,7 +311,7 @@ export class AttendanceController {
       },
     },
   })
-  @Get('pass-fail-check')
+  @Get('pass-fail-check-assigment')
   @HttpCode(HttpStatus.OK)
   async checkPassFail(@Query() query: CheckPassFailDto) {
     return await this.attendanceService.checkPassFailStatus(query);
@@ -371,7 +371,7 @@ export class AttendanceController {
     description: 'Pass/fail record updated successfully',
     type: PassFailRecordEntity,
   })
-  @Post('pass-fail-approve')
+  @Post('pass-fail-approve-certificate')
   @HttpCode(HttpStatus.OK)
   async approvePassFail(
     @Body() dto: ApprovePassFailDto,

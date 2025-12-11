@@ -61,6 +61,12 @@ export class AttendanceEntity {
   markedAt: Date;
 
   @ApiProperty({
+    description: 'Index of the timeBlock in session.timeBlocks array (0-based)',
+    example: 0,
+  })
+  timeBlockIndex: number;
+
+  @ApiProperty({
     description: 'Record creation timestamp',
     example: '2025-02-18T10:30:00.000Z',
   })
