@@ -65,6 +65,22 @@ export class AttendanceSchemaClass extends EntityDocumentHelper {
   })
   markedBy: Types.ObjectId;
 
+
+  @Prop({
+    type: String,
+    trim: true,
+    description: '2025-12-09',
+  })
+  startDate: string;
+
+
+  @Prop({
+    type: String,
+    trim: true,
+    description: '14:00',
+  })
+  startTime: string;
+
   @Prop({
     type: String,
     enum: Object.values(AttendanceStatusEnum),

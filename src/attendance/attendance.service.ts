@@ -200,8 +200,8 @@ export class AttendanceService {
 
     if (sessionData?.timeBlocks && Array.isArray(sessionData.timeBlocks)) {
       sessionData.timeBlocks.forEach((tb: any, index: number) => {
-        const isDateMatch = '2025-12-10' === tb.startDate;
-        const isTimeMatch = '14:00' === tb.startTime;
+        const isDateMatch = dto.startDate === tb.startDate;
+        const isTimeMatch = dto.startTime === tb.startTime;
 
         if (isDateMatch && isTimeMatch) {
           console.log(index, 'index==>');
@@ -226,6 +226,24 @@ export class AttendanceService {
     for (const studentAttendance of dto.students) {
       const studentId = new Types.ObjectId(studentAttendance.studentId);
 
+      // Check if attendance already exists for same courseId, classScheduleId, sessionId, startDate, startTime, and student
+      const existingAttendance = await this.attendanceModel.findOne({
+        courseId: courseId,
+        classScheduleId: new Types.ObjectId(dto.classScheduleId),
+        sessionId: new Types.ObjectId(dto.sessionId),
+        startDate: dto.startDate,
+        startTime: dto.startTime,
+        student: studentId,
+      });
+
+      if (existingAttendance) {
+        // Skip creating duplicate attendance - already exists for this combination
+        console.log(
+          `Attendance already exists for student ${studentAttendance.studentId} with same courseId, classScheduleId, sessionId, date (${dto.startDate}), and time (${dto.startTime}). Skipping...`,
+        );
+        continue; // Skip this student and move to next
+      }
+
       // Enforce per-student limit based on timeBlocks length
       const existingCount = await this.attendanceModel.countDocuments({
         classScheduleId: new Types.ObjectId(dto.classScheduleId),
@@ -247,6 +265,8 @@ export class AttendanceService {
         student: studentId,
         markedBy: new Types.ObjectId(instructorId),
         status: studentAttendance.status,
+        startDate: dto.startDate,
+        startTime: dto.startTime,
         markedAt: new Date(),
       });
 

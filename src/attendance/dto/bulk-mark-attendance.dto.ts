@@ -55,6 +55,22 @@ export class BulkMarkAttendanceDto {
   sessionId: string;
 
   @ApiProperty({
+    description: 'Start date',
+    example: '2025-12-09',
+  })
+  @IsString()
+  @IsNotEmpty()
+  startDate: string;    
+
+  @ApiProperty({
+    description: 'Start time',
+    example: '14:00',
+  })
+  @IsString()
+  @IsNotEmpty()
+  startTime: string;
+
+  @ApiProperty({
     description: 'Instructor ID who is marking the attendance',
     example: '675f4aaf2b67a23d4c9f2941',
   })
