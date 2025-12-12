@@ -138,7 +138,7 @@ export class AttendanceService {
     const created = await this.attendanceModel.create({
       classScheduleId: new Types.ObjectId(dto.classScheduleId),
       courseId: new Types.ObjectId(dto.courseId),
-      sessionId: new Types.ObjectId(dto.sessionId),
+      sessionId: new Types.ObjectId(dto.sessionId),  
       student: new Types.ObjectId(dto.studentId),
       markedBy: new Types.ObjectId(instructorId),
       status: dto.status,
@@ -227,14 +227,16 @@ export class AttendanceService {
       const studentId = new Types.ObjectId(studentAttendance.studentId);
 
       // Check if attendance already exists for same courseId, classScheduleId, sessionId, startDate, startTime, and student
-      const existingAttendance = await this.attendanceModel.findOne({
-        courseId: courseId,
-        classScheduleId: new Types.ObjectId(dto.classScheduleId),
-        sessionId: new Types.ObjectId(dto.sessionId),
-        startDate: dto.startDate,
-        startTime: dto.startTime,
-        student: studentId,
-      });
+      const existingAttendance = await this.attendanceModel
+        .findOne({
+          courseId: courseId,
+          classScheduleId: new Types.ObjectId(dto.classScheduleId),
+          sessionId: new Types.ObjectId(dto.sessionId),
+          startDate: dto.startDate,
+          startTime: dto.startTime,
+          student: studentId,
+        })
+        .lean();
 
       if (existingAttendance) {
         // Skip creating duplicate attendance - already exists for this combination
