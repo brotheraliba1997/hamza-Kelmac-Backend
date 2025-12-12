@@ -38,6 +38,9 @@ export class CheckPassFailDto {
 
 export class StudentPassFailResult {
   @ApiProperty()
+  id: string;
+
+  @ApiProperty()
   studentId: string;
 
   @ApiProperty()
@@ -86,4 +89,3 @@ export class PassFailSummary {
   @ApiProperty({ type: [StudentPassFailResult] })
   results: StudentPassFailResult[];
 }
-

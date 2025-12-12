@@ -661,6 +661,7 @@ export class AttendanceService {
       const certificateIssued = savedRecord?.certificateIssued || false;
 
       results.push({
+        id: savedRecord._id.toString(),
         studentId,
         studentName,
         totalClasses,
