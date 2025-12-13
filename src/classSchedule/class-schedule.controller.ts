@@ -52,7 +52,7 @@ export class ClassScheduleController {
     return this.classScheduleService.create(dto, accessToken, refreshToken);
   }
 
-  @Get('All-schedule')
+  @Get()
   @ApiBearerAuth()
   @UseGuards(AuthGuard('jwt'))
   @ApiOperation({ summary: 'Get all class schedules with filters and sorting' })
