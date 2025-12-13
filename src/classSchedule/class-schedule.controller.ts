@@ -10,8 +10,16 @@ import {
   HttpCode,
   HttpStatus,
   Patch,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiQuery,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
+import { AuthGuard } from '@nestjs/passport';
 import { randomUUID } from 'crypto';
 
 import { CreateClassScheduleDto } from './dto/create-class-schedule.dto';
@@ -23,13 +31,14 @@ import {
 import { ClassScheduleService } from './class-schedule.service';
 import { infinityPagination } from '../utils/infinity-pagination';
 import { InfinityPaginationResponseDto } from '../utils/dto/infinity-pagination-response.dto';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { JwtPayloadType } from '../auth/strategies/types/jwt-payload.type';
 
 @ApiTags('Class Schedule')
 @Controller('v1/class-schedule')
 export class ClassScheduleController {
   constructor(private readonly classScheduleService: ClassScheduleService) {}
 
-  // 📘 Create new class schedule
   @Post()
   @ApiOperation({ summary: 'Create a new class schedule' })
   @ApiResponse({
@@ -43,14 +52,18 @@ export class ClassScheduleController {
     return this.classScheduleService.create(dto, accessToken, refreshToken);
   }
 
-  // 📗 Get all classes (with filters + sorting)
-  @Get()
+  @Get('All-schedule')
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'))
   @ApiOperation({ summary: 'Get all class schedules with filters and sorting' })
   findAll(
-    @Query() filters: FilterClassScheduleDto,
-    @Query() sort?: SortClassScheduleDto,
+    // @Query() filters: FilterClassScheduleDto,
+    // @Query() sort?: SortClassScheduleDto,
+    @CurrentUser() user?: JwtPayloadType,
   ) {
-    return this.classScheduleService.findAll(filters, sort);
+    const userData = { id: user?.id, role: user?.role?.id };
+
+    return this.classScheduleService.findAll(userData);
   }
 
   // 📗 Get paginated class schedules
@@ -72,7 +85,7 @@ export class ClassScheduleController {
     description: 'Items per page (default: 10, max: 50)',
   })
   @ApiQuery({
-    name: 'instructorId',
+    name: 'instructorIdss',
     required: false,
     type: String,
     description: 'Filter by instructor ID',

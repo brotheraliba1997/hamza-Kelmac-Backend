@@ -30,12 +30,7 @@ export class CreateClassScheduleDto {
   @IsOptional()
   sessionId?: string;
 
-  @ApiProperty({
-    example: '671018fabc123456789ef014',
-    description: 'Instructor assigned to this class',
-  })
-  @IsMongoId()
-  instructor: string;
+ 
 
   @ApiProperty({
     type: String,

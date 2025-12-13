@@ -30,12 +30,7 @@ export class ClassScheduleSchemaClass extends EntityDocumentHelper {
   })
   sessionId: string;
 
-  @Prop({
-    type: Types.ObjectId,
-    ref: UserSchemaClass.name,
-    required: true,
-  })
-  instructor: Types.ObjectId;
+
 
   @Prop({
     type: [{ type: Types.ObjectId, ref: UserSchemaClass.name }],
@@ -75,6 +70,7 @@ export class ClassScheduleSchemaClass extends EntityDocumentHelper {
     type: String,
     required: false,
     unique: true,
+    sparse: true,
     description: 'Security key used for class access validation',
   })
   securityKey?: string;

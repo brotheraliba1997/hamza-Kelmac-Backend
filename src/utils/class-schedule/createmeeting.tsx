@@ -118,7 +118,7 @@ export async function sendScheduleEmails(
   }
 
   const course = populatedSchedule.course as any;
-  const instructor = populatedSchedule.instructor as any;
+
   const students = populatedSchedule.students as any[];
 
   // Get admin email from config
@@ -135,9 +135,7 @@ export async function sendScheduleEmails(
   // Prepare email data
   const emailData = {
     courseName: course?.title || 'Unknown Course',
-    instructorName: instructor?.firstName
-      ? `${instructor.firstName} ${instructor.lastName || ''}`
-      : instructor?.email || 'Unknown Instructor',
+    instructorName: "Instructor",
     lessonDate,
     lessonTime: populatedSchedule.time,
     duration: populatedSchedule.duration,
@@ -162,14 +160,14 @@ export async function sendScheduleEmails(
     }
 
     // Send email to instructor
-    if (instructor?.email) {
-      await mailService.lessonScheduled({
-        to: instructor.email,
-        data: emailData,
-      });
-      emailResults.instructor = true;
-      console.log(`✅ Email sent to instructor: ${instructor.email}`);
-    }
+    // if (instructor?.email) {
+    //   await mailService.lessonScheduled({
+    //     to: instructor.email,
+    //     data: emailData,
+    //   });
+    //   emailResults.instructor = true;
+    //   console.log(`✅ Email sent to instructor: ${instructor.email}`);
+    // }
 
     // Send email to students (optional - currently commented)
     // for (const student of students) {

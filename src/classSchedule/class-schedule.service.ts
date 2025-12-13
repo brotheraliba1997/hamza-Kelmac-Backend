@@ -32,6 +32,7 @@ import {
   sanitizeMongooseDocument,
   convertIdToString,
 } from '../utils/convert-id';
+import { JwtPayloadType } from '../auth/strategies/types/jwt-payload.type';
 
 @Injectable()
 export class ClassScheduleService {
@@ -270,7 +271,7 @@ export class ClassScheduleService {
       paginationOptions,
       populateFields: [
         { path: 'course' }, // Full course with sessions (sessions are embedded, so automatically included)
-        { path: 'instructor', select: 'firstName lastName email' },
+
         { path: 'students', select: 'firstName lastName email' },
       ],
       mapper: (doc) => this.map(doc),
@@ -278,33 +279,78 @@ export class ClassScheduleService {
   }
 
   // Legacy method for backward compatibility
-  async findAll(filters: FilterClassScheduleDto, sort?: SortClassScheduleDto) {
-    const sortOptions = sort
-      ? [sort]
-      : [{ orderBy: 'createdAt', order: 'DESC' as 'DESC' }];
+  async findAll(
+    // filters: FilterClassScheduleDto,
+    // sort?: SortClassScheduleDto,
+    userData?: any,
+  ) {
+    console.log(userData);
 
-    const schedules = await this.findManyWithPagination({
-      filterOptions: filters,
-      sortOptions,
-      paginationOptions: { page: 1, limit: 1000 }, // Large limit for "all"
-    });
+    if (userData?.id) {
+      const schedules = await this.classScheduleModel
+        .find({})
+        .populate({
+          path: 'course',
+        })
+        .populate('students', 'firstName lastName email')
+        .lean();
 
-    // Ensure all IDs are converted to strings
-    const mappedData = schedules.data.map((doc: any) => {
-      const mapped = this.map(doc);
-      // Ensure id is string
-      if (mapped && mapped.id) {
-        mapped.id =
-          convertIdToString(mapped) || mapped.id?.toString() || mapped.id;
-      }
-      return mapped;
-    });
+      const schedulesWithSession = schedules.filter((schedule: any) => {
+        let matchedSession = null;
+        if (schedule.course?.sessions && schedule.sessionId) {
+          matchedSession = schedule.course.sessions.find((s: any) => {
+            if (s.instructor === userData?.id) {
+              return s.instructor === userData?.id;
+            } else {
+              schedule.students.find((s: any) => {
+                if (s.id === userData?.id) {
+                  return s.id === userData?.id;
+                }
+              });
+            }
+          });
+        }
 
-    return {
-      message: 'Class schedules fetched successfully',
-      total: schedules.totalItems,
-      data: mappedData,
-    };
+        // Return true only if matchedSession is found
+        return matchedSession !== null && matchedSession !== undefined;
+      });
+
+      // Map the filtered schedules
+      const mappedData = schedulesWithSession.map((schedule: any) => {
+        const mapped = this.map(schedule);
+        if (mapped && mapped.id) {
+          mapped.id =
+            convertIdToString(mapped) || mapped.id?.toString() || mapped.id;
+        }
+        return mapped;
+      });
+
+      return {
+        message: 'Class schedules fetched successfully',
+        total: mappedData.length,
+        data: mappedData,
+      };
+    } else {
+      const schedules = await this.findManyWithPagination({
+        paginationOptions: { page: 1, limit: 1000 },
+      });
+
+      const mappedData = schedules.data.map((doc: any) => {
+        const mapped = this.map(doc);
+
+        if (mapped && mapped.id) {
+          mapped.id =
+            convertIdToString(mapped) || mapped.id?.toString() || mapped.id;
+        }
+        return mapped;
+      });
+
+      return {
+        message: 'Class schedules fetched successfully',
+        total: schedules.totalItems,
+        data: mappedData,
+      };
+    }
   }
 
   // 📘 GET one schedule by ID
@@ -313,7 +359,6 @@ export class ClassScheduleService {
       .findById(id)
       .populate([
         { path: 'course' },
-        { path: 'instructor', select: 'firstName lastName email' },
         { path: 'students', select: 'firstName lastName email' },
       ])
       .lean();
@@ -329,7 +374,7 @@ export class ClassScheduleService {
       .findByIdAndUpdate(id, dto, { new: true })
       .populate([
         { path: 'course', select: 'title price' },
-        { path: 'instructor', select: 'firstName lastName email' },
+
         { path: 'students', select: 'firstName lastName email' },
       ])
       .lean();
@@ -357,7 +402,7 @@ export class ClassScheduleService {
       )
       .populate([
         { path: 'course', select: 'title price' },
-        { path: 'instructor', select: 'firstName lastName email' },
+
         { path: 'students', select: 'firstName lastName email' },
       ])
       .lean();
@@ -379,8 +424,7 @@ export class ClassScheduleService {
   async joinClass(securityKey: string) {
     const schedule = await this.classScheduleModel
       .findOne({ securityKey })
-      .populate('course')
-      .populate('instructor');
+      .populate('course');
 
     if (!schedule) throw new NotFoundException('Invalid security key');
 
@@ -403,7 +447,7 @@ export class ClassScheduleService {
       meetLink: schedule.googleMeetLink,
       data: {
         course: schedule.course,
-        instructor: schedule.instructor,
+        // instructor: schedule.instructor,
         date: schedule.date,
         time: schedule.time,
       },
