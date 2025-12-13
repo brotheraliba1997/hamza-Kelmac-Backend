@@ -221,7 +221,6 @@ export class ClassScheduleService {
     return this.map(schedule.toObject());
   }
 
-  // 📗 GET all schedules with pagination (with filters + sorting)
   async findManyWithPagination({
     filterOptions,
     sortOptions,
@@ -238,14 +237,12 @@ export class ClassScheduleService {
         .addEqual('course' as any, filterOptions?.courseId)
         .addEqual('status' as any, filterOptions?.status);
 
-    // Add student filter
     if (filterOptions?.studentId) {
       filterQueryBuilder.addCustom('students' as any, {
         $in: { id: filterOptions.studentId },
       });
     }
 
-    // Add date range filter
     if (filterOptions?.startDate || filterOptions?.endDate) {
       const dateFilter: any = {};
       if (filterOptions.startDate) dateFilter.$gte = filterOptions.startDate;
@@ -253,7 +250,6 @@ export class ClassScheduleService {
       filterQueryBuilder.addCustom('date' as any, dateFilter);
     }
 
-    // Add search filter
     if (filterOptions?.search) {
       filterQueryBuilder.addCustom('$or' as any, [
         { googleMeetLink: { $regex: filterOptions.search, $options: 'i' } },
@@ -263,14 +259,13 @@ export class ClassScheduleService {
 
     const filterQuery = filterQueryBuilder.build();
 
-    // Use buildMongooseQuery utility
     return buildMongooseQuery({
       model: this.classScheduleModel,
       filterQuery,
       sortOptions,
       paginationOptions,
       populateFields: [
-        { path: 'course' }, // Full course with sessions (sessions are embedded, so automatically included)
+        { path: 'course' },
 
         { path: 'students', select: 'firstName lastName email' },
       ],
@@ -278,12 +273,7 @@ export class ClassScheduleService {
     });
   }
 
-  // Legacy method for backward compatibility
-  async findAll(
-    // filters: FilterClassScheduleDto,
-    // sort?: SortClassScheduleDto,
-    userData?: any,
-  ) {
+  async findAll(userData?: any) {
     console.log(userData);
 
     if (userData?.id) {
@@ -353,7 +343,6 @@ export class ClassScheduleService {
     }
   }
 
-  // 📘 GET one schedule by ID
   async findOne(id: string) {
     const schedule = await this.classScheduleModel
       .findById(id)
