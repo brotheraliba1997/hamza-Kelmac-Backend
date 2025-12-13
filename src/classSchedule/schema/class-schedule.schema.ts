@@ -103,10 +103,10 @@ export class ClassScheduleSchemaClass extends EntityDocumentHelper {
   })
   endedAt?: Date;
 
-  @Prop({ unique: true, sparse: true })
+  @Prop( {default: false} )
   isCompleted?: boolean;
 
-  @Prop({ unique: true, sparse: true })
+  @Prop({ type: [Boolean], default: [] })
   ClassLeftList?: boolean[];
 
   @Prop({
