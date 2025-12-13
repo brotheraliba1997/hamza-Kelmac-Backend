@@ -274,73 +274,67 @@ export class ClassScheduleService {
   }
 
   async findAll(userData?: any) {
-    console.log(userData);
-
-    if (userData?.id) {
+    if (userData?.role === 1) {
       const schedules = await this.classScheduleModel
+        // paginationOptions: { page: 1, limit: 1000 },
         .find({})
-        .populate({
-          path: 'course',
-        })
+        .populate({ path: 'course' })
         .populate('students', 'firstName lastName email')
         .lean();
 
-      const schedulesWithSession = schedules.filter((schedule: any) => {
-        let matchedSession = null;
-        if (schedule.course?.sessions && schedule.sessionId) {
-          matchedSession = schedule.course.sessions.find((s: any) => {
-            if (s.instructor === userData?.id) {
-              return s.instructor === userData?.id;
-            } else {
-              schedule.students.find((s: any) => {
-                if (s.id === userData?.id) {
-                  return s.id === userData?.id;
-                }
-              });
-            }
-          });
-        }
-
-        // Return true only if matchedSession is found
-        return matchedSession !== null && matchedSession !== undefined;
-      });
-
-      // Map the filtered schedules
-      const mappedData = schedulesWithSession.map((schedule: any) => {
-        const mapped = this.map(schedule);
-        if (mapped && mapped.id) {
-          mapped.id =
-            convertIdToString(mapped) || mapped.id?.toString() || mapped.id;
-        }
-        return mapped;
-      });
-
-      return {
-        message: 'Class schedules fetched successfully',
-        total: mappedData.length,
-        data: mappedData,
-      };
-    } else {
-      const schedules = await this.findManyWithPagination({
-        paginationOptions: { page: 1, limit: 1000 },
-      });
-
-      const mappedData = schedules.data.map((doc: any) => {
+      const mappedData = schedules.map((doc: any) => {
         const mapped = this.map(doc);
-
-        if (mapped && mapped.id) {
-          mapped.id =
-            convertIdToString(mapped) || mapped.id?.toString() || mapped.id;
+        if (mapped?.id) {
+          mapped.id = convertIdToString(mapped) || mapped.id.toString();
         }
         return mapped;
       });
 
       return {
         message: 'Class schedules fetched successfully',
-        total: schedules.totalItems,
+        total: schedules.length,
         data: mappedData,
       };
     }
+
+    // NON-ADMIN → filtered data
+    const schedules = await this.classScheduleModel
+      .find({})
+      .populate({ path: 'course' })
+      .populate('students', 'firstName lastName email')
+      .lean();
+
+    const userId = userData?.id?.toString();
+
+    const schedulesWithSession = schedules.filter((schedule: any) => {
+      if (!schedule.course?.sessions || !userId) return false;
+
+      return schedule.course.sessions.some((session: any) => {
+        // Instructor match
+        if (session.instructor?.toString() === userId) {
+          return true;
+        }
+
+        // Student match
+        return schedule.students?.some(
+          (student: any) => student._id?.toString() === userId,
+        );
+      });
+    });
+
+    const mappedData = schedulesWithSession.map((schedule: any) => {
+      const mapped = this.map(schedule);
+      if (mapped?.id) {
+        mapped.id = convertIdToString(mapped) || mapped.id.toString();
+      }
+      return mapped;
+    });
+
+    return {
+      message: 'Class schedules fetched successfully',
+      total: mappedData.length,
+      data: mappedData,
+    };
   }
 
   async findOne(id: string) {
