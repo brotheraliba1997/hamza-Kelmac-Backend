@@ -30,7 +30,18 @@ export class BookingsService {
   async map(doc: any): Promise<Booking> {
     if (!doc) return undefined as any;
     const sanitized = sanitizeMongooseDocument(doc);
-    return sanitized;
+    return {
+      ...sanitized,
+      courseId: {
+        ...sanitized.courseId,
+        sessions: sanitized.courseId.sessions?.map((session: any) => ({
+          ...session,
+          instructor: session?.instructor?._doc
+            ? session?.instructor?._doc
+            : session.instructor,
+        })),
+      },
+    };
   }
   async create(createBookingDto: CreateBookingDto) {
     const payments = await this.paymentModel.findOne({
@@ -101,12 +112,16 @@ export class BookingsService {
         { path: 'studentId', select: 'firstName lastName email' },
         {
           path: 'courseId',
-          select: 'title category sessions price discountedPrice instructor',
-          populate: [
-            { path: 'instructor', select: 'firstName lastName email' },
-          ],
+          select: 'title category sessions price discountedPrice sessions',
+          populate: {
+            path: 'sessions',
+            populate: {
+              path: 'instructor',
+              select: 'firstName lastName email',
+            },
+          },
         },
-        { path: 'timeTableId', select: 'date time' },
+        { path: 'timeTableId', select: 'startDate startTime endDate endTime' },
       ])
       .lean()
       .exec();
