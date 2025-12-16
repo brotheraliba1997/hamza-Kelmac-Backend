@@ -35,7 +35,15 @@ export class CheckPassFailDto {
   @IsBoolean()
   issueCertificates?: boolean;
 }
-
+export class CheckPassFailStudentDto {
+  @ApiPropertyOptional({
+    description: 'Class Schedule ID (optional - for reference only)',
+    example: '675f4aaf2b67a23d4c9f2941',
+  })
+  @IsOptional()
+  @IsMongoId()
+  studentId?: string;
+}
 export class StudentPassFailResult {
   @ApiProperty()
   id: string;

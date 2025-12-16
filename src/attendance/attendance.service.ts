@@ -25,6 +25,7 @@ import {
 } from '../utils/convert-id';
 import {
   CheckPassFailDto,
+  CheckPassFailStudentDto,
   PassFailSummary,
   StudentPassFailResult,
 } from './dto/check-pass-fail.dto';
@@ -139,7 +140,7 @@ export class AttendanceService {
     const created = await this.attendanceModel.create({
       classScheduleId: new Types.ObjectId(dto.classScheduleId),
       courseId: new Types.ObjectId(dto.courseId),
-      sessionId: new Types.ObjectId(dto.sessionId),  
+      sessionId: new Types.ObjectId(dto.sessionId),
       student: new Types.ObjectId(dto.studentId),
       markedBy: new Types.ObjectId(instructorId),
       status: dto.status,
@@ -691,6 +692,51 @@ export class AttendanceService {
       failedStudents: failedCount,
       results,
     };
+  }
+
+  /**
+   * Get pass/fail records for a course session (for operator dashboard)
+   * @param dto - GetPassFailRecordsDto with filters
+   * @param paginationOptions - Pagination options (page, limit)
+   * @returns Paginated pass/fail records
+   */
+  async getPassFailRecordsByStudent(
+    dto: CheckPassFailStudentDto,
+    paginationOptions: IPaginationOptions,
+  ): Promise<PaginationResult<PassFailRecordEntity>> {
+    const { studentId } = dto;
+
+    const query: any = {
+      studentId: new Types.ObjectId(studentId),
+    };
+
+    // if (status) {
+    //   query.status = status;
+    // }
+
+    // if (isApproved !== undefined) {
+    //   query.isApproved = isApproved;
+    // }
+
+    // if (certificateIssued !== undefined) {
+    //   query.certificateIssued = certificateIssued;
+    // }
+
+    return buildMongooseQuery({
+      model: this.passFailRecordModel,
+      filterQuery: query,
+      sortOptions: [
+        { orderBy: 'status', order: 'ASC' },
+        { orderBy: 'determinedAt', order: 'DESC' },
+      ],
+      paginationOptions,
+      populateFields: [
+        { path: 'studentId', select: 'firstName lastName email' },
+        { path: 'approvedBy', select: 'firstName lastName email' },
+        { path: 'courseId', select: 'title description' },
+      ],
+      mapper: (doc) => this.mapPassFailRecord(doc),
+    });
   }
 
   /**

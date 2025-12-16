@@ -27,11 +27,18 @@ import {
 import { CreateAttendanceDto } from './dto/create-attendance.dto';
 import { BulkMarkAttendanceDto } from './dto/bulk-mark-attendance.dto';
 import { UpdateAttendanceDto } from './dto/update-attendance.dto';
-import { FilterAttendanceDto, SortAttendanceDto } from './dto/query-attendance.dto';
+import {
+  FilterAttendanceDto,
+  SortAttendanceDto,
+} from './dto/query-attendance.dto';
 import { AttendanceStatusEnum } from './schema/attendance.schema';
 import { AttendanceEntity } from './domain/attendance.entity';
 import { AttendanceService } from './attendance.service';
-import { CheckPassFailDto, PassFailSummary } from './dto/check-pass-fail.dto';
+import {
+  CheckPassFailDto,
+  CheckPassFailStudentDto,
+  PassFailSummary,
+} from './dto/check-pass-fail.dto';
 import {
   ApprovePassFailDto,
   GetPassFailRecordsDto,
@@ -48,7 +55,8 @@ export class AttendanceController {
 
   @ApiOperation({
     summary: 'Mark attendance for a single student',
-    description: 'Instructor marks attendance for one student in a class schedule.',
+    description:
+      'Instructor marks attendance for one student in a class schedule.',
   })
   @ApiCreatedResponse({
     description: 'Attendance marked successfully',
@@ -57,9 +65,9 @@ export class AttendanceController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() dto: CreateAttendanceDto) {
-    // TODO: Get instructorId from authenticated user (auth guard) instead of DTO             
+    // TODO: Get instructorId from authenticated user (auth guard) instead of DTO
     // For now, instructorId comes from request body
-    return await this.attendanceService.create(dto, dto.markedBy); 
+    return await this.attendanceService.create(dto, dto.markedBy);
   }
 
   @ApiOperation({
@@ -323,6 +331,85 @@ export class AttendanceController {
   }
 
   @ApiOperation({
+    summary: 'Check Pass/Fail status for student assignments',
+    description:
+      'Get pass/fail records for a specific student with pagination support. ' +
+      'Returns paginated list of pass/fail records for the student.',
+  })
+  @ApiQuery({
+    name: 'studentId',
+    required: true,
+    type: String,
+    description: 'Student ID',
+  })
+  @ApiOkResponse({
+    description: 'Pass/Fail summary for all students',
+    type: PassFailSummary,
+    schema: {
+      example: {
+        classScheduleId: '675f4aaf2b67a23d4c9f2941',
+        courseId: '675f4aaf2b67a23d4c9f2942',
+        sessionId: '671018fabc123456789ef015',
+        totalStudents: 25,
+        passedStudents: 18,
+        failedStudents: 7,
+        results: [
+          {
+            studentId: '675f4aaf2b67a23d4c9f2945',
+            studentName: 'Ali Khan',
+            totalClasses: 20,
+            presentCount: 20,
+            absentCount: 0,
+            result: 'PASS',
+            certificateIssued: false,
+          },
+          {
+            studentId: '675f4aaf2b67a23d4c9f2946',
+            studentName: 'Sara Ahmed',
+            totalClasses: 20,
+            presentCount: 19,
+            absentCount: 1,
+            result: 'FAIL',
+            certificateIssued: false,
+          },
+        ],
+      },
+    },
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number (default: 1)',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Items per page (default: 10, max: 50)',
+  })
+  @Get('get-results-by-student/:studentId')
+  @HttpCode(HttpStatus.OK)
+  async getPassFailRecordsByStudent(
+    @Param('studentId') studentId: string,
+    @Query() query: any,
+  ) {
+    const page = query?.page ?? 1;
+    let limit = query?.limit ?? 10;
+    if (limit > 50) {
+      limit = 50;
+    }
+
+    return await this.attendanceService.getPassFailRecordsByStudent(
+      { studentId },
+      {
+        page: Number(page),
+        limit: Number(limit),
+      },
+    );
+  }
+
+  @ApiOperation({
     summary: 'Get pass/fail records for operator dashboard',
     description:
       'Get all pass/fail records for a course session. Operator can filter by status, approval, and certificate issuance.',
@@ -385,7 +472,10 @@ export class AttendanceController {
     if (!dto.operatorId) {
       throw new BadRequestException('Operator ID is required');
     }
-    return await this.attendanceService.approvePassFailStatus(dto, dto.operatorId);
+    return await this.attendanceService.approvePassFailStatus(
+      dto,
+      dto.operatorId,
+    );
   }
 
   @ApiOperation({
@@ -475,10 +565,7 @@ export class AttendanceController {
   })
   @Patch(':id')
   @HttpCode(HttpStatus.OK)
-  async update(
-    @Param('id') id: string,
-    @Body() dto: UpdateAttendanceDto,
-  ) {
+  async update(@Param('id') id: string, @Body() dto: UpdateAttendanceDto) {
     return await this.attendanceService.update(id, dto);
   }
 
