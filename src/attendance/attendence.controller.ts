@@ -10,7 +10,12 @@ import {
   Patch,
   Post,
   Query,
+  Res,
+  NotFoundException,
 } from '@nestjs/common';
+import { Response } from 'express';
+import * as path from 'path';
+import * as fs from 'fs';
 import {
   ApiCreatedResponse,
   ApiOkResponse,
@@ -497,5 +502,44 @@ export class AttendanceController {
   async remove(@Param('id') id: string) {
     const deleted = await this.attendanceService.remove(id);
     return { deleted };
+  }
+
+  @ApiOperation({
+    summary: 'Download PDF certificate',
+    description: 'Download PDF file from pdfs folder by filename',
+  })
+  @ApiParam({
+    name: 'filename',
+    type: String,
+    required: true,
+    description: 'PDF filename (e.g., CertificateNo.2.pdf)',
+    example: 'CertificateNo.2.pdf',
+  })
+  @ApiOkResponse({
+    description: 'PDF file downloaded successfully',
+    content: {
+      'application/pdf': {
+        schema: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+    },
+  })
+  @Get('pdf/:filename')
+  async downloadPdf(@Param('filename') filename: string, @Res() res: Response) {
+    const filePath = path.join(process.cwd(), 'pdfs', filename);
+
+    // Check if file exists
+    if (!fs.existsSync(filePath)) {
+      throw new NotFoundException(`PDF file not found: ${filename}`);
+    }
+
+    // Set headers for PDF download
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+    // Send file
+    return res.sendFile(filePath);
   }
 }

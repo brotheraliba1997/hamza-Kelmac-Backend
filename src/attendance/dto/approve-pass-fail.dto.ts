@@ -35,6 +35,14 @@ export class ApprovePassFailDto {
   certificateUrl?: string;
 
   @ApiPropertyOptional({
+    description: 'PDF filename for certificate - if provided, certificateUrl will be generated automatically',
+    example: 'Certificate No. 1.pdf',
+  })
+  @IsOptional()
+  @IsString()
+  pdfFileName?: string;
+
+  @ApiPropertyOptional({
     description: 'Operator ID (will be taken from auth context in production)',
     example: '675f4aaf2b67a23d4c9f2941',
   })

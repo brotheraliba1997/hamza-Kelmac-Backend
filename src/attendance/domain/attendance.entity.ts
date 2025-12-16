@@ -60,6 +60,12 @@ export class AttendanceEntity {
   })
   markedAt: Date;
 
+  @ApiPropertyOptional({
+    description: 'Certificate PDF URL',
+    example: 'http://localhost:5000/pdfs/Certificate No. 1.pdf',
+  })
+  certificateUrl?: string;
+
   @ApiProperty({
     description: 'Index of the timeBlock in session.timeBlocks array (0-based)',
     example: 0,

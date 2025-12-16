@@ -83,5 +83,13 @@ export class CreateAttendanceDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @ApiPropertyOptional({
+    description: 'PDF filename for certificate',
+    example: 'Certificate No. 1.pdf',
+  })
+  @IsOptional()
+  @IsString()
+  pdfFileName?: string;
 }
 

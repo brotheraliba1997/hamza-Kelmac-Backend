@@ -35,6 +35,7 @@ import {
   GetPassFailRecordsDto,
 } from './dto/approve-pass-fail.dto';
 import { PassFailStatusEnum } from './schema/pass-fail-record.schema';
+import getPdfLink from '../utils/pdf-download/pdfs';
 
 @Injectable()
 export class AttendanceService {
@@ -740,12 +741,20 @@ export class AttendanceService {
     dto: ApprovePassFailDto,
     operatorId: string,
   ): Promise<PassFailRecordEntity> {
-    const { recordId, approve, notes, certificateUrl } = dto;
+    const { recordId, approve, notes, certificateUrl, pdfFileName } = dto;
 
     const record = await this.passFailRecordModel.findById(recordId).lean();
     if (!record) {
       throw new NotFoundException('Pass/Fail record not found');
     }
+
+    // Generate certificate URL from PDF filename if provided
+    let finalCertificateUrl = certificateUrl;
+    if (pdfFileName && !certificateUrl) {
+      finalCertificateUrl = getPdfLink(pdfFileName) || undefined;
+    }
+
+    console.log(finalCertificateUrl, 'finalCertificateUrl');
 
     const updateData: any = {
       isApproved: approve,
@@ -758,11 +767,11 @@ export class AttendanceService {
       // If PASS status and certificateUrl provided, automatically issue certificate
       if (
         record.status === PassFailStatusEnum.PASS &&
-        certificateUrl &&
+        finalCertificateUrl &&
         !record.certificateIssued
       ) {
         updateData.certificateIssued = true;
-        updateData.certificateUrl = certificateUrl;
+        updateData.certificateUrl = finalCertificateUrl;
       }
     } else {
       // If rejecting, clear approval data

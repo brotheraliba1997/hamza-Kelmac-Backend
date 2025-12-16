@@ -102,6 +102,13 @@ export class AttendanceSchemaClass extends EntityDocumentHelper {
     description: 'Timestamp when attendance was marked',
   })
   markedAt: Date;
+
+  @Prop({
+    type: String,
+    trim: true,
+    description: 'Certificate PDF URL',
+  })
+  certificateUrl?: string;
 }
 
 export const AttendanceSchema = SchemaFactory.createForClass(
