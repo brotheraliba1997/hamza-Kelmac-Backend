@@ -54,7 +54,16 @@ export class ClassScheduleService {
     const sanitizedDoc = sanitizeMongooseDocument(doc);
     return {
       id,
-      course: sanitizedDoc.course,
+      // course: sanitizedDoc.course,
+      course: {
+        ...sanitizedDoc.course,
+        sessions: sanitizedDoc.course.sessions?.map((session: any) => ({
+          ...session,
+          instructor: session?.instructor?._doc
+            ? session?.instructor?._doc
+            : session.instructor,
+        })),
+      },
       sessionId: sanitizedDoc.sessionId,
       instructor: sanitizedDoc.instructor,
       students: sanitizedDoc.students,
@@ -231,15 +240,15 @@ export class ClassScheduleService {
     paginationOptions: IPaginationOptions;
   }) {
     // Build filter query using FilterQueryBuilder
+    console.log('Filter Options:', filterOptions);
     const filterQueryBuilder =
       new FilterQueryBuilder<ClassScheduleSchemaClass>()
-        .addEqual('instructor' as any, filterOptions?.instructorId)
         .addEqual('course' as any, filterOptions?.courseId)
         .addEqual('status' as any, filterOptions?.status);
 
     if (filterOptions?.studentId) {
       filterQueryBuilder.addCustom('students' as any, {
-        $in: { id: filterOptions.studentId },
+        $in: filterOptions?.studentId,
       });
     }
 
@@ -254,19 +263,82 @@ export class ClassScheduleService {
       filterQueryBuilder.addCustom('$or' as any, [
         { googleMeetLink: { $regex: filterOptions.search, $options: 'i' } },
         { securityKey: { $regex: filterOptions.search, $options: 'i' } },
+        { 'course.title': { $regex: filterOptions.search, $options: 'i' } },
       ]);
     }
 
     const filterQuery = filterQueryBuilder.build();
 
+    // If instructor filter is provided, use direct query with populate
+    if (filterOptions?.instructorId) {
+      const instructorObjectId = new Types.ObjectId(filterOptions.instructorId);
+      const page = paginationOptions.page || 1;
+      const limit = paginationOptions.limit || 10;
+      const skip = (page - 1) * limit;
+
+      // First, get all class schedules that match base filters
+      const allSchedules = await this.classScheduleModel
+        .find(filterQuery)
+        .populate({
+          path: 'course',
+          populate: {
+            path: 'sessions',
+            populate: {
+              path: 'instructor',
+              select: 'firstName lastName email',
+            },
+          },
+        })
+        .populate('students', 'firstName lastName email')
+        .lean();
+
+      // Filter in memory for instructor match in course.sessions
+      const filteredSchedules = allSchedules.filter((schedule: any) => {
+        if (!schedule.course?.sessions) return false;
+        return schedule.course.sessions.some(
+          (session: any) =>
+            session.instructor?._id?.toString() ===
+              instructorObjectId.toString() ||
+            session.instructor?.toString() === instructorObjectId.toString(),
+        );
+      });
+
+      console.log(
+        `Total schedules: ${allSchedules.length}, Filtered: ${filteredSchedules.length}`,
+      );
+
+      // Apply pagination on filtered results
+      const paginatedSchedules = filteredSchedules.slice(skip, skip + limit);
+      const mappedResults = paginatedSchedules.map((doc) => this.map(doc));
+
+      return {
+        data: mappedResults,
+        totalItems: filteredSchedules.length,
+        limit,
+        hasNextPage: skip + limit < filteredSchedules.length,
+        hasPreviousPage: skip > 0,
+        totalPages: Math.ceil(filteredSchedules.length / limit),
+        currentPage: page,
+      };
+    }
+
+    // For non-instructor filters, use standard query builder
     return buildMongooseQuery({
       model: this.classScheduleModel,
       filterQuery,
       sortOptions,
       paginationOptions,
       populateFields: [
-        { path: 'course' },
-
+        {
+          path: 'course',
+          populate: {
+            path: 'sessions',
+            populate: {
+              path: 'instructor',
+              select: 'firstName lastName email',
+            },
+          },
+        },
         { path: 'students', select: 'firstName lastName email' },
       ],
       mapper: (doc) => this.map(doc),
@@ -278,7 +350,16 @@ export class ClassScheduleService {
       const schedules = await this.classScheduleModel
         // paginationOptions: { page: 1, limit: 1000 },
         .find({})
-        .populate({ path: 'course' })
+        .populate({
+          path: 'course',
+          populate: {
+            path: 'sessions',
+            populate: {
+              path: 'instructor',
+              select: 'firstName lastName email',
+            },
+          },
+        })
         .populate('students', 'firstName lastName email')
         .lean();
 

@@ -54,10 +54,10 @@ export class AttendanceService {
   private readonly attendancePopulate = [
     {
       path: 'classScheduleId',
-      select: 'date time duration status course instructor',
+      select: 'date time duration status course',
       populate: [
         { path: 'course', select: 'title slug' },
-        { path: 'instructor', select: 'firstName lastName email' },
+        // { path: 'instructor', select: 'firstName lastName email' },
       ],
     },
     {

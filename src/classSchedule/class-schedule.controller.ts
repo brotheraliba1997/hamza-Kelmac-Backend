@@ -85,7 +85,7 @@ export class ClassScheduleController {
     description: 'Items per page (default: 10, max: 50)',
   })
   @ApiQuery({
-    name: 'instructorIdss',
+    name: 'instructorId',
     required: false,
     type: String,
     description: 'Filter by instructor ID',
