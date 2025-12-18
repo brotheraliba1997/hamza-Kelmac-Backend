@@ -613,6 +613,25 @@ export class AuthService {
     return this.sessionService.deleteById(data.sessionId);
   }
 
+  async verifySocketToken(token: string): Promise<JwtPayloadType> {
+    if (!token) {
+      throw new UnauthorizedException('Token is required');
+    }
+
+    try {
+      const payload = await this.jwtService.verifyAsync<JwtPayloadType>(
+        token,
+        {
+          secret: this.configService.getOrThrow('auth.secret', { infer: true }),
+        },
+      );
+
+      return payload;
+    } catch (error) {
+      throw new UnauthorizedException('Invalid token');
+    }
+  }
+
   private async getTokensData(data: {
     id: User['id'];
     role: User['role'];
@@ -659,4 +678,6 @@ export class AuthService {
       tokenExpires,
     };
   }
+
+  
 }
