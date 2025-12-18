@@ -484,17 +484,17 @@ export class MailService {
   ): Promise<void> {
     const subject = `Payment Confirmed - Access Your Course Materials`;
 
-    const frontendDomain = this.configService.getOrThrow(
-      'app.frontendDomain',
-      { infer: true },
-    );
+    const frontendDomain = this.configService.getOrThrow('app.frontendDomain', {
+      infer: true,
+    });
 
-    const courseMaterialsList = mailData.data.courseMaterials
-      ?.map(
-        (material) =>
-          `- ${material.name} (${material.type})${material.link ? ` - ${material.link}` : ''}`,
-      )
-      .join('\n') || 'Course materials will be available in your dashboard.';
+    const courseMaterialsList =
+      mailData.data.courseMaterials
+        ?.map(
+          (material) =>
+            `- ${material.name} (${material.type})${material.link ? ` - ${material.link}` : ''}`,
+        )
+        .join('\n') || 'Course materials will be available in your dashboard.';
 
     const text = `
 Dear ${mailData.data.studentName},
@@ -518,6 +518,46 @@ Thank you for your purchase!
 Best regards,
 ${this.configService.get('app.name', { infer: true }) || 'Kelmac Team'}
     `.trim();
+
+    await this.mailerService.sendMail({
+      to: mailData.to,
+      subject,
+      text,
+    });
+  }
+
+  async enquirySubmitted(
+    mailData: MailData<{
+      subject: string;
+      name: string;
+      email: string;
+      phone?: string;
+      company?: string;
+      designation?: string;
+      industry?: string;
+      trainingType?: string;
+    }>,
+  ): Promise<void> {
+    const subject = `New Enquiry: ${mailData.data.subject}`;
+
+    const lines = [
+      `Subject: ${mailData.data.subject}`,
+      `Name: ${mailData.data.name}`,
+      `Email: ${mailData.data.email}`,
+      mailData.data.phone ? `Phone: ${mailData.data.phone}` : undefined,
+      mailData.data.company ? `Company: ${mailData.data.company}` : undefined,
+      mailData.data.designation
+        ? `Designation: ${mailData.data.designation}`
+        : undefined,
+      mailData.data.industry
+        ? `Industry: ${mailData.data.industry}`
+        : undefined,
+      mailData.data.trainingType
+        ? `Training Type: ${mailData.data.trainingType}`
+        : undefined,
+    ].filter(Boolean);
+
+    const text = lines.join('\n');
 
     await this.mailerService.sendMail({
       to: mailData.to,
