@@ -7,6 +7,7 @@ import {
   MessageBody,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
+import { AuthService } from '../auth/auth.service';
 
 @WebSocketGateway({
   cors: {
@@ -28,11 +29,25 @@ import { Server, Socket } from 'socket.io';
 export class NotificationGateway
   implements OnGatewayConnection, OnGatewayDisconnect
 {
+  constructor(private authService: AuthService) {}
   @WebSocketServer()
   server: Server;
 
-  handleConnection(client: Socket) {
-    console.log('Client connected:', client.id);
+  async handleConnection(client: Socket) {
+    const token = client.handshake.auth?.token;
+
+    try {
+      const user = await this.authService.verifySocketToken(token); // JWT verify
+      const userId = user.id;
+
+      // ✅ best practice: room join
+      client.join(`user-${userId}`);
+
+      console.log(`User ${userId} connected with socket ${client.id}`);
+    } catch (error) {
+      console.error('Socket connection error:', error);
+      client.disconnect();
+    }
   }
 
   handleDisconnect(client: Socket) {
@@ -51,4 +66,3 @@ export class NotificationGateway
     return { status: 'ok' };
   }
 }
-  
