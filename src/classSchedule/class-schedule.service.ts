@@ -157,7 +157,6 @@ export class ClassScheduleService {
 
       await schedules.save();
 
-      console.log(`✅ Student added to schedule ${schedules._id}`);
       schedule = schedules;
     } else {
       schedule = await this.classScheduleModel.create({
@@ -354,7 +353,7 @@ export class ClassScheduleService {
           path: 'course',
           populate: {
             path: 'sessions',
-            populate: {
+            populate: { 
               path: 'instructor',
               select: 'firstName lastName email',
             },

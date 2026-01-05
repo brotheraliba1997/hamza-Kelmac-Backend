@@ -43,6 +43,7 @@ import { AttendanceModule } from './attendance/attendence.module';
 import { LocationModule } from './location/location.module';
 import { NotificationModule } from './notification/notification.module';
 import { EnquiriesModule } from './enquiry/enquiries.module';
+import { AssigmentModule } from './assigment/assigment.module';
 
 // <database-block>
 const infrastructureDatabaseModule = (databaseConfig() as DatabaseConfig)
@@ -124,6 +125,7 @@ const infrastructureDatabaseModule = (databaseConfig() as DatabaseConfig)
     LocationModule,
     NotificationModule,
     EnquiriesModule,
+    AssigmentModule
   ],
 })
 export class AppModule {}
