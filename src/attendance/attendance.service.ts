@@ -573,8 +573,7 @@ export class AttendanceService {
     const studentAttendanceMap = new Map<string, any[]>();
 
     attendanceRecords.forEach((record: any) => {
-      const studentId =
-        record.student?._id?.toString() || record.student?.toString();
+      const studentId = record.student?._id?.toString() || record.student?.toString();
       if (!studentAttendanceMap.has(studentId)) {
         studentAttendanceMap.set(studentId, []);
       }
@@ -597,12 +596,10 @@ export class AttendanceService {
         (r: any) => r.status === 'absent',
       ).length;
       const totalClasses = records.length;
-      const attendancePercentage =
-        totalClasses > 0 ? Math.round((presentCount / totalClasses) * 100) : 0;
+      const attendancePercentage = totalClasses > 0 ? Math.round((presentCount / totalClasses) * 100) : 0;
 
       // Determine pass/fail: PASS only if absentCount === 0
-      const result =
-        absentCount === 0 ? PassFailStatusEnum.PASS : PassFailStatusEnum.FAIL;
+      const result = absentCount === 0 ? PassFailStatusEnum.PASS : PassFailStatusEnum.FAIL;
 
       if (result === PassFailStatusEnum.PASS) {
         passedCount++;
@@ -610,8 +607,7 @@ export class AttendanceService {
         failedCount++;
       }
 
-      const studentName =
-        student.firstName && student.lastName
+      const studentName = student.firstName && student.lastName
           ? `${student.firstName} ${student.lastName}`
           : student.email || 'Unknown Student';
 
@@ -654,7 +650,7 @@ export class AttendanceService {
           )
           .lean();
       } else {
-        // Create new record
+      
         savedRecord = await this.passFailRecordModel.create(passFailData);
         savedRecord = await this.passFailRecordModel
           .findById(savedRecord._id)

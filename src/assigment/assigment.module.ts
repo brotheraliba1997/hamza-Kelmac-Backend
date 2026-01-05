@@ -7,7 +7,7 @@ import { CourseSchemaClass, CourseSchema } from '../course/schema/course.schema'
 import { ClassScheduleSchemaClass, ClassScheduleSchema } from '../classSchedule/schema/class-schedule.schema';
 import { AssigmentController } from './assigment.controller';
 import { AssignmentService } from './assigment.service';
-import { PassFailRecordSchemaClass, PassFailRecordSchema } from './schema/pass-fail-record.schema';
+import { AssigmentPassFailRecordSchemaClass, PassFailRecordSchema } from './schema/pass-fail-record.schema';
 
 
 @Module({
@@ -15,7 +15,7 @@ import { PassFailRecordSchemaClass, PassFailRecordSchema } from './schema/pass-f
     MongooseModule.forFeature([
       { name: AssignmentSchemaClass.name, schema: AssigmentSchema },
       { name: CourseSchemaClass.name, schema: CourseSchema },
-      { name: PassFailRecordSchemaClass.name, schema: PassFailRecordSchema },
+      { name: AssigmentPassFailRecordSchemaClass.name, schema: PassFailRecordSchema },
       { name: ClassScheduleSchemaClass.name, schema: ClassScheduleSchema },
     ]),
   ],

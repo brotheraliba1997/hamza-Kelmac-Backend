@@ -5,7 +5,7 @@ import { CourseSchemaClass } from '../../course/schema/course.schema';
 import { UserSchemaClass } from '../../users/schema/user.schema';
 import { ClassScheduleSchemaClass } from '../../classSchedule/schema/class-schedule.schema';
 
-export type PassFailRecordDocument = HydratedDocument<PassFailRecordSchemaClass>;
+export type PassFailRecordDocument = HydratedDocument<AssigmentPassFailRecordSchemaClass>;
 
 export enum PassFailStatusEnum {
   PASS = 'PASS',
@@ -16,7 +16,7 @@ export enum PassFailStatusEnum {
   timestamps: true,
   toJSON: { virtuals: true, getters: true },
 })
-export class PassFailRecordSchemaClass extends EntityDocumentHelper {
+export class AssigmentPassFailRecordSchemaClass extends EntityDocumentHelper {
   @Prop({
     type: Types.ObjectId,
     ref: UserSchemaClass.name,
@@ -153,7 +153,7 @@ export class PassFailRecordSchemaClass extends EntityDocumentHelper {
 }
 
 export const PassFailRecordSchema = SchemaFactory.createForClass(
-  PassFailRecordSchemaClass,
+  AssigmentPassFailRecordSchemaClass,
 );
 
 // Indexes for performance

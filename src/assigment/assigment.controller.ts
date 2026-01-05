@@ -37,6 +37,7 @@ import { UpdateAssignmentDto } from './dto/update-assignment.dto';
 import { ApprovePassFailDto } from './dto/approve-pass-fail.dto';
 import { AssignmentPassFailRecordEntity } from './domain/pass-fail-record.entity';
 import { FilterAttendanceDto } from '../attendance/dto/query-attendance.dto';
+import { CheckPassFailDto } from './dto/check-pass-fail.dto';
 
 @ApiTags('Assigment')
 @Controller({
@@ -106,5 +107,14 @@ export class AssigmentController {
       dto,
       dto.operatorId,
     );
+  }
+
+
+
+  @Get('pass-fail-check-assigment')
+  @HttpCode(HttpStatus.OK)
+  async checkPassFail(@Query() query: CheckPassFailDto) {
+    console.log(query, "issueCertificates")
+    return await this.assigmentService.checkPassFailStatus(query);
   }
 }
