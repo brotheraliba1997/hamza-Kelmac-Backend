@@ -37,12 +37,16 @@ import {
 } from './dto/approve-pass-fail.dto';
 import { PassFailStatusEnum } from './schema/pass-fail-record.schema';
 import getPdfLink from '../utils/pdf-download/pdfs';
+import { AssignmentSchemaClass } from '../assigment/schema/assigment.schema';
 
 @Injectable()
 export class AttendanceService {
   constructor(
     @InjectModel(AttendanceSchemaClass.name)
     private readonly attendanceModel: Model<AttendanceSchemaClass>,
+    @InjectModel(AssignmentSchemaClass.name)
+    private readonly assignmentModel: Model<AssignmentSchemaClass>,
+
     @InjectModel(CourseSchemaClass.name)
     private readonly courseModel: Model<CourseSchemaClass>,
     @InjectModel(PassFailRecordSchemaClass.name)
@@ -557,6 +561,10 @@ export class AttendanceService {
       courseId: new Types.ObjectId(courseId),
       sessionId: new Types.ObjectId(sessionId),
     };
+    const assignmentRecords = await this.assignmentModel
+      .find(query)
+      .populate('student', 'firstName lastName email')
+      .lean();
 
     const attendanceRecords = await this.attendanceModel
       .find(query)
@@ -570,14 +578,34 @@ export class AttendanceService {
     }
 
     // Group attendance by student
-    const studentAttendanceMap = new Map<string, any[]>();
+    const studentAttendanceMap = new Map<
+      string,
+      { attendance: any[]; assignments: any[] }
+    >();
 
     attendanceRecords.forEach((record: any) => {
-      const studentId = record.student?._id?.toString() || record.student?.toString();
+      const studentId =
+        record.student?._id?.toString() || record.student?.toString();
       if (!studentAttendanceMap.has(studentId)) {
-        studentAttendanceMap.set(studentId, []);
+        studentAttendanceMap.set(studentId, {
+          attendance: [],
+          assignments: [],
+        });
       }
-      studentAttendanceMap.get(studentId)?.push(record);
+      studentAttendanceMap.get(studentId)?.attendance.push(record);
+    });
+
+    // Merge assignment records with marks into studentAttendanceMap
+    assignmentRecords.forEach((record: any) => {
+      const studentId =
+        record.student?._id?.toString() || record.student?.toString();
+      if (!studentAttendanceMap.has(studentId)) {
+        studentAttendanceMap.set(studentId, {
+          attendance: [],
+          assignments: [],
+        });
+      }
+      studentAttendanceMap.get(studentId)?.assignments.push(record);
     });
 
     // Calculate pass/fail for each student and save to database
@@ -585,8 +613,10 @@ export class AttendanceService {
     let passedCount = 0;
     let failedCount = 0;
 
-    for (const [studentId, records] of studentAttendanceMap.entries()) {
-      const student = records[0].student;
+    for (const [studentId, data] of studentAttendanceMap.entries()) {
+      const records = data.attendance;
+      const assignments = data.assignments;
+      const student = records[0]?.student || assignments[0]?.student;
 
       // Count present and absent
       const presentCount = records.filter(
@@ -596,10 +626,20 @@ export class AttendanceService {
         (r: any) => r.status === 'absent',
       ).length;
       const totalClasses = records.length;
-      const attendancePercentage = totalClasses > 0 ? Math.round((presentCount / totalClasses) * 100) : 0;
+
+      // Calculate assignment marks
+      const totalMarks = assignments.reduce(
+        (sum: number, a: any) => sum + (a.marks || 0),
+        0,
+      );
+      const averageMarks =
+        assignments.length > 0 ? totalMarks / assignments.length : 0;
+      const attendancePercentage =
+        totalClasses > 0 ? Math.round((presentCount / totalClasses) * 100) : 0;
 
       // Determine pass/fail: PASS only if absentCount === 0
-      const result = absentCount === 0 ? PassFailStatusEnum.PASS : PassFailStatusEnum.FAIL;
+      const result =
+        absentCount === 0 ? PassFailStatusEnum.PASS : PassFailStatusEnum.FAIL;
 
       if (result === PassFailStatusEnum.PASS) {
         passedCount++;
@@ -607,7 +647,8 @@ export class AttendanceService {
         failedCount++;
       }
 
-      const studentName = student.firstName && student.lastName
+      const studentName =
+        student.firstName && student.lastName
           ? `${student.firstName} ${student.lastName}`
           : student.email || 'Unknown Student';
 
@@ -627,6 +668,7 @@ export class AttendanceService {
         presentCount,
         absentCount,
         attendancePercentage,
+
         determinedAt: new Date(),
       };
 
@@ -650,7 +692,6 @@ export class AttendanceService {
           )
           .lean();
       } else {
-      
         savedRecord = await this.passFailRecordModel.create(passFailData);
         savedRecord = await this.passFailRecordModel
           .findById(savedRecord._id)
@@ -667,6 +708,8 @@ export class AttendanceService {
         totalClasses,
         presentCount,
         absentCount,
+        totalMarks,
+        averageMarks,
         result: result as 'PASS' | 'FAIL',
         certificateIssued,
       });

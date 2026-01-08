@@ -63,6 +63,11 @@ export class StudentPassFailResult {
   @ApiProperty()
   absentCount: number;
 
+  @ApiProperty()
+  totalMarks: number;
+  @ApiProperty()
+  averageMarks: number;
+
   @ApiProperty({
     enum: ['PASS', 'FAIL'],
   })
