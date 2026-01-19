@@ -6,6 +6,8 @@ export type NotificationDocument = Notification & Document;
 
 @Schema({ timestamps: true })
 export class Notification {
+
+  
   @Prop({ required: true })
   title: string;
 

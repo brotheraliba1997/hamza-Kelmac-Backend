@@ -12,7 +12,7 @@ import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { StudentItemGradeService } from './student-item-grade.service';
 
 import { UpdateStudentItemGradeDto } from './dto/update-student-item-grade.dto';
-import { CreateStudentItemGradeDto } from './dto/create-student-item-grade.dto';
+import { createManyStudentItemGradeDto, CreateStudentItemGradeDto } from './dto/create-student-item-grade.dto';
 
 @ApiTags('Student Item Grades')
 @Controller({
@@ -24,7 +24,8 @@ export class StudentItemGradeController {
 
   @Post()
   @ApiOperation({ summary: 'Create or update student item grade' })
-  createOrUpdate(@Body() dto: CreateStudentItemGradeDto) {
+  createOrUpdate(@Body() dto: createManyStudentItemGradeDto) {
+    console.log(dto);
     return this.gradeService.createOrUpdate(dto);
   }
 

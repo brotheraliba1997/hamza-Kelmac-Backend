@@ -11,7 +11,10 @@ import {
 } from '../utils/convert-id';
 import { UpdateStudentItemGradeDto } from './dto/update-student-item-grade.dto';
 import { StudentItemGrade } from './schema/student-item-grade.schema';
-import { CreateStudentItemGradeDto } from './dto/create-student-item-grade.dto';
+import {
+  createManyStudentItemGradeDto,
+  CreateStudentItemGradeDto,
+} from './dto/create-student-item-grade.dto';
 
 @Injectable()
 export class StudentItemGradeService {
@@ -35,42 +38,36 @@ export class StudentItemGradeService {
     } as any;
   }
 
-  /**
-   * Create or Update (UPSERT)
-   */
-  async createOrUpdate(dto: CreateStudentItemGradeDto) {
-    const { studentId, assessmentItemId, obtainedMarks } = dto;
-
-    const existingGrade = await this.gradeModel.findOne({
-      studentId: new Types.ObjectId(studentId),
-      assessmentItemId: new Types.ObjectId(assessmentItemId),
-    });
-
-    if (existingGrade) {
-      throw new BadRequestException('Grade already exists');
-    }
-
-    const createGrade = await this.gradeModel.findOneAndUpdate(
-      {
-        studentId: new Types.ObjectId(studentId),
-        assessmentItemId: new Types.ObjectId(assessmentItemId),
-      },
-      {
-        obtainedMarks,
-      },
-      {
-        upsert: true,
-        new: true,
-      },
-    );
-
-    const grade = await this.gradeModel
-      .findById(createGrade._id)
+  
+  async createOrUpdate(dto: createManyStudentItemGradeDto) {
+    const results = [];
+  
+    for (const grade of dto.grades) {
+      const { studentId, assessmentItemId, obtainedMarks } = grade;
+  
+      const record = await this.gradeModel.findOneAndUpdate(
+        {
+          studentId: new Types.ObjectId(studentId),
+          assessmentItemId: new Types.ObjectId(assessmentItemId),
+        },
+        {
+          obtainedMarks,
+        },
+        {
+          upsert: true,
+          new: true,
+        },
+      )
       .populate('studentId')
       .populate('assessmentItemId')
       .lean();
-    return this.map(grade);
+  
+      results.push(this.map(record));
+    }
+  
+    return results;
   }
+  
 
   async findByStudent(studentId: string) {
     const grades = await this.gradeModel

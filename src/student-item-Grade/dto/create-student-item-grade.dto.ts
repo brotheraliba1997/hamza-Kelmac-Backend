@@ -1,7 +1,14 @@
 // dto/create-student-item-grade.dto.ts
 
 import { ApiProperty } from '@nestjs/swagger';
-import { IsMongoId, IsNumber, Min } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  IsArray,
+  IsMongoId,
+  IsNumber,
+  Min,
+  ValidateNested,
+} from 'class-validator';
 
 export class CreateStudentItemGradeDto {
   @ApiProperty({
@@ -25,4 +32,20 @@ export class CreateStudentItemGradeDto {
   @IsNumber()
   @Min(0)
   obtainedMarks: number;
+}
+
+export class createManyStudentItemGradeDto {
+  @ApiProperty({
+    example: [
+      {
+        studentId: '68fdf94006e63abc0d5a12e4',
+        assessmentItemId: '65afd1206f1e23abc45a9912',
+        obtainedMarks: 8,
+      },
+    ],
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateStudentItemGradeDto)
+  grades: CreateStudentItemGradeDto[];
 }
