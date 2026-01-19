@@ -14,6 +14,7 @@ import {
   Matches,
   MaxLength,
   IsDate,
+  isBoolean,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import {
@@ -21,6 +22,8 @@ import {
   SkillLevelEnum,
   CurrencyEnum,
 } from '../schema/course.schema';
+import {  CreateCrouseAssessmentItemDto } from './create-assessment-Item.dto';
+
 
 // Time Block DTO
 export class TimeBlockDto {
@@ -201,13 +204,16 @@ export class DateOptionDto {
   @ApiProperty({ example: 'Full Week , Weekend Per day' })
   @IsString()
   @IsOptional()
-  description?: string; // e.g. "Full Week"
+  description?: string;
 
   @ApiProperty({ example: '9:00 AM - 4:30 PM (Eastern Time (GMT-5))' })
   @IsString()
   @IsOptional()
   time?: string;
 }
+
+
+
 
 export class CreateCourseDto {
   // ===== Basic Information =====
@@ -217,6 +223,13 @@ export class CreateCourseDto {
   })
   @IsString()
   title: string;
+
+  @ApiProperty({
+    description: 'Does this course have a test?',
+    example: true,
+  })
+  @IsBoolean()
+  hasTest: boolean;
 
   @ApiPropertyOptional({
     description:
@@ -321,6 +334,20 @@ export class CreateCourseDto {
   @IsArray()
   @IsOptional()
   sessions?: SessionDto[];
+
+
+  @ApiPropertyOptional({
+    type: [CreateCrouseAssessmentItemDto],
+    description: 'List of assessment items for the test',
+  })
+  @ValidateNested({ each: true })
+  @Type(() => CreateCrouseAssessmentItemDto)
+  @IsArray()
+  @IsOptional()
+  items?: CreateCrouseAssessmentItemDto[];
+
+  // internetsssss
+  
 
   // ===== Course Metadata =====
   @ApiPropertyOptional({ type: CourseSnapshotDto })

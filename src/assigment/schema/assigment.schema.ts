@@ -29,6 +29,8 @@ export class AssignmentSchemaClass extends EntityDocumentHelper {
     description: 'Course ID reference',
   })
   courseId: Types.ObjectId;
+
+  
   @Prop({
     type: Types.ObjectId,
     required: true,

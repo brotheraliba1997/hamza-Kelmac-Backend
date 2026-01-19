@@ -26,6 +26,8 @@ import {
   sanitizeMongooseDocument,
 } from '../utils/convert-id';
 import { CategoriesService } from '../category/categories.service';
+import { AssessmentItem } from '../assessment-Items/schema/assessmentItem.schema';
+import { CreateCrouseAssessmentItemDto } from './dto/create-assessment-Item.dto';
 
 type TimeBlockLike = {
   startDate?: string;
@@ -46,6 +48,9 @@ export class CoursesService {
     private readonly mailService: MailService,
     private readonly configService: ConfigService<AllConfigType>,
     private readonly categoriesService: CategoriesService,
+
+    @InjectModel(AssessmentItem.name)
+    private readonly assessmentItemModel: Model<AssessmentItem>,
   ) {}
 
   /**
@@ -231,7 +236,20 @@ export class CoursesService {
       }
     }
 
-    // Populate sessions with instructor for email
+    if (created.hasTest && dto.items && dto.items.length > 0) {
+      try {
+        const items = dto.items.map(item => ({
+          ...item,
+          courseId: created._id.toString(), 
+        }));
+    
+        await this.assessmentItemModel.insertMany(items);
+      } catch (error) {
+        console.error('Assessment items creation failed:', error);
+      }
+    }
+
+   
     const populatedCourse = await this.courseModel
       .findById(created._id)
       .populate('sessions.instructor')

@@ -7,12 +7,14 @@ import { CourseSchema, CourseSchemaClass } from './schema/course.schema';
 import { MailModule } from '../mail/mail.module';
 import { UserSchema, UserSchemaClass } from '../users/schema/user.schema';
 import { CategoriesModule } from '../category/categories.module';
+import { AssessmentItem, AssessmentItemSchema } from '../assessment-Items/schema/assessmentItem.schema';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: CourseSchemaClass.name, schema: CourseSchema },
       { name: UserSchemaClass.name, schema: UserSchema },
+      { name: AssessmentItem.name, schema: AssessmentItemSchema }, 
     ]),
     MailModule,
     CategoriesModule,

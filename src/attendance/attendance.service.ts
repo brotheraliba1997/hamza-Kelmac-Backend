@@ -61,7 +61,7 @@ export class AttendanceService {
       select: 'date time duration status course',
       populate: [
         { path: 'course', select: 'title slug' },
-        // { path: 'instructor', select: 'firstName lastName email' },
+      
       ],
     },
     {
@@ -75,28 +75,14 @@ export class AttendanceService {
   private map(doc: any): AttendanceEntity {
     if (!doc) return undefined as any;
 
-    // Sanitize the document to convert all IDs and nested objects
-    // sanitizeMongooseDocument automatically:
-    // - Converts _id to id (as string)
-    // - Handles populated references (converts nested _id to id)
-    // - Preserves populated object structure (courseId, student, markedBy)
     const sanitized = sanitizeMongooseDocument(doc);
     if (!sanitized) return undefined as any;
-
     return {
       id: sanitized.id || convertIdToString(doc),
-      // classScheduleId: Class Schedule ID reference
       classScheduleId: sanitized.classScheduleId,
-      // courseId: If populated, will have { id, title, slug, sessions: [...], instructor: {...} }
-      //           If not populated, will be just the ID string
       courseId: sanitized.courseId,
-      // sessionId: Session ID from course.sessions array (stored in attendance document)
       sessionId: sanitized.sessionId,
-      // student: If populated, will have { id, firstName, lastName, email }
-      //          If not populated, will be just the ID string
       student: sanitized.student,
-      // markedBy: If populated, will have { id, firstName, lastName, email }
-      //           If not populated, will be just the ID strings
       markedBy: sanitized.markedBy,
       status: sanitized.status,
       notes: sanitized.notes,

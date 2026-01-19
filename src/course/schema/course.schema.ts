@@ -120,7 +120,7 @@ export class SessionSchemaClass {
   })
   location: Types.ObjectId;
 
-  @Prop({ type: String, default: 0, min: 0, enum: ['online', 'in-person'] })
+  @Prop({ type: String, default: "online", enum: ['online', 'in-person'] })
   mode: 'online' | 'in-person';
 
   @Prop({
@@ -237,6 +237,10 @@ export class CourseSchemaClass extends EntityDocumentHelper {
   })
   category: Types.ObjectId;
 
+
+  @Prop({ type: Boolean, default: false })
+  hasTest: boolean;
+
   @Prop({ type: [String], default: [], index: true })
   subcategories: string[];
 
@@ -328,6 +332,10 @@ export class CourseSchemaClass extends EntityDocumentHelper {
 }
 
 export const CourseSchema = SchemaFactory.createForClass(CourseSchemaClass);
+
+
+
+
 
 // =====================================================
 // INDEXES
