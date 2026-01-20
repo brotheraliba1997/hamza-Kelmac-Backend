@@ -24,7 +24,10 @@ export class AssessmentItem extends Document {
   title: string; // Example: "ISO 19011 Terminology..."
 
   @Prop({ type: String, required: true })
-  cu: string; // Example: "AU" or "AU-TL"
+  cu: string; 
+  
+  @Prop({ type: Number, required: true })
+  maxMarks: string; // Example: "AU" or "AU-TL"
 }
 
 export const AssessmentItemSchema =

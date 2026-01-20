@@ -15,7 +15,6 @@ import { AssessmentItemService } from './assessmentItem.services';
 import { UpdateAssessmentItemDto } from './dto/update-assessment-item.dto';
 
 @ApiTags('Assessment Items')
-
 @Controller({
   path: 'assessment-items',
   version: '1',
@@ -34,10 +33,12 @@ export class AssessmentItemController {
     return this.service.findAll();
   }
 
-
-  @Get('course/:courseId')
-  findByCourse(@Param('courseId') courseId: string  ): Promise<AssessmentItem[]> {
-    return this.service.findByCourse(courseId);
+  @Get('course/:courseId/day/:day')
+  findByCourse(
+    @Param('courseId') courseId: string,
+    @Param('day') day: string,
+  ): Promise<{ data: AssessmentItem[] }> {
+    return this.service.findByCourse(courseId, day);
   }
 
   @Get(':id')

@@ -29,6 +29,7 @@ export class AssessmentItemService {
       topicRef: sanitized.topicRef,
       title: sanitized.title,
       cu: sanitized.cu,
+      maxMarks: sanitized.maxMarks,
       createdAt: sanitized.createdAt,
       updatedAt: sanitized.updatedAt,
     } as any;
@@ -45,20 +46,22 @@ export class AssessmentItemService {
     return this.assessmentItemModel.find().exec();
   }
 
-  async findByCourse(courseId: string): Promise<AssessmentItem[]> {
-    console.log(courseId);
+  async findByCourse(courseId: string, day: string): Promise<{ data: AssessmentItem[] }> {
     const items = await this.assessmentItemModel
-      .find({ courseId: courseId })
-      .exec();
+      .find({ courseId: courseId, day: day })
+      .lean();
 
-    console.log(items);
-    return items.map((item) => this.map(item));
+    if (!items || items.length === 0) throw new NotFoundException('Assessment items not founds');
+  
+    return {
+      data: items.map(item => this.map(item)),
+    };
   }
 
   // Find by ID
   async findOne(id: string): Promise<AssessmentItem> {
     const item = await this.assessmentItemModel.findById(id).exec();
-    if (!item) throw new NotFoundException('AssessmentItem not found');
+    if (!item) throw new NotFoundException('AssessmentItem not founds');
     return item;
   }
 

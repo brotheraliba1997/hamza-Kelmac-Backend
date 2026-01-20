@@ -12,7 +12,10 @@ import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { StudentItemGradeService } from './student-item-grade.service';
 
 import { UpdateStudentItemGradeDto } from './dto/update-student-item-grade.dto';
-import { createManyStudentItemGradeDto, CreateStudentItemGradeDto } from './dto/create-student-item-grade.dto';
+import {
+  createManyStudentItemGradeDto,
+  CreateStudentItemGradeDto,
+} from './dto/create-student-item-grade.dto';
 
 @ApiTags('Student Item Grades')
 @Controller({
@@ -35,13 +38,14 @@ export class StudentItemGradeController {
     return this.gradeService.findByStudent(studentId);
   }
 
-  // @Get('assessment/:assessmentItemId')
-  // @ApiOperation({ summary: 'Get grades for an assessment item' })
-  // findByAssessment(
-  //   @Param('assessmentItemId') assessmentItemId: string,
-  // ) {
-  //   return this.gradeService.findByAssessmentItem(assessmentItemId);
-  // }
+  @Get('course/:courseId/result-pass-fail/:studentId')
+  @ApiOperation({ summary: 'Get all grades of a student' })
+  resultPassFail(
+    @Param('courseId') courseId: string,
+    @Param('studentId') studentId: string,
+  ) {
+    return this.gradeService.resultPassFail(courseId, studentId);
+  }
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update obtained marks' })
