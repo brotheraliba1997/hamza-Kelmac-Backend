@@ -149,43 +149,66 @@ export class ClassScheduleService {
     }
 
     // Check if notification already exists for same course + same students
-    const existingNotification = await this.notificationModel.findOne({
+    // const existingNotification = await this.notificationModel.findOne({
+    //   receiverIds: { $in: studentIds },
+    //   type: 'class_schedules',
+    //   'meta.courseId': dto.course,
+    // });
+
+    // if (!existingNotification) {
+    //   // Check if notification exists for same students but different course
+    //   const notificationForDifferentCourse = await this.notificationModel.findOne({
+    //     receiverIds: { $in: studentIds },
+    //     type: 'class_schedules',
+    //     'meta.courseId': { $ne: dto.course },
+    //   });
+
+    //   if (notificationForDifferentCourse) {
+    //     // Update existing notification: add new courseId to meta and update receiverIds
+    //     await this.notificationModel.updateOne(
+    //       { _id: notificationForDifferentCourse._id },
+    //       {
+    //         $set: {
+    //           receiverIds: studentIds,
+    //           title: 'Class Schedule Created',
+    //           message: 'A new class schedule has been created',
+    //           meta: { courseId: dto.course },
+    //         },
+    //       },
+    //     );
+    //   } else {
+    //     // Create new notification if none exists
+    //     await this.notificationModel.create({
+    //       receiverIds: studentIds,
+    //       type: 'class_schedules',
+    //       title: 'Class Schedule Created',
+    //       message: 'A new class schedule has been created',
+    //       meta: { courseId: dto.course },
+    //     });
+    //   }
+    // }
+
+    const alreadyExistsNotification = await this.notificationModel.findOne({
       receiverIds: { $in: studentIds },
       type: 'class_schedules',
       'meta.courseId': dto.course,
     });
 
-    if (!existingNotification) {
-      // Check if notification exists for same students but different course
-      const notificationForDifferentCourse = await this.notificationModel.findOne({
-        receiverIds: { $in: studentIds },
+    if (alreadyExistsNotification) {
+      await this.notificationModel.updateOne(
+        { _id: alreadyExistsNotification._id },
+        {
+          $addToSet: { receiverIds: { $each: studentIds } },
+        },
+      );
+    } else {
+      await this.notificationModel.create({
+        receiverIds: studentIds,
         type: 'class_schedules',
-        'meta.courseId': { $ne: dto.course },
+        title: 'Class Schedule Created',
+        message: 'A new class schedule has been created',
+        meta: { courseId: dto.course },
       });
-
-      if (notificationForDifferentCourse) {
-        // Update existing notification: add new courseId to meta and update receiverIds
-        await this.notificationModel.updateOne(
-          { _id: notificationForDifferentCourse._id },
-          {
-            $set: {
-              receiverIds: studentIds,
-              title: 'Class Schedule Created',
-              message: 'A new class schedule has been created',
-              meta: { courseId: dto.course },
-            },
-          },
-        );
-      } else {
-        // Create new notification if none exists
-        await this.notificationModel.create({
-          receiverIds: studentIds,
-          type: 'class_schedules',
-          title: 'Class Schedule Created',
-          message: 'A new class schedule has been created',
-          meta: { courseId: dto.course },
-        });
-      }
     }
 
     return this.map(schedule.toObject());

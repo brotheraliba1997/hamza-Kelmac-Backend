@@ -28,6 +28,10 @@ import {
 import { CategoriesService } from '../category/categories.service';
 import { AssessmentItem } from '../assessment-Items/schema/assessmentItem.schema';
 import { CreateCrouseAssessmentItemDto } from './dto/create-assessment-Item.dto';
+import {
+  Notification,
+  NotificationDocument,
+} from '../notification/schema/notification.schema';
 
 type TimeBlockLike = {
   startDate?: string;
@@ -51,6 +55,9 @@ export class CoursesService {
 
     @InjectModel(AssessmentItem.name)
     private readonly assessmentItemModel: Model<AssessmentItem>,
+
+    @InjectModel(Notification.name)
+    private readonly notificationModel: Model<NotificationDocument>,
   ) {}
 
   /**
@@ -315,6 +322,15 @@ export class CoursesService {
 
     // Convert Mongoose document to plain object before mapping
     const createdLean = created.toObject();
+
+
+    // await this.notificationModel.create({
+    //   receiverIds: [created._id],
+    //   type: 'course_created',
+    //   title: 'Course Created',
+    //   message: 'A new course has been created',
+    //   meta: { courseId: created._id },
+    // });
     return this.map(createdLean);
   }
 
