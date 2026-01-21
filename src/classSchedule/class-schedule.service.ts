@@ -29,6 +29,10 @@ import { CourseSchemaClass } from '../course/schema/course.schema';
 import { UserSchemaClass } from '../users/schema/user.schema';
 import { google } from 'googleapis';
 import {
+  Notification,
+  NotificationDocument,
+} from '../notification/schema/notification.schema';
+import {
   sanitizeMongooseDocument,
   convertIdToString,
 } from '../utils/convert-id';
@@ -41,6 +45,9 @@ export class ClassScheduleService {
   constructor(
     @InjectModel(ClassScheduleSchemaClass.name)
     private readonly classScheduleModel: Model<ClassScheduleSchemaClass>,
+
+    @InjectModel(Notification.name)
+    private readonly notificationModel: Model<NotificationDocument>,
     @InjectModel(CourseSchemaClass.name)
     private readonly courseModel: Model<CourseSchemaClass>,
     private readonly mailService: MailService,
@@ -90,54 +97,30 @@ export class ClassScheduleService {
     accessToken: string,
     refreshToken: string,
   ) {
-    // dto.securityKey = randomUUID();
-    // this.oauth2Client.setCredentials({
-    //   access_token: accessToken,
-    //   refresh_token: refreshToken,
-    // });
+    const studentIds = Array.isArray(dto.students)
+      ? dto.students
+      : [dto.students];
 
-    // const calendar = google.calendar({
-    //   version: 'v3',
-    //   auth: this.oauth2Client,
-    // });
+    const duplicateSchedule = await this.classScheduleModel.findOne({
+      course: new Types.ObjectId(dto.course),
+      students: { $in: studentIds },
+    });
 
-    // const event = {
-    //   summary: 'Scheduled Class',
-    //   description: 'Auto-generated class schedule with Google Meet link',
-    //   start: {
-    //     dateTime: `${dto.date}T${dto.time}:00Z`, // e.g., "2025-11-04T15:00:00Z"
-    //     timeZone: 'Asia/Karachi',
-    //   },
-    //   end: {
-    //     dateTime: new Date(
-    //       new Date(`${dto.date}T${dto.time}:00Z`).getTime() +
-    //         dto.duration * 60000,
-    //     ).toISOString(),
-    //     timeZone: 'Asia/Karachi',
-    //   },
-    //   conferenceData: {
-    //     createRequest: {
-    //       requestId: randomUUID(),
-    //       conferenceSolutionKey: { type: 'hangoutsMeet' },
-    //     },
-    //   },
-    // };
-
-    // const response = await calendar.events.insert({
-    //   calendarId: 'primary',
-    //   requestBody: event,
-    //   conferenceDataVersion: 1,
-    // });
-
-    // dto.googleMeetLink =
-    //   response.data.conferenceData?.entryPoints?.[0]?.uri || '';
-    // dto.googleCalendarEventLink = response.data.htmlLink || '';
+    if (duplicateSchedule) {
+      throw new BadRequestException('student already added in this schedule');
+    }
 
     const schedules = await this.classScheduleModel.findOne({
       course: new Types.ObjectId(dto.course),
     });
 
-    const studentId = dto.students;
+    const studentId = Array.isArray(dto.students)
+      ? dto.students[0]
+      : dto.students;
+
+    if (!studentId) {
+      throw new BadRequestException('Student ID is required');
+    }
 
     let schedule: any = null;
 
@@ -148,9 +131,8 @@ export class ClassScheduleService {
           (s) => s?.id?.toString() === studentId?.toString(),
         )
       ) {
-        throw new BadRequestException(
-          `Student ${studentId} is already added in schedule ${schedules._id}`,
-        );
+        // Student already in schedule: return existing mapped scheduless
+        return this.map(schedules.toObject());
       }
 
       schedules.students.push(new Types.ObjectId(studentId));
@@ -162,69 +144,49 @@ export class ClassScheduleService {
       schedule = await this.classScheduleModel.create({
         ...dto,
         course: new Types.ObjectId(dto?.course),
-        students: [{ id: new Types.ObjectId(studentId), status: 'pending' }],
+        students: [new Types.ObjectId(studentId)],
       });
     }
 
-    // const populatedSchedule = await this.classScheduleModel
-    //   .findById(schedule._id)
-    //   .populate([
-    //     { path: 'course' },
-    //     { path: 'instructor' },
-    //     { path: 'students' },
-    //   ])
-    //   .lean();
+    // Check if notification already exists for same course + same students
+    const existingNotification = await this.notificationModel.findOne({
+      receiverIds: { $in: studentIds },
+      type: 'class_schedules',
+      'meta.courseId': dto.course,
+    });
 
-    // if (populatedSchedule) {
-    //   const course = populatedSchedule.course as any;
-    //   const instructor = populatedSchedule.instructor as any;
-    //   const students = populatedSchedule.students;
+    if (!existingNotification) {
+      // Check if notification exists for same students but different course
+      const notificationForDifferentCourse = await this.notificationModel.findOne({
+        receiverIds: { $in: studentIds },
+        type: 'class_schedules',
+        'meta.courseId': { $ne: dto.course },
+      });
 
-    //   const adminEmail = this.configService.get('app.adminEmail', {
-    //     infer: true,
-    //   });
-
-    // const lessonDate = new Date(populatedSchedule.date).toLocaleDateString(
-    //   'en-US',
-    //   { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' },
-    // );
-
-    // const emailData = {
-    //   courseName: course?.title || 'Unknown Course',
-    //   instructorName: instructor?.firstName
-    //     ? `${instructor.firstName} ${instructor.lastName || ''}`
-    //     : instructor?.email || 'Unknown Instructor',
-    //   lessonDate,
-    //   // lessonTime: populatedSchedule.time,
-    //   // duration: populatedSchedule.duration,
-    //   // googleMeetLink: populatedSchedule.googleMeetLink,
-    // };
-
-    // try {
-    //   if (adminEmail) {
-    //     await this.mailService.lessonScheduled({
-    //       to: adminEmail,
-    //       data: emailData,
-    //     });
-    //   }
-    //   if (instructor?.email) {
-    //     await this.mailService.lessonScheduled({
-    //       to: instructor.email,
-    //       data: emailData,
-    //     });
-    //   }
-    //   // for (const student of students) {
-    //   //   if (student?.email) {
-    //   //     await this.mailService.lessonScheduled({
-    //   //       to: student.email,
-    //   //       data: emailData,
-    //   //     });
-    //   //   }
-    //   // }
-    // } catch (error) {
-    //   console.error('Failed to send lesson schedule emails:', error);
-    // }
-    // }
+      if (notificationForDifferentCourse) {
+        // Update existing notification: add new courseId to meta and update receiverIds
+        await this.notificationModel.updateOne(
+          { _id: notificationForDifferentCourse._id },
+          {
+            $set: {
+              receiverIds: studentIds,
+              title: 'Class Schedule Created',
+              message: 'A new class schedule has been created',
+              meta: { courseId: dto.course },
+            },
+          },
+        );
+      } else {
+        // Create new notification if none exists
+        await this.notificationModel.create({
+          receiverIds: studentIds,
+          type: 'class_schedules',
+          title: 'Class Schedule Created',
+          message: 'A new class schedule has been created',
+          meta: { courseId: dto.course },
+        });
+      }
+    }
 
     return this.map(schedule.toObject());
   }
@@ -353,7 +315,7 @@ export class ClassScheduleService {
           path: 'course',
           populate: {
             path: 'sessions',
-            populate: { 
+            populate: {
               path: 'instructor',
               select: 'firstName lastName email',
             },
@@ -433,6 +395,19 @@ export class ClassScheduleService {
 
   // 🟡 UPDATE schedule details
   async update(id: string, dto: UpdateClassScheduleDto) {
+    const studentIds = Array.isArray(dto.students)
+      ? dto.students
+      : [dto.students];
+
+    const duplicateSchedule = await this.classScheduleModel.findOne({
+      course: new Types.ObjectId(dto.course),
+      students: { $in: studentIds },
+    });
+
+    if (duplicateSchedule) {
+      throw new BadRequestException('Schedule already exists for this student');
+    }
+
     const updated = await this.classScheduleModel
       .findByIdAndUpdate(id, dto, { new: true })
       .populate([

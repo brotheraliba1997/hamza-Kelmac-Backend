@@ -31,8 +31,8 @@ export class NotificationService {
       message: sanitized.message,
       type: sanitized.type,
       receiverIds: sanitized.receiverIds,
-      meta: sanitized.meta,
-      isRead: sanitized.isRead,
+      readByIds: true || [],
+      meta: sanitized.meta || {},
       createdAt: sanitized.createdAt,
       updatedAt: sanitized.updatedAt,
     } as any;
@@ -58,14 +58,15 @@ export class NotificationService {
     const populatedAny = populated as any;
 
     receiverIds.forEach((receiverId) => {
-      this.gateway.server.emit(`notification:${receiverId.toString()}`, {
-        id: populatedAny._id.toString(),
-        title: populatedAny.title,
-        message: populatedAny.message,
-        type: populatedAny.type,
-        isRead: populatedAny.isRead,
-        createdAt: populatedAny.createdAt,
-      });
+      this.gateway.server
+        .to(`user-${receiverId.toString()}`)
+        .emit('notification', {
+          id: populatedAny._id.toString(),
+          title: populatedAny.title,
+          message: populatedAny.message,
+          type: populatedAny.type,
+          createdAt: populatedAny.createdAt,
+        });
     });
 
     return this.map(populated);
@@ -86,7 +87,15 @@ export class NotificationService {
       .populate('receiverIds')
       .sort({ createdAt: -1 })
       .lean();
-    return notifications.map((notification) => this.map(notification));
+    return notifications.map((notification) => {
+      const mapped = this.map(notification);
+      // Add isRead field based on whether userId is in readByIds
+      if (mapped) {
+        mapped.isRead =
+          mapped.readByIds?.some((id: string) => id === userId) || false;
+      }
+      return mapped;
+    });
   }
 
   async findOne(id: string) {
@@ -109,7 +118,6 @@ export class NotificationService {
       throw new NotFoundException('Notification not found');
     }
 
-    // Check if user is a receiver
     const isReceiver = notification.receiverIds.some(
       (id) => id.toString() === userId,
     );
@@ -120,21 +128,34 @@ export class NotificationService {
       );
     }
 
+    const userIdObjectId = new Types.ObjectId(userId);
+    if (!notification.readByIds.some((id) => id.toString() === userId)) {
+      notification.readByIds.push(userIdObjectId);
+      await notification.save();
+    }
+
     const updated = await this.notificationModel
-      .findByIdAndUpdate(notificationId, { isRead: true }, { new: true })
+      .findById(notificationId)
       .populate('receiverIds')
       .lean();
 
-    return this.map(updated);
+    return {
+      message: 'Notification marked as read',
+      data: this.map(updated),
+    };
   }
 
   async markAllAsRead(userId: string) {
+    const userIdObjectId = new Types.ObjectId(userId);
+
     const result = await this.notificationModel.updateMany(
       {
-        receiverIds: new Types.ObjectId(userId),
-        isRead: false,
+        receiverIds: userIdObjectId,
+        readByIds: { $ne: userIdObjectId },
       },
-      { isRead: true },
+      {
+        $addToSet: { readByIds: userIdObjectId },
+      },
     );
 
     return {
@@ -166,9 +187,10 @@ export class NotificationService {
   }
 
   async getUnreadCount(userId: string): Promise<number> {
+    const userIdObjectId = new Types.ObjectId(userId);
     return this.notificationModel.countDocuments({
-      receiverIds: new Types.ObjectId(userId),
-      isRead: false,
+      receiverIds: userIdObjectId,
+      readByIds: { $ne: userIdObjectId },
     });
   }
 

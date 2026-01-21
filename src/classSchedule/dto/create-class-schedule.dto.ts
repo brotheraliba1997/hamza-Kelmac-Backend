@@ -33,13 +33,18 @@ export class CreateClassScheduleDto {
  
 
   @ApiProperty({
-    type: String,
-    example: '671018fabc123456789ef015',
-    description: 'List of student IDs attending this class',
+    oneOf: [
+      { type: 'string', example: '671018fabc123456789ef015' },
+      {
+        type: 'array',
+        items: { type: 'string' },
+        example: ['671018fabc123456789ef015', '671018fabc123456789ef016'],
+      },
+    ],
+    description: 'Student ID(s) attending this class. Can be a single ID or array of IDs',
   })
-  @IsString()
   @IsMongoId({ each: true })
-  students: string;
+  students: string | string[];
 
   @ApiPropertyOptional({
     example: '2025-11-05',

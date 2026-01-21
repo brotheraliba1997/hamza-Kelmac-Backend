@@ -10,12 +10,14 @@ import {
   ClassScheduleSchemaClass,
 } from './schema/class-schedule.schema';
 import { MailModule } from '../mail/mail.module';
+import { NotificationModule } from '../notification/notification.module';
 import {
   CourseSchema,
   CourseSchemaClass,
 } from '../course/schema/course.schema';
 import { UserSchema, UserSchemaClass } from '../users/schema/user.schema';
 import { GoogleOAuthProvider } from '../googleService/google.provider';
+import { Notification, NotificationSchema } from '../notification/schema/notification.schema';
 
 @Module({
   imports: [
@@ -24,8 +26,10 @@ import { GoogleOAuthProvider } from '../googleService/google.provider';
       { name: ClassScheduleSchemaClass.name, schema: ClassScheduleSchema }, 
       { name: CourseSchemaClass.name, schema: CourseSchema },
       { name: UserSchemaClass.name, schema: UserSchema },
+      { name: Notification.name, schema: NotificationSchema },
     ]),
     MailModule,
+    NotificationModule,
   ],
   controllers: [ClassScheduleController],
   providers: [

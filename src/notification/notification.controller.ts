@@ -9,16 +9,21 @@ import {
   Patch,
   Post,
   Query,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiCreatedResponse,
   ApiOkResponse,
   ApiOperation,
   ApiParam,
+  ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
 import { NotificationService } from './notification.service';
 import { CreateNotificationDto } from './dto/notification.dto';
+import { AuthGuard } from '@nestjs/passport';
 
 @ApiTags('Notifications')
 @Controller({
@@ -85,23 +90,25 @@ export class NotificationController {
 
   @Patch(':id/read')
   @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'))
   @ApiOperation({ summary: 'Mark a notification as read' })
   @ApiParam({ name: 'id', description: 'Notification ID' })
-  @ApiParam({ name: 'userId', description: 'User ID' })
+
   @ApiOkResponse({
-    description: 'Notification marked as read',
+    description: 'Notification marked as reads',
   })
-  async markAsRead(
-    @Param('id') id: string,
-    @Query('userId') userId: string,
-  ) {
+  async markAsRead(@Req() req, @Param('id') id: string) {
+    const userId = req.user?.id;
     return this.notificationService.markAsRead(id, userId);
   }
 
-  @Patch('mark-all-read/:userId')
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'))
+  @Patch('mark-all-read')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Mark all notifications as read for a user' })
-  @ApiParam({ name: 'userId', description: 'User ID' })
+ 
   @ApiOkResponse({
     description: 'All notifications marked as read',
     schema: {
@@ -111,7 +118,9 @@ export class NotificationController {
       },
     },
   })
-  async markAllAsRead(@Param('userId') userId: string) {
+  async markAllAsRead(@Req() req) {
+    const userId = req.user?.id;
+    console.log(userId);
     return this.notificationService.markAllAsRead(userId);
   }
 
@@ -119,7 +128,7 @@ export class NotificationController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Delete a notification' })
   @ApiParam({ name: 'id', description: 'Notification ID' })
-  @ApiParam({ name: 'userId', description: 'User ID' })
+  @ApiQuery({ name: 'userId', description: 'User ID', required: true })
   @ApiOkResponse({
     description: 'Notification deleted successfully',
     schema: {
