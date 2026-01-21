@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 
@@ -24,7 +28,7 @@ export class AssessmentItemService {
     if (!sanitized) return undefined as any;
     return {
       id: sanitized.id || convertIdToString(doc),
-      courseId: sanitized.courseId,
+      courseId: sanitized.courseId.toString(),
       day: sanitized.day,
       topicRef: sanitized.topicRef,
       title: sanitized.title,
@@ -46,15 +50,24 @@ export class AssessmentItemService {
     return this.assessmentItemModel.find().exec();
   }
 
-  async findByCourse(courseId: string, day: string): Promise<{ data: AssessmentItem[] }> {
+  async findByCourse(
+    courseId: string,
+    day: number,
+  ): Promise<{ data: AssessmentItem[] }> {
+    if (!courseId || !day)
+      throw new BadRequestException('Course ID and day are required');
+
+    const dayofCaptital = `Day ${day}`;
+
     const items = await this.assessmentItemModel
-      .find({ courseId: courseId, day: day })
+      .find({ courseId: new Types.ObjectId(courseId), day: dayofCaptital })
       .lean();
 
-    if (!items || items.length === 0) throw new NotFoundException('Assessment items not founds');
-  
+    if (!items || items.length === 0)
+      throw new NotFoundException('Assessment items not founds');
+
     return {
-      data: items.map(item => this.map(item)),
+      data: items.map((item) => this.map(item)),
     };
   }
 

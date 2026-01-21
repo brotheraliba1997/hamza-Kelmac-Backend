@@ -36,7 +36,7 @@ export class AssessmentItemController {
   @Get('course/:courseId/day/:day')
   findByCourse(
     @Param('courseId') courseId: string,
-    @Param('day') day: string,
+    @Param('day') day: number,
   ): Promise<{ data: AssessmentItem[] }> {
     return this.service.findByCourse(courseId, day);
   }

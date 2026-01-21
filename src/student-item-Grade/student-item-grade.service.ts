@@ -48,7 +48,7 @@ export class StudentItemGradeService {
     if (!sanitized) return undefined as any;
     return {
       id: sanitized.id || convertIdToString(doc),
-      courseId: sanitized.courseId,
+      courseId: sanitized.courseId.toString(),
       day: sanitized.day,
       topicRef: sanitized.topicRef,
       title: sanitized.title,
@@ -126,7 +126,7 @@ export class StudentItemGradeService {
   async resultPassFail(courseId: string, studentId: string) {
     const assessmentItems = await this.assessmentItemModel
       .find({
-        courseId: courseId,
+        courseId: new Types.ObjectId(courseId),
       })
       .lean();
 

@@ -1,10 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, IsNumber } from 'class-validator';
+import { IsNotEmpty, IsString, IsNumber, IsMongoId } from 'class-validator';
 import { Types } from 'mongoose';
 
 export class CreateAssessmentItemDto {
   @ApiProperty({ description: 'Reference to the tests', example: '64f9c9...' })
   @IsNotEmpty()
+  @IsMongoId()
   courseId: Types.ObjectId;
 
   @ApiProperty({ description: 'Day of the assessment', example: 'Day 1' })
