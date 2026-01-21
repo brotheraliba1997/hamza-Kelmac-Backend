@@ -52,13 +52,15 @@ export class NotificationController {
     return this.notificationService.findAll();
   }
 
-  @Get('user/:userId')
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'))
+  @Get('user')
   @ApiOperation({ summary: 'Get all notifications for a specific user' })
-  @ApiParam({ name: 'userId', description: 'User ID' })
   @ApiOkResponse({
     description: 'List of notifications for the user',
   })
-  async findAllForUser(@Param('userId') userId: string) {
+  async findAllForUser(@Req() req) {
+    const userId = req.user?.id;
     return this.notificationService.findAllForUser(userId);
   }
 
@@ -94,7 +96,6 @@ export class NotificationController {
   @UseGuards(AuthGuard('jwt'))
   @ApiOperation({ summary: 'Mark a notification as read' })
   @ApiParam({ name: 'id', description: 'Notification ID' })
-
   @ApiOkResponse({
     description: 'Notification marked as reads',
   })
@@ -108,7 +109,6 @@ export class NotificationController {
   @Patch('mark-all-read')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Mark all notifications as read for a user' })
- 
   @ApiOkResponse({
     description: 'All notifications marked as read',
     schema: {
