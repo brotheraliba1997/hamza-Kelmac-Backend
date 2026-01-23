@@ -30,12 +30,19 @@ import {
 } from '../booking/dto/create-booking.dto';
 import { Booking, BookingDocument } from '../booking/schema/booking.schema';
 import { ClassScheduleHelperService } from '../utils/class-schedule/class-schedule-helper.service';
+import { Notification, NotificationDocument } from '../notification/schema/notification.schema';
 
 @Injectable()
 export class PurchaseOrderService {
   constructor(
     @InjectModel(PurchaseOrderSchemaClass.name)
     private readonly purchaseOrderModel: Model<PurchaseOrderSchemaClass>,
+
+    @InjectModel(Notification.name)
+    private readonly notificationModel: Model<NotificationDocument>,
+
+    
+
     private readonly mailService: MailService,
     private readonly paymentService: PaymentService,
     @InjectModel(Booking.name) private bookingModel: Model<BookingDocument>,
@@ -235,16 +242,7 @@ export class PurchaseOrderService {
 
   async create(dto: CreatePurchaseOrderDto) {
     try {
-      const created = await this.purchaseOrderModel.create({
-        poNumber: dto.poNumber,
-        student: dto.studentId,
-        course: dto.courseId,
-        financialContact: dto.financialContactId,
-        bankSlipUrl: dto.bankSlipUrl,
-        submittedAt: dto.submittedAt ? new Date(dto.submittedAt) : new Date(),
-        status: PurchaseOrderStatusEnum.PENDING,
-        ...(dto.BookingId && { BookingId: new Types.ObjectId(dto.BookingId) }), // ✅ Add BookingId if provided
-      });
+
 
       const existingpurchaseOrder = await this.purchaseOrderModel.findOne({
         student: dto.studentId,
@@ -256,6 +254,20 @@ export class PurchaseOrderService {
         throw new BadRequestException('You have already paid for this course');
       }
 
+
+      const created = await this.purchaseOrderModel.create({
+        poNumber: dto.poNumber,
+        student: dto.studentId,
+        course: dto.courseId,
+        financialContact: dto.financialContactId,
+        bankSlipUrl: dto.bankSlipUrl,
+        submittedAt: dto.submittedAt ? new Date(dto.submittedAt) : new Date(),
+        status: PurchaseOrderStatusEnum.PENDING,
+        ...(dto.BookingId && { BookingId: new Types.ObjectId(dto.BookingId) }), 
+      });
+
+    
+
       const booking = await this.bookingModel.findOne({
         studentId: new Types.ObjectId(dto.studentId),
         courseId: new Types.ObjectId(dto.courseId),
@@ -265,7 +277,7 @@ export class PurchaseOrderService {
         booking.status = BookingStatus.PENDING;
         await booking.save();
 
-        // ✅ Student ko class schedule mein add karo
+       
       }
 
       const populated = await this.purchaseOrderModel
@@ -276,6 +288,30 @@ export class PurchaseOrderService {
 
       if (populated) {
         await this.sendSubmissionEmail(populated);
+
+        // notification work
+        const alreadyExistsNotification = await this.notificationModel.findOne({
+          receiverIds: { $in: dto.studentId },
+          type: 'Purchase order',
+          'meta.courseId': dto.courseId,
+        });
+    
+        if (alreadyExistsNotification) {
+          await this.notificationModel.updateOne(
+            { _id: alreadyExistsNotification._id },
+            {
+              $addToSet: { receiverIds: { $each: dto.studentId } },
+            },
+          );
+        } else {
+          await this.notificationModel.create({
+            receiverIds: [new Types.ObjectId(dto.studentId)] ,
+            type: 'Purchase order',
+            title: 'Purchase order Created',
+            message: 'Purchase has been created',
+            meta: { courseId: dto.courseId },
+          });
+        } 
         return this.map(populated);
       }
 

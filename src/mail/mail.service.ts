@@ -296,6 +296,72 @@ export class MailService {
     });
   }
 
+  async courseUpdated(
+    mailData: MailData<{
+      courseTitle: string;
+      instructorName: string;
+      description?: string;
+      price?: number;
+      courseUrl?: string;
+    }>,
+  ): Promise<void> {
+    const i18n = I18nContext.current();
+    let title: MaybeType<string>;
+    let text1: MaybeType<string>;
+    let text2: MaybeType<string>;
+    let text3: MaybeType<string>;
+
+    if (i18n) {
+      [title, text1, text2, text3] = await Promise.all([
+        i18n.t('course-updated.title'),
+        i18n.t('course-updated.text1'),
+        i18n.t('course-updated.text2'),
+        i18n.t('course-updated.text3'),
+      ]);
+    }
+
+    if (!title) title = 'Course Successfully Updated';
+    if (!text1)
+      text1 = 'Congratulations! Your course has been successfully updated.';
+    if (!text2)
+      text2 =
+        'Students can now discover and enroll in your updated course. You can continue to enhance it by adding modules, lessons, and learning materials.';
+    if (!text3)
+      text3 =
+        'Thank you for contributing to our learning community. If you need any assistance or have questions, our support team is here to help.';
+
+    const url = mailData.data.courseUrl
+      ? mailData.data.courseUrl
+      : `${this.configService.getOrThrow('app.frontendDomain', { infer: true })}/courses`;
+
+    await this.mailerService.sendMail({
+      to: mailData.to,
+      subject: title,
+      text: `${title} - ${mailData.data.courseTitle}`,
+      templatePath: path.join(
+        this.configService.getOrThrow('app.workingDirectory', {
+          infer: true,
+        }),
+        'src',
+        'mail',
+        'mail-templates',
+        'course-updated.hbs',
+      ),
+      context: {
+        title,
+        text1,
+        text2,
+        text3,
+        courseTitle: mailData.data.courseTitle,
+        instructorName: mailData.data.instructorName,
+        description: mailData.data.description,
+        price: mailData.data.price,
+        url,
+        app_name: this.configService.get('app.name', { infer: true }),
+      },
+    });
+  }
+
   async userRegistered(
     mailData: MailData<{
       userName: string;
@@ -558,6 +624,48 @@ ${this.configService.get('app.name', { infer: true }) || 'Kelmac Team'}
     ].filter(Boolean);
 
     const text = lines.join('\n');
+
+    await this.mailerService.sendMail({
+      to: mailData.to,
+      subject,
+      text,
+    });
+  }
+
+  async studentPassFailResult(
+    mailData: MailData<{
+      studentName?: string;
+      courseTitle?: string;
+      passFailStatus: number;
+      isPass: boolean;
+      studentMarks: number;
+      totalMarks: number;
+    }>,
+  ): Promise<void> {
+    const subject = mailData.data.isPass
+      ? 'Congratulations! You Have Passed'
+      : 'Assessment Result - You Have Failed';
+
+    const statusMessage = mailData.data.isPass
+      ? 'You are Pass'
+      : 'You are Fail';
+
+    const text = `
+Dear ${mailData.data.studentName || 'Student'},
+
+${statusMessage}
+
+${mailData.data.courseTitle ? `Course: ${mailData.data.courseTitle}` : ''}
+Your Score: ${mailData.data.studentMarks} out of ${mailData.data.totalMarks}
+Percentage: ${mailData.data.passFailStatus}%
+
+${mailData.data.isPass
+        ? 'Congratulations on passing the assessment! Keep up the excellent work.'
+        : 'We encourage you to review the course materials and try again. If you need assistance, please contact your instructor.'}
+
+Best regards,
+${this.configService.get('app.name', { infer: true }) || 'Kelmac Team'}
+    `.trim();
 
     await this.mailerService.sendMail({
       to: mailData.to,

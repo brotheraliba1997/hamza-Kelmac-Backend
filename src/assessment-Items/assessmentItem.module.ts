@@ -10,12 +10,14 @@ import {
   CourseSchema,
   CourseSchemaClass,
 } from '../course/schema/course.schema';
+import { Notification, NotificationSchema } from '../notification/schema/notification.schema';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: AssessmentItem.name, schema: AssessmentItemSchema },
-      { name: CourseSchemaClass.name, schema: CourseSchema },
+      { name: CourseSchemaClass.name, schema: CourseSchema }, 
+      { name: Notification.name, schema: NotificationSchema },
     ]),
   ],
   controllers: [AssessmentItemController],

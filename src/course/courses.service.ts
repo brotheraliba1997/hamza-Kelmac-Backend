@@ -211,6 +211,11 @@ export class CoursesService {
     const baseSlug = dto.slug || this.generateSlug(dto.title);
     const uniqueSlug = await this.ensureUniqueSlug(baseSlug);
 
+
+    if (dto.hasTest && (!dto.items || dto.items.length === 0)) {
+      throw new BadRequestException('Assessment items are required');
+    }
+
     // Validate category exists and is active
     if (dto.category) {
       try {
@@ -243,30 +248,38 @@ export class CoursesService {
       }
     }
 
-    if (created.hasTest && dto.items && dto.items.length > 0) {
+   
+
+    // Create assessment items if provided
+    if (dto.items && dto.items.length > 0) {
       try {
         const items = dto.items.map(item => ({
           ...item,
-          courseId: created._id.toString(), 
+          courseId: created._id, // Use ObjectId directly, not string
         }));
     
         await this.assessmentItemModel.insertMany(items);
+        console.log(`✅ Created ${items.length} assessment items for course: ${created.title}`);
       } catch (error) {
         console.error('Assessment items creation failed:', error);
+        // Don't throw error - course is already created, just log the issue
       }
     }
 
-   
+    // Send notification and email to instructor
+    let instructor: any = null;
+    let emailData: any = null;
+    
     const populatedCourse = await this.courseModel
       .findById(created._id)
       .populate('sessions.instructor')
       .lean();
 
-    if (populatedCourse) {
-      for (const session of populatedCourse.sessions) {
-        const instructor = session.instructor as any;
-
-        const emailData = {
+    if (populatedCourse && populatedCourse.sessions?.length > 0) {
+      instructor = populatedCourse.sessions[0].instructor as any;
+      
+      if (instructor) {
+        emailData = {
           courseTitle: populatedCourse.title,
           instructorName: instructor?.firstName
             ? `${instructor.firstName} ${instructor.lastName || ''}`
@@ -275,62 +288,31 @@ export class CoursesService {
           price: populatedCourse.price,
           courseUrl: `${this.configService.get('app.frontendDomain', { infer: true })}/courses/${created._id}`,
         };
-
-        if (instructor?.email) {
-          await this.mailService.courseCreated({
-            to: instructor.email,
-            data: emailData,
-          });
+      
+        try {
+          // Send email to instructor
+          if (instructor?.email) {
+            await this.mailService.courseCreated({
+              to: instructor.email,
+              data: emailData,
+            });
+          }
+          if (instructor) {
+            await this.notificationModel.create({
+              receiverIds: [new Types.ObjectId(instructor?._id)],
+              type: 'course_created',
+              title: 'Course Created',
+              message: 'A new course has been created',
+              meta: { courseId: created._id },
+            });
+          }
+        } catch (error) {
+          console.error('Failed to send course creation emails/notifications:', error);
+          // Don't throw error - course is already created
         }
       }
-      // const instructor = populatedCourse.sessions[0].instructor as any;
-
-      // const adminEmail = this.configService.get('app.adminEmail', {
-      //   infer: true,
-      // });
-
-      // const emailData = {
-      //   courseTitle: populatedCourse.title,
-      //   // instructorName: instructor?.firstName
-      //   //   ? `${instructor.firstName} ${instructor.lastName || ''}`
-      //   //   : instructor?.email || 'Unknown Instructor',
-      //   description: populatedCourse.description,
-      //   price: populatedCourse.price,
-      //   courseUrl: `${this.configService.get('app.frontendDomain', { infer: true })}/courses/${created._id}`,
-      // };
-
-      try {
-        // Send email to admin
-        // if (adminEmail) {
-        //   await this.mailService.courseCreated({
-        //     to: adminEmail,
-        //     data: emailData,
-        //   });
-        // }
-        // Send email to instructor (course creator)
-        // if (instructor?.email) {
-        //   await this.mailService.courseCreated({
-        //     to: instructor.email,
-        //     data: emailData,
-        //   });
-        // }
-      } catch (error) {
-        // Log error but don't fail course creation
-        console.error('Failed to send course creation emails:', error);
-      }
     }
-
-    // Convert Mongoose document to plain object before mapping
-    const createdLean = created.toObject();
-
-
-    // await this.notificationModel.create({
-    //   receiverIds: [created._id],
-    //   type: 'course_created',
-    //   title: 'Course Created',
-    //   message: 'A new course has been created',
-    //   meta: { courseId: created._id },
-    // });
+    const createdLean = created.toObject();  
     return this.map(createdLean);
   }
 
@@ -459,14 +441,14 @@ export class CoursesService {
   }
 
   async update(id: string, dto: UpdateCourseDto): Promise<CourseEntity | null> {
-    // Get the existing course to check for category change
+  
     const existingCourse = await this.courseModel.findById(id).lean();
 
     if (!existingCourse) {
       throw new NotFoundException('Course not found');
     }
 
-    // Generate new slug if title is being updated
+  
     if (dto.title && dto.title !== existingCourse.title) {
       const baseSlug = dto.slug || this.generateSlug(dto.title);
       dto.slug = await this.ensureUniqueSlug(baseSlug, id);
@@ -475,12 +457,8 @@ export class CoursesService {
       dto.slug = await this.ensureUniqueSlug(dto.slug, id);
     }
 
-    // Validate new category if provided
-    if (
-      dto.category &&
-      (dto.category !== existingCourse?.category?.toString() ||
-        dto.category !== existingCourse?.category?._id?.toString())
-    ) {
+    
+    if (dto.category && (dto.category !== existingCourse?.category?.toString() || dto.category !== existingCourse?.category?._id?.toString())) {
       try {
         const category = await this.categoriesService.findOne(dto.category);
         if (!category || !category.isActive) {
@@ -497,14 +475,67 @@ export class CoursesService {
         throw error;
       }
 
-      // Decrement old category count and increment new category count
+      console.log( existingCourse , "existingCourse" )
+
+     
       try {
         if (existingCourse.category) {
           await this.categoriesService.decrementCourseCount(
-            existingCourse.category._id.toString(),
+            existingCourse.category.toString(),
           );
         }
         await this.categoriesService.incrementCourseCount(dto.category);
+
+
+        const populatedCourse = await this.courseModel
+        .findById(id)
+        .populate('sessions.instructor')
+        .lean();
+
+        let instructor = null
+        let emailData = null
+  
+      if (populatedCourse && populatedCourse.sessions?.length > 0) {
+        instructor = populatedCourse.sessions[0].instructor as any;
+        
+        if (instructor) {
+          emailData = {
+            courseTitle: populatedCourse.title,
+            instructorName: instructor?.firstName
+              ? `${instructor.firstName} ${instructor.lastName || ''}`
+              : instructor?.email || 'Unknown Instructor',
+            description: populatedCourse.description,
+            price: populatedCourse.price,
+            courseUrl: `${this.configService.get('app.frontendDomain', { infer: true })}/courses/${id}`,
+        
+          };
+        
+          try {
+            // Send email to instructor
+            if (instructor?.email) {
+              await this.mailService.courseUpdated({
+                to: instructor.email,
+                data: emailData,
+              });
+            }
+            if (instructor) {
+              const instructorId = instructor._id || instructor.id;
+              if (instructorId) {
+                await this.notificationModel.create({
+                  receiverIds: [new Types.ObjectId(instructorId)],
+                  type: 'course_updated',
+                  title: 'Course Updated',
+                  message: 'Your course has been updated',
+                  meta: { courseId: id },
+                });
+              }
+            }
+          } catch (error) {
+            console.error('Failed to send course update emails/notifications:', error);
+          
+          }
+        }
+      }
       } catch (error) {
         console.error('Failed to update category course counts:', error);
       }

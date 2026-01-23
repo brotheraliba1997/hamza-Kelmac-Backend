@@ -16,6 +16,9 @@ import {
   CreateStudentItemGradeDto,
 } from './dto/create-student-item-grade.dto';
 import { AssessmentItem } from '../assessment-Items/schema/assessmentItem.schema';
+import { Notification, NotificationDocument } from '../notification/schema/notification.schema';
+import { MailService } from '../mail/mail.service';
+import { UserSchemaClass } from '../users/schema/user.schema';
 
 @Injectable()
 export class StudentItemGradeService {
@@ -23,7 +26,12 @@ export class StudentItemGradeService {
     @InjectModel(StudentItemGrade.name)
     private readonly gradeModel: Model<StudentItemGrade>,
     @InjectModel(AssessmentItem.name)
-    private readonly assessmentItemModel: Model<AssessmentItem>,
+    private readonly assessmentItemModel: Model<AssessmentItem>,  
+    @InjectModel(Notification.name)
+    private readonly notificationModel: Model<NotificationDocument>,
+    @InjectModel(UserSchemaClass.name)
+    private readonly userModel: Model<UserSchemaClass>,
+    private readonly mailService: MailService,
   ) {}
 
   private map(doc: any): any {
@@ -66,10 +74,9 @@ export class StudentItemGradeService {
       const { studentId, assessmentItemId, obtainedMarks } = grade;
 
       const record = await this.gradeModel
-        .findOneAndUpdate(
-          {
-            studentId: new Types.ObjectId(studentId),
-            assessmentItemId: new Types.ObjectId(assessmentItemId),
+        .findOneAndUpdate({
+          studentId: new Types.ObjectId(studentId),
+          assessmentItemId: new Types.ObjectId(assessmentItemId),
           },
           {
             obtainedMarks,
@@ -82,6 +89,16 @@ export class StudentItemGradeService {
         .populate('studentId')
         .populate('assessmentItemId')
         .lean();
+
+      if (record) {
+        await this.notificationModel.create({
+          receiverIds: [new Types.ObjectId(studentId)],
+          type: 'Student Item Grade Created',
+          title: 'Student Item Grade Created',
+          message: 'Student item grade has been created',
+          meta: { assessment: assessmentItemId },
+        });
+      }
 
       results.push(this.map(record));
     }
@@ -164,9 +181,57 @@ export class StudentItemGradeService {
       0,
     );
 
-    const passFailStatus = Number(
-      ((studentMarks / totalMaxMarks) * 100).toFixed(2),
-    );
+    const passFailStatus = Number(((studentMarks / totalMaxMarks) * 100).toFixed(2));
+
+    // Get student information for email
+    const student = await this.userModel.findById(studentId).lean();
+    const studentEmail = student?.email;
+
+    if (passFailStatus >= 70) {
+      await this.notificationModel.create({
+        receiverIds: [new Types.ObjectId(studentId)],
+        type: 'Student Item Grade Passed',
+        title: 'Student Item Grade Passed',
+        message: 'Student item grade has been passed',
+        meta: { assessment: assessmentItems.map((item: any) => item._id) },
+      });
+
+      // Send pass email
+      if (studentEmail) {
+        await this.mailService.studentPassFailResult({
+          to: studentEmail,
+          data: {
+            studentName: (student as any)?.firstName || (student as any)?.name || 'Student',
+            passFailStatus,
+            isPass: true,
+            studentMarks,
+            totalMarks: totalMaxMarks,
+          },
+        });
+      }
+    } else {
+      await this.notificationModel.create({
+        receiverIds: [new Types.ObjectId(studentId)],
+        type: 'Student Item Grade Failed',
+        title: 'Student Item Grade Failed',
+        message: 'Student item grade has been failed',
+        meta: { assessment: assessmentItems.map((item: any) => item._id) },
+      });
+
+      // Send fail email
+      if (studentEmail) {
+        await this.mailService.studentPassFailResult({
+          to: studentEmail,
+          data: {
+            studentName: (student as any)?.firstName || (student as any)?.name || 'Student',
+            passFailStatus,
+            isPass: false,
+            studentMarks,
+            totalMarks: totalMaxMarks,
+          },
+        });
+      }
+    }
     if (passFailStatus >= 70) {
       return {
         message: 'Pass',

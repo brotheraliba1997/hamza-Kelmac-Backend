@@ -14,6 +14,7 @@ import { MailModule } from '../mail/mail.module';
 import { PaymentModule } from '../payment/payment.module';
 import { BookingsModule } from '../booking/booking.module';
 import { ClassScheduleModule } from '../classSchedule/class-schedule.module';
+import { Notification, NotificationSchema } from '../notification/schema/notification.schema';
 
 @Module({
   imports: [
@@ -25,6 +26,11 @@ import { ClassScheduleModule } from '../classSchedule/class-schedule.module';
       {
         name: CourseSchemaClass.name,
         schema: CourseSchema,
+      },
+
+      {
+        name: Notification.name,
+        schema: NotificationSchema,
       },
     ]),
     MailModule,

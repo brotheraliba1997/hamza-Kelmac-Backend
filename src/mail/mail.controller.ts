@@ -23,6 +23,7 @@ export class MailController {
             'reset-password',
             'lesson-scheduled',
             'course-created',
+            'course-updated',
             'user-registered',
           ],
         },
@@ -79,6 +80,19 @@ export class MailController {
             },
           });
           break;
+        case 'course-updated':
+          await this.mailService.courseUpdated({
+            to,
+            data: {
+              courseTitle: 'Advanced JavaScript Programming',
+              instructorName: 'Jane Smith',
+              description:
+                'Learn advanced JavaScript concepts including async/await, closures, and design patterns.',
+              price: 99.99,
+              courseUrl: 'http://localhost:3000/courses/test-course-123',
+            },
+          });
+          break;
         case 'user-registered':
           await this.mailService.userRegistered({
             to,
@@ -97,7 +111,7 @@ export class MailController {
           break;
         default:
           throw new Error(
-            'Invalid template. Use: activation, confirm-new-email, reset-password, lesson-scheduled, course-created, or user-registered',
+            'Invalid template. Use: activation, confirm-new-email, reset-password, lesson-scheduled, course-created, course-updated, or user-registered',
           );
       }
       return {

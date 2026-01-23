@@ -96,6 +96,7 @@ async function seedCourses() {
         description:
           'Master advanced leadership techniques and strategies to lead high-performing teams and drive organizational success.',
         category: professionalDevCategoryId,
+        hasTest: false,
         subcategories: ['Leadership', 'Management'],
         topics: [
           'Strategic Leadership',
@@ -185,6 +186,7 @@ async function seedCourses() {
         description:
           'Learn the fundamentals of digital marketing including SEO, social media, content marketing, and analytics.',
         category: businessTrainingCategoryId,
+        hasTest: false,
         subcategories: ['Marketing'],
         topics: ['SEO', 'Social Media', 'Content Marketing', 'Analytics'],
         overview:
@@ -257,6 +259,7 @@ async function seedCourses() {
         description:
           'Comprehensive project management training covering PMP exam preparation and real-world project execution.',
         category: professionalDevCategoryId,
+        hasTest: false,
         subcategories: ['Management'],
         topics: [
           'Project Planning',
@@ -319,6 +322,7 @@ async function seedCourses() {
         description:
           'Learn to analyze financial statements, create reports, and make data-driven financial decisions.',
         category: businessTrainingCategoryId,
+        hasTest: false,
         subcategories: ['Finance'],
         topics: [
           'Financial Statements',
@@ -381,6 +385,7 @@ async function seedCourses() {
         description:
           'Learn data science fundamentals including Python, statistics, machine learning, and data visualization.',
         category: businessTrainingCategoryId,
+        hasTest: false,
         subcategories: ['Strategy'],
         topics: [
           'Python',
@@ -453,6 +458,7 @@ async function seedCourses() {
         description:
           'Enhance your communication skills for better workplace relationships and career success.',
         category: professionalDevCategoryId,
+        hasTest: false,
         subcategories: ['Corporate Training'],
         topics: [
           'Public Speaking',
@@ -514,6 +520,7 @@ async function seedCourses() {
         description:
           'Learn to create comprehensive business plans and strategic roadmaps for organizational success.',
         category: businessTrainingCategoryId,
+        hasTest: false,
         subcategories: ['Strategy'],
         topics: [
           'Business Planning',
@@ -575,6 +582,7 @@ async function seedCourses() {
         description:
           'Master Agile methodologies and Scrum framework for effective project delivery.',
         category: professionalDevCategoryId,
+        hasTest: false,
         subcategories: ['Management'],
         topics: [
           'Agile Principles',
@@ -643,6 +651,7 @@ async function seedCourses() {
         description:
           'Learn to provide exceptional customer service and build lasting customer relationships.',
         category: businessTrainingCategoryId,
+        hasTest: false,
         subcategories: ['Operations'],
         topics: [
           'Customer Relations',
@@ -708,6 +717,7 @@ async function seedCourses() {
         description:
           'Master supply chain management principles, logistics, and optimization strategies.',
         category: businessTrainingCategoryId,
+        hasTest: false,
         subcategories: ['Operations'],
         topics: [
           'Logistics',
@@ -777,6 +787,7 @@ async function seedCourses() {
         description:
           'Learn proven time management techniques to increase productivity and achieve work-life balance.',
         category: professionalDevCategoryId,
+        hasTest: false,
         subcategories: ['Corporate Training'],
         topics: [
           'Productivity',
@@ -838,6 +849,7 @@ async function seedCourses() {
         description:
           'Learn advanced sales techniques, negotiation skills, and business development strategies.',
         category: businessTrainingCategoryId,
+        hasTest: false,
         subcategories: ['Marketing'],
         topics: [
           'Sales Techniques',
@@ -910,6 +922,7 @@ async function seedCourses() {
         description:
           'Master HR management including recruitment, employee relations, performance management, and compliance.',
         category: professionalDevCategoryId,
+        hasTest: false,
         subcategories: ['Management'],
         topics: [
           'Recruitment',
@@ -971,6 +984,7 @@ async function seedCourses() {
         description:
           'Learn to analyze business data, create dashboards, and make data-driven business decisions.',
         category: businessTrainingCategoryId,
+        hasTest: false,
         subcategories: ['Strategy'],
         topics: [
           'Data Analysis',
@@ -1032,6 +1046,7 @@ async function seedCourses() {
         description:
           'Learn effective conflict resolution and mediation techniques for the workplace.',
         category: professionalDevCategoryId,
+        hasTest: false,
         subcategories: ['Corporate Training'],
         topics: [
           'Conflict Management',
@@ -1094,6 +1109,7 @@ async function seedCourses() {
         description:
           'Learn to optimize business operations, improve efficiency, and reduce costs.',
         category: businessTrainingCategoryId,
+        hasTest: false,
         subcategories: ['Operations'],
         topics: [
           'Process Optimization',
@@ -1159,6 +1175,7 @@ async function seedCourses() {
         description:
           'Learn to build, motivate, and manage high-performing teams for organizational success.',
         category: professionalDevCategoryId,
+        hasTest: false,
         subcategories: ['Leadership'],
         topics: [
           'Team Building',
@@ -1227,6 +1244,7 @@ async function seedCourses() {
         description:
           'Learn the fundamentals of entrepreneurship including business planning, funding, and growth strategies.',
         category: businessTrainingCategoryId,
+        hasTest: false,
         subcategories: ['Strategy'],
         topics: [
           'Business Planning',
@@ -1304,6 +1322,7 @@ async function seedCourses() {
         description:
           'Learn to effectively lead and manage organizational change initiatives.',
         category: professionalDevCategoryId,
+        hasTest: false,
         subcategories: ['Management'],
         topics: [
           'Change Leadership',
@@ -1365,6 +1384,7 @@ async function seedCourses() {
         description:
           'Learn quality management systems, ISO standards, and quality assurance processes.',
         category: businessTrainingCategoryId,
+        hasTest: false,
         subcategories: ['Operations'],
         topics: [
           'ISO Standards',

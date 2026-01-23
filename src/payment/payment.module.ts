@@ -16,6 +16,7 @@ import {  CourseSchema, CourseSchemaClass } from '../course/schema/course.schema
 import { UserSchema, UserSchemaClass } from '../users/schema/user.schema';
 import { Booking, BookingSchema } from '../booking/schema/booking.schema';
 import { ClassScheduleModule } from '../classSchedule/class-schedule.module';
+import { Notification, NotificationSchema } from '../notification/schema/notification.schema';
 
 
 
@@ -24,9 +25,10 @@ import { ClassScheduleModule } from '../classSchedule/class-schedule.module';
     MongooseModule.forFeature([
       { name: Payment.name, schema: PaymentSchema },
       { name: CourseSchemaClass.name, schema: CourseSchema },
-    { name: UserSchemaClass.name, schema: UserSchema },
+      { name: UserSchemaClass.name, schema: UserSchema },
       { name: EnrollmentSchemaClass.name, schema: EnrollmentSchema },
-      { name: Booking.name, schema: BookingSchema },
+      { name: Booking.name, schema: BookingSchema },  
+      {name: Notification.name, schema: NotificationSchema}
     ]),
     StripeModule,
     MailModule,

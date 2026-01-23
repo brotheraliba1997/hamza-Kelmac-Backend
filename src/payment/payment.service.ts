@@ -33,6 +33,7 @@ import {
   BookingStatus,
   PaymentMethod as BookingPaymentMethod,
 } from '../booking/dto/create-booking.dto';
+import { NotificationDocument, Notification } from '../notification/schema/notification.schema';
 
 @Injectable()
 export class PaymentService {
@@ -41,6 +42,8 @@ export class PaymentService {
   constructor(
     @InjectModel(Payment.name)
     private paymentModel: Model<PaymentDocument>,
+    @InjectModel(Notification.name)
+    private notificationModel: Model<NotificationDocument>,
     @InjectModel(CourseSchemaClass.name)
     private courseModel: Model<CourseSchemaClass>,
     @InjectModel(UserSchemaClass.name)
@@ -126,10 +129,16 @@ export class PaymentService {
       },
     });
 
+
+
+   
+
+
+   
     await payment.save();
 
     try {
-      // Create Stripe payment intent
+    
       const paymentIntent = await this.stripeService.createPaymentIntent({
         amount: amountInCents,
         currency,
@@ -138,14 +147,14 @@ export class PaymentService {
         description: `Payment for ${course.title}`,
       });
 
-      // Update payment with Stripe details
+     
       payment.stripePaymentIntentId = paymentIntent.paymentIntentId;
       payment.status = PaymentStatus.SUCCEEDED;
 
       const booking = await this.bookingModel.findOne({
         studentId: new Types.ObjectId(payment.userId),
         courseId: new Types.ObjectId(payment.courseId),
-        // sessionId: new Types.ObjectId(payment.sessionId),
+      
       });
 
       if (!booking) {
@@ -156,7 +165,6 @@ export class PaymentService {
         };
       }
 
-      console.log(booking, 'working');
 
       booking.status = BookingStatus.CONFIRMED;
       booking.paymentMethod = BookingPaymentMethod.STRIPE;
@@ -197,7 +205,7 @@ export class PaymentService {
         `Payment intent created: ${paymentIntent.paymentIntentId} for user ${userId}`,
       );
 
-      // Send payment confirmation email to finance department
+     
       try {
         const financeEmail =
           this.configService.get('app.adminEmail', { infer: true }) ||
@@ -217,7 +225,28 @@ export class PaymentService {
               paymentMethod: 'stripe',
               createdAt: new Date().toISOString(),
             },
+
+            
           });
+
+
+          const findstudentwhopaid = await this.notificationModel.findOne({
+            receiverIds: [new Types.ObjectId(userId)],
+            type: 'course_paid',
+            title: 'Course Paid',
+            message: 'You have paid for a course',
+            meta: { courseId: course?._id.toString()},
+          })
+      
+          if (!findstudentwhopaid) {
+            await this.notificationModel.create({
+              receiverIds: [new Types.ObjectId(userId)],
+              type: 'course_paid',
+              title: 'Course Paid',
+              message: 'You have paid for a course',
+              meta: { courseId: course?._id.toString() },
+            });
+          }
 
           this.logger.log(
             `Payment confirmation email sent to finance: ${financeEmail}`,

@@ -13,12 +13,15 @@ import {
   convertIdToString,
   sanitizeMongooseDocument,
 } from '../utils/convert-id';
+import { Notification, NotificationDocument } from '../notification/schema/notification.schema';
 
 @Injectable()
 export class AssessmentItemService {
   constructor(
     @InjectModel(AssessmentItem.name)
     private readonly assessmentItemModel: Model<AssessmentItem>,
+    @InjectModel(Notification.name)
+    private readonly notificationModel: Model<NotificationDocument>,
   ) {}
 
   private map(doc: any): any {
@@ -42,6 +45,9 @@ export class AssessmentItemService {
   // Create
   async create(dto: CreateAssessmentItemDto): Promise<AssessmentItem> {
     const item = new this.assessmentItemModel(dto);
+    
+
+  
     return item.save();
   }
 

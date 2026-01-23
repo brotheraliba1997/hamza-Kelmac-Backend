@@ -8,6 +8,7 @@ import { ClassScheduleSchemaClass, ClassScheduleSchema } from '../classSchedule/
 import { AssigmentController } from './assigment.controller';
 import { AssignmentService } from './assigment.service';
 import { AssigmentPassFailRecordSchemaClass, PassFailRecordSchema } from './schema/pass-fail-record.schema';
+import { Notification, NotificationSchema } from '../notification/schema/notification.schema';
 
 
 @Module({
@@ -17,6 +18,7 @@ import { AssigmentPassFailRecordSchemaClass, PassFailRecordSchema } from './sche
       { name: CourseSchemaClass.name, schema: CourseSchema },
       { name: AssigmentPassFailRecordSchemaClass.name, schema: PassFailRecordSchema },
       { name: ClassScheduleSchemaClass.name, schema: ClassScheduleSchema },
+      { name: Notification.name, schema: NotificationSchema },
     ]),
   ],
   controllers: [AssigmentController],

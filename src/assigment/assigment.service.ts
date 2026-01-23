@@ -36,6 +36,7 @@ import {
   PassFailSummary,
   StudentPassFailResult,
 } from './dto/check-pass-fail.dto';
+import { Notification, NotificationDocument } from '../notification/schema/notification.schema';
 
 @Injectable()
 export class AssignmentService {
@@ -44,6 +45,8 @@ export class AssignmentService {
     private readonly assigmenteModel: Model<AssignmentSchemaClass>,
     @InjectModel(AssigmentPassFailRecordSchemaClass.name)
     private readonly passFailRecordModel: Model<AssigmentPassFailRecordSchemaClass>,
+    @InjectModel(Notification.name)
+    private readonly notificationModel: Model<NotificationDocument>,
   ) {}
 
   private readonly assigmentePopulate = [
@@ -115,26 +118,16 @@ export class AssignmentService {
     } as AssignmentPassFailRecordEntity;
   }
 
-  async create(
-    dto: CreateAssignmentDto,
-
-    instructorId: string,
-  ): Promise<AssigmentEntity> {
-    // Check if assigmente already exists for this classScheduleId + student combination
-
-    const existing = await this.assigmenteModel
-      .findOne({
+  async create(dto: CreateAssignmentDto,instructorId: string): Promise<AssigmentEntity> {
+    const existing = await this.assigmenteModel.findOne({
         classScheduleId: new Types.ObjectId(dto.classScheduleId),
         student: new Types.ObjectId(dto.studentId),
       })
       .lean();
 
     if (existing) {
-      // Update existing record instead of creating duplicate
-      const updated = await this.assigmenteModel
-        .findByIdAndUpdate(
-          existing._id,
-          {
+      const updated = await this.assigmenteModel.findByIdAndUpdate(existing._id,
+        {
             classScheduleId: new Types.ObjectId(dto.classScheduleId),
             courseId: new Types.ObjectId(dto.courseId),
             sessionId: new Types.ObjectId(dto.sessionId),
@@ -163,10 +156,19 @@ export class AssignmentService {
       markedAt: new Date(),
     });
 
-    const populated = await this.assigmenteModel
-      .findById(created._id)
+    const populated = await this.assigmenteModel.findById(created._id)
       .populate(this.assigmentePopulate)
       .lean();
+
+    if (populated) {
+      await this.notificationModel.create({
+        receiverIds: [new Types.ObjectId(dto.studentId), new Types.ObjectId(instructorId)],
+        type: 'Assignment Marked',
+        title: 'Assignment Marked',
+        message: 'Assignment has been marked',
+        meta: { courseId: dto.courseId },
+      });
+    }
 
     return this.map(populated);
   }

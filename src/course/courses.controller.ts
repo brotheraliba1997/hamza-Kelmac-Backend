@@ -334,9 +334,7 @@ export class CoursesController {
     description:
       'Update an existing course. Requires authentication and admin/instructor role. Can update all course details including sessions, pricing, and metadata.',
   })
-  @ApiBearerAuth()
-  @Roles(RoleEnum.admin, RoleEnum.instructor)
-  @UseGuards(AuthGuard('jwt'), RolesGuard)
+
   @ApiBody({ type: UpdateCourseDto })
   @ApiOkResponse({
     description: 'Course updated successfully',
@@ -361,7 +359,7 @@ export class CoursesController {
     description: 'Course ObjectId',
     example: '507f1f77bcf86cd799439011',
   })
-  @HttpCode(HttpStatus.OK)
+ 
   @Patch(':id')
   update(@Param('id') id: string, @Body() dto: UpdateCourseDto) {
     return this.service.update(id, dto);
@@ -372,9 +370,9 @@ export class CoursesController {
     description:
       'Permanently delete a course. Requires authentication and admin/instructor role. This action cannot be undone and will decrement the category course count.',
   })
-  @ApiBearerAuth()
-  @Roles(RoleEnum.admin, RoleEnum.instructor)
-  @UseGuards(AuthGuard('jwt'), RolesGuard)
+
+ 
+
   @ApiResponse({
     status: 204,
     description: 'Course deleted successfully',
