@@ -1,6 +1,6 @@
-﻿import { Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { CreateEnrollmentDto } from './dto/create-enrollment.dto';
 import { Enrollment } from './interfaces/enrollment.interface';
 import { EnrollmentSchemaClass } from '../Enrollment/infrastructure/enrollments.schema';
@@ -14,11 +14,15 @@ import {
   convertIdToString,
   sanitizeMongooseDocument,
 } from '../utils/convert-id';
+import { Notification, NotificationDocument } from '../notification/schema/notification.schema';
+
 @Injectable()
 export class EnrollmentService {
   constructor(
     @InjectModel(EnrollmentSchemaClass.name)
     private readonly enrollmentModel: Model<EnrollmentSchemaClass>,
+    @InjectModel(Notification.name)
+    private readonly notificationModel: Model<NotificationDocument>,
   ) {}
 
   private map(doc: any): Enrollment {
@@ -52,6 +56,24 @@ export class EnrollmentService {
       status: createEnrollmentDto.status ?? 'active',
     };
     const created = await this.enrollmentModel.create(toCreate as any);
+
+    // Send notification to student about enrollment
+    try {
+      await this.notificationModel.create({
+        receiverIds: [new Types.ObjectId(createEnrollmentDto.user)],
+        type: 'Enrollment Created',
+        title: 'Enrollment Created',
+        message: 'You have been enrolled in a course',
+        meta: { 
+          enrollmentId: created._id.toString(),
+          courseId: createEnrollmentDto.course,
+        },
+      });
+    } catch (notificationError) {
+      // Don't fail enrollment creation if notification fails
+      console.error('Failed to send enrollment notification:', notificationError);
+    }
+
     return this.map(created);
   }
 

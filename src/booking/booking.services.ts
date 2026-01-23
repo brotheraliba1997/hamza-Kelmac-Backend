@@ -16,6 +16,7 @@ import {
   PurchaseOrderDocument,
   PurchaseOrderSchemaClass,
 } from '../purchaseOrder/schema/purchase.schema';
+import { Notification, NotificationDocument } from '../notification/schema/notification.schema';
 
 @Injectable()
 export class BookingsService {
@@ -26,6 +27,8 @@ export class BookingsService {
     @InjectModel(Payment.name) private paymentModel: Model<PaymentDocument>,
     @InjectModel(PurchaseOrderSchemaClass.name)
     private purchaseOrderModel: Model<PurchaseOrderDocument>,
+    @InjectModel(Notification.name)
+    private notificationModel: Model<NotificationDocument>,
   ) {}
   async map(doc: any): Promise<Booking> {
     if (!doc) return undefined as any;
@@ -76,6 +79,20 @@ export class BookingsService {
         paymentMethod: createBookingDto.paymentMethod || 'stripe',
         status: 'pending',
       });
+
+      // Send notification to student
+      try {
+        await this.notificationModel.create({
+          receiverIds: [new Types.ObjectId(createBookingDto.studentId)],
+          type: 'Booking Created',
+          title: 'Booking Created',
+          message: 'Your course booking has been created successfully',
+          meta: { bookingId: newBooking._id, courseId: createBookingDto.courseId },
+        });
+      } catch (notificationError) {
+        this.logger.warn('Failed to send booking notification', notificationError);
+        // Don't fail booking creation if notification fails
+      }
 
       return this.map(newBooking.toObject());
     } catch (error) {

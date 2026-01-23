@@ -38,6 +38,9 @@ import {
 import { PassFailStatusEnum } from './schema/pass-fail-record.schema';
 import getPdfLink from '../utils/pdf-download/pdfs';
 import { AssignmentSchemaClass } from '../assigment/schema/assigment.schema';
+import { Notification, NotificationDocument } from '../notification/schema/notification.schema';
+import { MailService } from '../mail/mail.service';
+import { UserSchemaClass } from '../users/schema/user.schema';
 
 @Injectable()
 export class AttendanceService {
@@ -53,6 +56,12 @@ export class AttendanceService {
     private readonly passFailRecordModel: Model<PassFailRecordSchemaClass>,
     @InjectModel(ClassScheduleSchemaClass.name)
     private readonly classScheduleModel: Model<ClassScheduleSchemaClass>,
+
+    @InjectModel(Notification.name)
+    private readonly notificationModel: Model<NotificationDocument>,
+    @InjectModel(UserSchemaClass.name)
+    private readonly userModel: Model<UserSchemaClass>,
+    private readonly mailService: MailService,
   ) {}
 
   private readonly attendancePopulate = [
@@ -123,6 +132,16 @@ export class AttendanceService {
         .populate(this.attendancePopulate)
         .lean();
 
+      if (updated) {
+        await this.notificationModel.create({
+          receiverIds: [new Types.ObjectId(dto.studentId)],
+          type: 'Attendance Marked',
+          title: 'Attendance Marked',
+          message: 'Attendance has been marked',
+          meta: { attendance: updated._id },
+        });
+      }
+
       return this.map(updated);
     }
 
@@ -142,6 +161,16 @@ export class AttendanceService {
       .findById(created._id)
       .populate(this.attendancePopulate)
       .lean();
+
+    if (populated) {
+      await this.notificationModel.create({
+        receiverIds: [new Types.ObjectId(dto.studentId)],
+        type: 'Attendance Marked',
+        title: 'Attendance Marked',
+        message: 'Attendance has been marked',
+        meta: { attendance: populated._id },
+      });
+    }
 
     return this.map(populated);
   }
@@ -570,8 +599,7 @@ export class AttendanceService {
     >();
 
     attendanceRecords.forEach((record: any) => {
-      const studentId =
-        record.student?._id?.toString() || record.student?.toString();
+      const studentId = record.student?._id?.toString() || record.student?.toString();
       if (!studentAttendanceMap.has(studentId)) {
         studentAttendanceMap.set(studentId, {
           attendance: [],
@@ -581,7 +609,7 @@ export class AttendanceService {
       studentAttendanceMap.get(studentId)?.attendance.push(record);
     });
 
-    // Merge assignment records with marks into studentAttendanceMap
+    
     assignmentRecords.forEach((record: any) => {
       const studentId =
         record.student?._id?.toString() || record.student?.toString();
@@ -594,7 +622,6 @@ export class AttendanceService {
       studentAttendanceMap.get(studentId)?.assignments.push(record);
     });
 
-    // Calculate pass/fail for each student and save to database
     const results: StudentPassFailResult[] = [];
     let passedCount = 0;
     let failedCount = 0;
@@ -605,36 +632,38 @@ export class AttendanceService {
       const student = records[0]?.student || assignments[0]?.student;
 
       // Count present and absent
-      const presentCount = records.filter(
-        (r: any) => r.status === 'present',
-      ).length;
-      const absentCount = records.filter(
-        (r: any) => r.status === 'absent',
-      ).length;
+      const presentCount = records.filter((r: any) => r.status === 'present').length;
+      const absentCount = records.filter((r: any) => r.status === 'absent').length;
       const totalClasses = records.length;
 
       // Calculate assignment marks
-      const totalMarks = assignments.reduce(
-        (sum: number, a: any) => sum + (a.marks || 0),
-        0,
-      );
+      const totalMarks = assignments.reduce((sum: number, a: any) => sum + (a.marks || 0),0);
       const averageMarks =
         assignments.length > 0 ? totalMarks / assignments.length : 0;
       const attendancePercentage =
         totalClasses > 0 ? Math.round((presentCount / totalClasses) * 100) : 0;
 
       // Determine pass/fail: PASS only if absentCount === 0
-      const result =
-        absentCount === 0 ? PassFailStatusEnum.PASS : PassFailStatusEnum.FAIL;
+      const result = absentCount === 0 ? PassFailStatusEnum.PASS : PassFailStatusEnum.FAIL;
+
+      // Get student email for sending email
+      const studentEmail = student?.email;
 
       if (result === PassFailStatusEnum.PASS) {
         passedCount++;
+     
+
+        // Send pass email
+      
       } else {
         failedCount++;
+    
+
+        // Send fail email
+      
       }
 
-      const studentName =
-        student.firstName && student.lastName
+      const studentName = student.firstName && student.lastName
           ? `${student.firstName} ${student.lastName}`
           : student.email || 'Unknown Student';
 
@@ -654,7 +683,6 @@ export class AttendanceService {
         presentCount,
         absentCount,
         attendancePercentage,
-
         determinedAt: new Date(),
       };
 
@@ -666,11 +694,9 @@ export class AttendanceService {
             existingRecord._id,
             {
               ...passFailData,
-              // Don't overwrite approval if already approved
               isApproved: existingRecord.isApproved,
               approvedBy: existingRecord.approvedBy,
               approvedAt: existingRecord.approvedAt,
-              // Don't overwrite certificate info if already issued
               certificateIssued: existingRecord.certificateIssued,
               certificateId: existingRecord.certificateId,
             },
@@ -841,11 +867,45 @@ export class AttendanceService {
         finalCertificateUrl &&
         !record.certificateIssued
       ) {
+        await this.notificationModel.create({
+          receiverIds: [new Types.ObjectId(record.studentId)],
+          type: 'Certificate Issued',
+          title: 'Certificate Issued',
+          message: 'Certificate has been issued',
+          meta: { courseId: record.courseId },
+        });
         updateData.certificateIssued = true;
         updateData.certificateUrl = finalCertificateUrl;
       }
+
+      const student = await this.userModel.findById(record.studentId).select('firstName lastName email').lean();
+      const studentEmail = student?.email;
+
+      if (studentEmail) {
+        await this.mailService.studentPassFailResult({
+          to: studentEmail,
+          data: {
+            studentName: student?.firstName && student?.lastName
+              ? `${student.firstName} ${student.lastName}`
+              : student?.email || 'Student',
+            passFailStatus: record.attendancePercentage || 0,
+            isPass: record.status === PassFailStatusEnum.PASS,
+            studentMarks: record.presentCount || 0,
+            totalMarks: record.totalClasses || 0,
+          },
+        });
+      }
+
+     
     } else {
-      // If rejecting, clear approval data
+      // If rejecting, clear approval data  
+      await this.notificationModel.create({
+        receiverIds: [new Types.ObjectId(record.studentId)],
+        type: 'Certificate Rejected',
+        title: 'Certificate Rejected',
+        message: 'Certificate has been rejected',
+        meta: { courseId: record.courseId },
+      });
       updateData.approvedBy = null;
       updateData.approvedAt = null;
     }

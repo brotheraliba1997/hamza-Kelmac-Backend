@@ -22,6 +22,9 @@ import {
   AssignmentSchemaClass,
   AssigmentSchema,
 } from '../assigment/schema/assigment.schema';
+import { Notification, NotificationSchema } from '../notification/schema/notification.schema';
+import { MailModule } from '../mail/mail.module';
+import { UserSchemaClass, UserSchema } from '../users/schema/user.schema';
 
 @Module({
   imports: [
@@ -32,7 +35,10 @@ import {
       { name: CourseSchemaClass.name, schema: CourseSchema },
       { name: PassFailRecordSchemaClass.name, schema: PassFailRecordSchema },
       { name: ClassScheduleSchemaClass.name, schema: ClassScheduleSchema },
+      { name: Notification.name, schema: NotificationSchema },
+      { name: UserSchemaClass.name, schema: UserSchema },
     ]),
+    MailModule,
   ],
   controllers: [AttendanceController],
   providers: [AttendanceService],

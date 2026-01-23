@@ -153,7 +153,7 @@ export class StudentItemGradeService {
       );
     }
 
-    // Total max marks across all assessment items of this course
+    
     const totalMaxMarks = assessmentItems.reduce(
       (acc: number, item: any) => acc + (item.maxMarks || 0),
       0,
@@ -183,7 +183,7 @@ export class StudentItemGradeService {
 
     const passFailStatus = Number(((studentMarks / totalMaxMarks) * 100).toFixed(2));
 
-    // Get student information for email
+ 
     const student = await this.userModel.findById(studentId).lean();
     const studentEmail = student?.email;
 
@@ -196,7 +196,7 @@ export class StudentItemGradeService {
         meta: { assessment: assessmentItems.map((item: any) => item._id) },
       });
 
-      // Send pass email
+      
       if (studentEmail) {
         await this.mailService.studentPassFailResult({
           to: studentEmail,
@@ -218,7 +218,7 @@ export class StudentItemGradeService {
         meta: { assessment: assessmentItems.map((item: any) => item._id) },
       });
 
-      // Send fail email
+   
       if (studentEmail) {
         await this.mailService.studentPassFailResult({
           to: studentEmail,

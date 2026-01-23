@@ -401,6 +401,28 @@ export class PaymentService {
       );
     }
 
+    // Send notification to student about payment confirmation
+    try {
+      const userId = user?._id?.toString() || (typeof user === 'string' ? user : payment.userId?.toString());
+      if (userId) {
+        await this.notificationModel.create({
+          receiverIds: [new Types.ObjectId(userId)],
+          type: 'Payment Confirmed',
+          title: 'Payment Confirmed',
+          message: `Your payment of ${payment.currency?.toUpperCase() || 'USD'} ${payment.amount} for ${course?.title || 'course'} has been confirmed`,
+          meta: { 
+            paymentId: payment._id.toString(),
+            courseId: course?._id?.toString() || payment.courseId?.toString(),
+          },
+        });
+      }
+    } catch (notificationError) {
+      // Don't fail payment confirmation if notification fails
+      this.logger.error(
+        `Failed to send payment confirmation notification: ${notificationError.message}`,
+      );
+    }
+
     return {
       success: true,
       message: 'Payment confirmed',

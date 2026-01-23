@@ -18,6 +18,7 @@ import {
   PurchaseOrderSchema,
   PurchaseOrderSchemaClass,
 } from '../purchaseOrder/schema/purchase.schema';
+import { Notification, NotificationSchema } from '../notification/schema/notification.schema';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import {
       { name: ClassScheduleSchemaClass.name, schema: ClassScheduleSchema },
       { name: Payment.name, schema: PaymentSchema },
       { name: PurchaseOrderSchemaClass.name, schema: PurchaseOrderSchema },
+      { name: Notification.name, schema: NotificationSchema },
     ]),
   ],
   controllers: [BookingsController],
