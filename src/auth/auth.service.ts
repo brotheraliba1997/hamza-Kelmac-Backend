@@ -150,6 +150,13 @@ export class AuthService {
         provider: authProvider,
         role,
         status,
+        company: null,
+        jobTitle: null,
+        emailAddress: null,
+        phoneNumber: null,
+        country: null,
+        industry: null,
+        currency: null,
       });
 
       user = await this.usersService.findById(user.id);
@@ -193,7 +200,8 @@ export class AuthService {
     };
   }
 
-  async register(dto: AuthRegisterLoginDto): Promise<void> {
+  async register(dto: AuthRegisterLoginDto): Promise<LoginResponseDto> {
+    // ✅ Create the user with extended fields
     const user = await this.usersService.create({
       ...dto,
       email: dto.email,
@@ -203,8 +211,16 @@ export class AuthService {
       status: {
         id: StatusEnum.inactive,
       },
+      // New fields (set defaults or from dto if available)
+      company: dto.company ?? null,
+      jobTitle: dto.jobTitle ?? null,
+      emailAddress: dto.emailAddress ?? dto.email,
+      phoneNumber: dto.phoneNumber ?? null,
+      country: dto.country ?? null,
+      industry: dto.industry ?? null,
     });
-
+    console.log(dto, 'User created:', user);
+    // ✅ Generate email confirmation token
     const hash = await this.jwtService.signAsync(
       {
         confirmEmailUserId: user.id,
@@ -219,12 +235,65 @@ export class AuthService {
       },
     );
 
+    // ✅ Send activation email to user
     await this.mailService.userSignUp({
       to: dto.email,
       data: {
         hash,
       },
     });
+
+    // ✅ Notify admin about registration
+    const adminEmail = this.configService.get('app.adminEmail', {
+      infer: true,
+    });
+
+    if (adminEmail) {
+      try {
+        await this.mailService.userRegistered({
+          to: adminEmail,
+          data: {
+            userName: dto.firstName
+              ? `${dto.firstName} ${dto.lastName || ''}`
+              : dto.email,
+            userEmail: dto.email,
+            userRole: 'Student',
+            registrationDate: new Date().toLocaleDateString('en-US', {
+              weekday: 'long',
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+            }),
+          },
+        });
+      } catch (error) {
+        console.error('Failed to send admin notification email:', error);
+      }
+    }
+
+    const sessionHash = crypto
+      .createHash('sha256')
+      .update(randomStringGenerator())
+      .digest('hex');
+
+    const session = await this.sessionService.create({
+      user,
+      hash: sessionHash,
+    });
+
+    const { token, refreshToken, tokenExpires } = await this.getTokensData({
+      id: user.id,
+      role: user.role,
+      sessionId: session.id,
+      hash: sessionHash,
+    });
+
+    return {
+      refreshToken,
+      token,
+      tokenExpires,
+      user,
+    };
   }
 
   async confirmEmail(hash: string): Promise<void> {
@@ -542,6 +611,22 @@ export class AuthService {
 
   async logout(data: Pick<JwtRefreshPayloadType, 'sessionId'>) {
     return this.sessionService.deleteById(data.sessionId);
+  }
+
+  async verifySocketToken(token: string): Promise<JwtPayloadType> {
+    if (!token) {
+      throw new UnauthorizedException('Token is required');
+    }
+
+    try {
+      const payload = await this.jwtService.verifyAsync<JwtPayloadType>(token, {
+        secret: this.configService.getOrThrow('auth.secret', { infer: true }),
+      });
+
+      return payload;
+    } catch (error) {
+      throw new UnauthorizedException('Invalid token');
+    }
   }
 
   private async getTokensData(data: {

@@ -14,7 +14,33 @@ import { AllConfigType } from './config/config.type';
 import { ResolvePromisesInterceptor } from './utils/serializer.interceptor';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { cors: true });
+  const app = await NestFactory.create(AppModule);
+
+  app.enableCors({
+    origin: [
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'http://localhost:5000',
+      'http://127.0.0.1:3000',
+      'http://127.0.0.1:5000',
+      'http://127.0.0.1:3001',
+      'https://main.df46b7jwedpjp.amplifyapp.com',
+      'https://main.d18t90ld1cnu0o.amplifyapp.com',
+      // ==== Vercel Frontend Domains ====
+      'https://kelmac-frontend-kelmac-dev.vercel.app',
+      'https://kelmac-frontend.vercel.app',
+      'http://localhost:3000',
+      'https://kelmac-dashboard-g33j.vercel.app',
+      'https://kelmac-dashboard.vercel.app',
+      'https://kelmac-frontend.vercel.app',
+    ],
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    allowedHeaders: 'Content-Type, Authorization, x-custom-lang',
+    credentials: true,
+    preflightContinue: false,
+    optionsSuccessStatus: 200,
+  });
+
   useContainer(app.select(AppModule), { fallbackOnErrors: true });
   const configService = app.get(ConfigService<AllConfigType>);
 
@@ -54,6 +80,12 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, options);
   SwaggerModule.setup('docs', app, document);
 
-  await app.listen(configService.getOrThrow('app.port', { infer: true }));
+  const port = configService.getOrThrow('app.port', { infer: true });
+  await app.listen(port);
+  console.log(`🚀 Application is running on: http://localhost:${port}`);
 }
-void bootstrap();
+
+bootstrap().catch((err) => {
+  console.error('❌ Error starting application:', err);
+  process.exit(1);
+});

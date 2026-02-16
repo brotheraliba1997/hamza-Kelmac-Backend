@@ -3,10 +3,11 @@ import {
   Injectable,
   UnprocessableEntityException,
 } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { CreateUserDto } from './dto/create-user.dto';
 import { NullableType } from '../utils/types/nullable.type';
 import { FilterUserDto, SortUserDto } from './dto/query-user.dto';
-import { UserRepository } from './infrastructure/persistence/user.repository';
 import { User } from './domain/user';
 import bcrypt from 'bcryptjs';
 import { AuthProvidersEnum } from '../auth/auth-providers.enum';
@@ -18,13 +19,49 @@ import { FileType } from '../files/domain/file';
 import { Role } from '../roles/domain/role';
 import { Status } from '../statuses/domain/status';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UserSchemaClass } from './schema/user.schema';
+import {
+  buildMongooseQuery,
+  FilterQueryBuilder,
+  PaginationResult,
+} from '../utils/mongoose-query-builder';
+import { sanitizeMongooseDocument } from '../utils/convert-id';
 
 @Injectable()
 export class UsersService {
   constructor(
-    private readonly usersRepository: UserRepository,
+    @InjectModel(UserSchemaClass.name)
+    private readonly userModel: Model<UserSchemaClass>,
     private readonly filesService: FilesService,
   ) {}
+
+  private map(doc: any): User {
+    if (!doc) return undefined as any;
+    const id = typeof doc.id !== 'undefined' ? doc.id : doc._id?.toString?.();
+    // Sanitize the document to convert all IDs and nested objects
+    const sanitized = sanitizeMongooseDocument(doc);
+    // Double-check sanitized is not null
+    if (!sanitized) return undefined as any;
+
+    return {
+      ...sanitized,
+      id,
+      email: sanitized.email,
+      password: sanitized.password,
+      provider: sanitized.provider || AuthProvidersEnum.email,
+      socialId: sanitized.socialId,
+      firstName: sanitized.firstName,
+      lastName: sanitized.lastName,
+      photo: sanitized.photo,
+      role: sanitized.role,
+      status: sanitized.status,
+      createdAt: sanitized.createdAt,
+      updatedAt: sanitized.updatedAt,
+      deletedAt: sanitized.deletedAt,
+      isDeleted: sanitized.isDeleted,
+      isActive: sanitized.isActive,
+    };
+  }
 
   async create(createUserDto: CreateUserDto): Promise<User> {
     // Do not remove comment below.
@@ -40,10 +77,10 @@ export class UsersService {
     let email: string | null = null;
 
     if (createUserDto.email) {
-      const userObject = await this.usersRepository.findByEmail(
-        createUserDto.email,
-      );
-      if (userObject) {
+      const existingUser = await this.userModel
+        .findOne({ email: createUserDto.email })
+        .lean();
+      if (existingUser) {
         throw new UnprocessableEntityException({
           status: HttpStatus.UNPROCESSABLE_ENTITY,
           errors: {
@@ -113,9 +150,10 @@ export class UsersService {
       };
     }
 
-    return this.usersRepository.create({
+    const created = await this.userModel.create({
       // Do not remove comment below.
       // <creating-property-payload />
+      ...createUserDto,
       firstName: createUserDto.firstName,
       lastName: createUserDto.lastName,
       email: email,
@@ -126,9 +164,12 @@ export class UsersService {
       provider: createUserDto.provider ?? AuthProvidersEnum.email,
       socialId: createUserDto.socialId,
     });
+    console.log('User created SERVICE:', created);
+    const { password: _, ...userObj } = created.toObject();
+    return this.map(userObj);
   }
 
-  findManyWithPagination({
+  async findManyWithPagination({
     filterOptions,
     sortOptions,
     paginationOptions,
@@ -136,37 +177,81 @@ export class UsersService {
     filterOptions?: FilterUserDto | null;
     sortOptions?: SortUserDto[] | null;
     paginationOptions: IPaginationOptions;
-  }): Promise<User[]> {
-    return this.usersRepository.findManyWithPagination({
-      filterOptions,
-      sortOptions,
+  }): Promise<PaginationResult<User>> {
+    // Build filter query
+
+    console.log('Filter Options:', filterOptions);
+    const filterQuery = new FilterQueryBuilder<UserSchemaClass>()
+      // .addCustom(
+      //   'role._id' as any,
+      //   filterOptions?.roles?.length
+      //     ? { $in: filterOptions.roles.map((role) => role.id.toString()) }
+      //     : undefined,
+      // )
+      .addCustom(
+        'role.id' as any,
+        filterOptions?.role && Number(filterOptions?.role),
+      )
+      .addEqual('isActive' as any, filterOptions?.isActive)
+      .addEqual('isDeleted' as any, filterOptions?.isDeleted)
+      .addEqual('country' as any, filterOptions?.country)
+      .addEqual('currency' as any, filterOptions?.currency)
+      .build();
+
+    if (filterOptions?.search) {
+      // Use regex search for better compatibility
+      const searchRegex = new RegExp(filterOptions.search, 'i');
+      filterQuery.$or = [
+        { firstName: searchRegex },
+        { lastName: searchRegex },
+        { email: searchRegex },
+      ];
+    }
+    // Convert sort options to match expected type
+    const mappedSortOptions = sortOptions?.map((s) => ({
+      orderBy: s.orderBy as string,
+      order: (s.order?.toUpperCase() === 'ASC' ? 'ASC' : 'DESC') as
+        | 'ASC'
+        | 'DESC',
+    }));
+
+    return buildMongooseQuery({
+      model: this.userModel,
+      filterQuery,
+      sortOptions: mappedSortOptions,
       paginationOptions,
+      mapper: (doc) => this.map(doc),
     });
   }
 
-  findById(id: User['id']): Promise<NullableType<User>> {
-    return this.usersRepository.findById(id);
+  async findById(id: User['id']): Promise<NullableType<User>> {
+    const doc = await this.userModel.findById(id).lean();
+    const { password, ...sanitized } = doc || {};
+    return doc ? this.map(sanitized) : null;
   }
 
-  findByIds(ids: User['id'][]): Promise<User[]> {
-    return this.usersRepository.findByIds(ids);
+  async findByIds(ids: User['id'][]): Promise<User[]> {
+    const docs = await this.userModel.find({ _id: { $in: ids } }).lean();
+    const sanitizedDocs = docs.map(({ password, ...rest }) => rest);
+    return sanitizedDocs.map((doc: any) => this.map(doc));
   }
 
-  findByEmail(email: User['email']): Promise<NullableType<User>> {
-    return this.usersRepository.findByEmail(email);
+  async findByEmail(email: User['email']): Promise<NullableType<User>> {
+    if (!email) return null;
+    const doc = await this.userModel.findOne({ email }).lean();
+    return doc ? this.map(doc) : null;
   }
 
-  findBySocialIdAndProvider({
+  async findBySocialIdAndProvider({
     socialId,
     provider,
   }: {
     socialId: User['socialId'];
     provider: User['provider'];
   }): Promise<NullableType<User>> {
-    return this.usersRepository.findBySocialIdAndProvider({
-      socialId,
-      provider,
-    });
+    if (!socialId || !provider) return null;
+    const doc = await this.userModel.findOne({ socialId, provider }).lean();
+    return doc ? this.map(doc) : null;
   }
 
   async update(
@@ -179,9 +264,9 @@ export class UsersService {
     let password: string | undefined = undefined;
 
     if (updateUserDto.password) {
-      const userObject = await this.usersRepository.findById(id);
+      const userDoc = await this.userModel.findById(id).lean();
 
-      if (userObject && userObject?.password !== updateUserDto.password) {
+      if (userDoc && userDoc?.password !== updateUserDto.password) {
         const salt = await bcrypt.genSalt();
         password = await bcrypt.hash(updateUserDto.password, salt);
       }
@@ -190,11 +275,11 @@ export class UsersService {
     let email: string | null | undefined = undefined;
 
     if (updateUserDto.email) {
-      const userObject = await this.usersRepository.findByEmail(
-        updateUserDto.email,
-      );
+      const existingUser = await this.userModel
+        .findOne({ email: updateUserDto.email })
+        .lean();
 
-      if (userObject && userObject.id !== id) {
+      if (existingUser && existingUser._id.toString() !== id.toString()) {
         throw new UnprocessableEntityException({
           status: HttpStatus.UNPROCESSABLE_ENTITY,
           errors: {
@@ -267,22 +352,30 @@ export class UsersService {
       };
     }
 
-    return this.usersRepository.update(id, {
-      // Do not remove comment below.
-      // <updating-property-payload />
-      firstName: updateUserDto.firstName,
-      lastName: updateUserDto.lastName,
-      email,
-      password,
-      photo,
-      role,
-      status,
-      provider: updateUserDto.provider,
-      socialId: updateUserDto.socialId,
-    });
+    const updated = await this.userModel
+      .findByIdAndUpdate(
+        id,
+        {
+          // Do not remove comment below.
+          // <updating-property-payload />
+          ...updateUserDto,
+          firstName: updateUserDto.firstName,
+          lastName: updateUserDto.lastName,
+          email,
+          password,
+          photo,
+          role,
+          status,
+          provider: updateUserDto.provider,
+          socialId: updateUserDto.socialId,
+        },
+        { new: true },
+      )
+      .lean();
+    return updated ? this.map(updated) : null;
   }
 
   async remove(id: User['id']): Promise<void> {
-    await this.usersRepository.remove(id);
+    await this.userModel.deleteOne({ _id: id });
   }
 }

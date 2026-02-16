@@ -1,26 +1,472 @@
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsArray,
   IsMongoId,
   IsNumber,
   IsOptional,
   IsString,
+  IsBoolean,
+  IsEnum,
+  ValidateNested,
+  IsInt,
+  Min,
+  Max,
+  Matches,
+  MaxLength,
+  IsDate,
+  isBoolean,
 } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  SessionFormatEnum,
+  SkillLevelEnum,
+  CurrencyEnum,
+} from '../schema/course.schema';
+import { CreateCrouseAssessmentItemDto } from './create-assessment-Item.dto';
 
-export class CreateCourseDto {
+// Time Block DTO
+export class TimeBlockDto {
+  @ApiProperty({ example: '2025-01-06' })
   @IsString()
-  title: string;
+  startDate: string;
 
+  @ApiProperty({ example: '2025-01-10' })
+  @IsString()
+  endDate: string;
+
+  @ApiProperty({ example: '09:00' })
+  @Matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, {
+    message: 'Start time must be in HH:MM format',
+  })
+  startTime: string;
+
+  @ApiProperty({ example: '17:00' })
+  @Matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, {
+    message: 'End time must be in HH:MM format',
+  })
+  endTime: string;
+
+  @ApiPropertyOptional({ example: 'Eastern Time (GMT-5)' })
+  @IsString()
   @IsOptional()
-  description?: string;
+  timeZone?: string;
+}
 
+// Session DTO
+export class SessionDto {
+  @ApiProperty({
+    enum: SessionFormatEnum,
+    example: SessionFormatEnum.FULL_WEEK,
+  })
+  @IsEnum(SessionFormatEnum)
+  type: SessionFormatEnum;
+
+  @ApiProperty({
+    type: [TimeBlockDto],
+    description: 'Structured time blocks for this session type',
+  })
+  @ValidateNested({ each: true })
+  @Type(() => TimeBlockDto)
+  @IsArray()
+  timeBlocks: TimeBlockDto[];
+
+  @ApiPropertyOptional({ example: 12 })
+  @IsInt()
+  @Min(0)
+  @IsOptional()
+  seatsLeft?: number;
+
+  @ApiPropertyOptional({ example: '68fdf94006e63abc0d5a12e4' })
+  @IsString()
   @IsMongoId()
   instructor: string;
 
+  @ApiPropertyOptional({ example: '6931b6648080a892831ad338' })
+  @IsMongoId()
+  location: string;
+
+  @ApiPropertyOptional({ enum: ['online', 'in-person'] })
+  @IsEnum(['online', 'in-person'])
+  mode: 'online' | 'in-person';
+}
+
+// FAQ DTO
+export class FAQDto {
+  @ApiProperty({ example: 'What are the prerequisites?' })
+  @IsString()
+  question: string;
+
+  @ApiProperty({ example: 'Basic programming knowledge is recommended' })
+  @IsString()
+  answer: string;
+}
+
+// Course Snapshot DTO
+export class CourseSnapshotDto {
+  @ApiPropertyOptional({ example: 120 })
+  @IsInt()
+  @Min(0)
+  @IsOptional()
+  totalLectures?: number;
+
+  @ApiPropertyOptional({ example: 40, description: 'Total duration in hours' })
   @IsNumber()
+  @Min(0)
+  @IsOptional()
+  totalDuration?: number;
+
+  @ApiPropertyOptional({
+    enum: SkillLevelEnum,
+    example: SkillLevelEnum.BEGINNER,
+  })
+  @IsEnum(SkillLevelEnum)
+  @IsOptional()
+  skillLevel?: SkillLevelEnum;
+
+  @ApiPropertyOptional({ example: 'English' })
+  @IsString()
+  @IsOptional()
+  language?: string;
+
+  @ApiPropertyOptional({ example: 'English, Spanish' })
+  @IsString()
+  @IsOptional()
+  captionsLanguage?: string;
+
+  @ApiPropertyOptional({ example: 0 })
+  @IsInt()
+  @Min(0)
+  @IsOptional()
+  enrolledStudents?: number;
+
+  @ApiPropertyOptional({ example: true })
+  @IsBoolean()
+  @IsOptional()
+  certificate?: boolean;
+
+  @ApiPropertyOptional({ example: true })
+  @IsBoolean()
+  @IsOptional()
+  lifetimeAccess?: boolean;
+
+  @ApiPropertyOptional({ example: true })
+  @IsBoolean()
+  @IsOptional()
+  mobileAccess?: boolean;
+}
+
+// Course Details DTO
+export class CourseDetailsDto {
+  @ApiPropertyOptional({
+    type: [String],
+    example: ['Build modern web applications', 'Master JavaScript'],
+  })
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  whatYouWillLearn?: string[];
+
+  @ApiPropertyOptional({
+    type: [String],
+    example: ['Basic computer skills', 'Text editor installed'],
+  })
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  requirements?: string[];
+
+  @ApiPropertyOptional({
+    type: [String],
+    example: ['Beginners in web development', 'Career switchers'],
+  })
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  targetAudience?: string[];
+
+  @ApiPropertyOptional({
+    type: [String],
+    example: ['Lifetime access', '30-day money back guarantee'],
+  })
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  features?: string[];
+}
+
+export class DateOptionDto {
+  @ApiProperty({ example: '2025-11-06T13:44:37.064+00:00' })
+  @IsDate()
+  @Type(() => Date)
+  date: Date;
+
+  @ApiProperty({ example: 'Full Week , Weekend Per day' })
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @ApiProperty({ example: '9:00 AM - 4:30 PM (Eastern Time (GMT-5))' })
+  @IsString()
+  @IsOptional()
+  time?: string;
+}
+
+export class CreateCourseDto {
+  // ===== Basic Information =====
+  @ApiProperty({
+    description: 'The title of the course',
+    example: 'Complete Web Development Bootcamp 2025',
+  })
+  @IsString()
+  title: string;
+
+  @ApiProperty({
+    description: 'Does this course have a test?',
+    example: true,
+  })
+  @IsBoolean()
+  hasTest: boolean;
+
+  @ApiPropertyOptional({
+    description:
+      'URL-friendly slug (auto-generated from title if not provided)',
+    example: 'complete-web-development-bootcamp-2025',
+  })
+  @IsString()
+  @IsOptional()
+  slug?: string;
+
+  @ApiPropertyOptional({
+    example: 'From Zero to Full-Stack Hero',
+  })
+  @IsString()
+  @IsOptional()
+  subtitle?: string;
+
+  @ApiPropertyOptional({
+    description: 'A detailed description of the course',
+    example:
+      'Master web development with HTML, CSS, JavaScript, React, Node.js and more',
+  })
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @ApiProperty({
+    description: 'The MongoDB ID of the instructor',
+    example: '507f1f77bcf86cd799439011',
+  })
+
+  // ===== Category & Classification =====
+  @ApiProperty({
+    description: 'The category slug of the course',
+    example: '690bc43d8ddd23690d42287e',
+  })
+  @IsMongoId()
+  category: string;
+
+  // @ApiProperty({
+  //   description: 'The mode of the course',
+  //   example: 'online',
+  // })
+  // @IsEnum(['online', 'in-person'])
+  // mode: 'online' | 'in-person';
+
+  // @ApiProperty({
+  //   description: 'The location of the course',
+  //   example: '690bc43d8ddd23690d42287e',
+  // })
+  // @IsMongoId()
+  // location: string;
+
+  @ApiPropertyOptional({
+    description: 'Array of subcategory names',
+    example: ['Frontend Development', 'Backend Development'],
+  })
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  subcategories?: string[];
+
+  @ApiPropertyOptional({
+    description: 'Array of topic tags',
+    example: ['HTML', 'CSS', 'JavaScript', 'React', 'Node.js'],
+  })
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  topics?: string[];
+
+  // ===== Course Overview =====
+  @ApiPropertyOptional({
+    example:
+      'This comprehensive course covers everything you need to become a full-stack developer...',
+  })
+  @IsString()
+  @IsOptional()
+  overview?: string;
+
+  @ApiPropertyOptional({
+    example: 'https://example.com/thumbnail.jpg',
+  })
+  @IsString()
+  @IsOptional()
+  thumbnailUrl?: string;
+
+  @ApiPropertyOptional({
+    example: 'https://example.com/preview-video.mp4',
+  })
+  @IsString()
+  @IsOptional()
+  previewVideoUrl?: string;
+
+  // ===== Syllabus & Content =====
+  @ApiPropertyOptional({
+    type: [SessionDto],
+    description: 'Course sessions/lectures',
+  })
+  @ValidateNested({ each: true })
+  @Type(() => SessionDto)
+  @IsArray()
+  @IsOptional()
+  sessions?: SessionDto[];
+
+  @ApiPropertyOptional({
+    type: [CreateCrouseAssessmentItemDto],
+    description: 'List of assessment items for the test',
+  })
+  @ValidateNested({ each: true })
+  @Type(() => CreateCrouseAssessmentItemDto)
+  @IsArray()
+  @IsOptional()
+  items?: CreateCrouseAssessmentItemDto[];
+
+  // internetsssss
+
+  // ===== Course Metadata =====
+  @ApiPropertyOptional({ type: CourseSnapshotDto })
+  @ValidateNested()
+  @Type(() => CourseSnapshotDto)
+  @IsOptional()
+  snapshot?: CourseSnapshotDto;
+
+  @ApiPropertyOptional({ type: CourseDetailsDto })
+  @ValidateNested()
+  @Type(() => CourseDetailsDto)
+  @IsOptional()
+  details?: CourseDetailsDto;
+
+  @ApiPropertyOptional({ type: [FAQDto] })
+  @ValidateNested({ each: true })
+  @Type(() => FAQDto)
+  @IsArray()
+  @IsOptional()
+  faqs?: FAQDto[];
+
+  // ===== Pricing =====
+  @ApiPropertyOptional({
+    description: 'The price of the course',
+    example: 199.99,
+    minimum: 0,
+  })
+  @IsNumber()
+  @Min(0)
   @IsOptional()
   price?: number;
 
+  @ApiPropertyOptional({
+    example: 149.99,
+    minimum: 0,
+  })
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  discountedPrice?: number;
+
+  @ApiPropertyOptional({
+    example: 25,
+    minimum: 0,
+    maximum: 100,
+  })
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  @IsOptional()
+  discountPercentage?: number;
+
+  @ApiPropertyOptional({
+    enum: CurrencyEnum,
+    example: CurrencyEnum.USD,
+  })
+  @IsEnum(CurrencyEnum)
+  @IsOptional()
+  currency?: CurrencyEnum;
+
+  // ===== Stats & Engagement =====
+  @ApiPropertyOptional({ example: 0 })
+  @IsInt()
+  @Min(0)
+  @IsOptional()
+  enrolledCount?: number;
+
+  @ApiPropertyOptional({ example: 0, minimum: 0, maximum: 5 })
+  @IsNumber()
+  @Min(0)
+  @Max(5)
+  @IsOptional()
+  averageRating?: number;
+
+  @ApiPropertyOptional({ example: 0 })
+  @IsInt()
+  @Min(0)
+  @IsOptional()
+  totalReviews?: number;
+
+  @ApiPropertyOptional({ example: 0 })
+  @IsInt()
+  @Min(0)
+  @IsOptional()
+  totalRatings?: number;
+
+  // ===== Publishing & Status =====
+  @ApiPropertyOptional({
+    description: 'Whether the course is published',
+    example: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  isPublished?: boolean;
+
+  @ApiPropertyOptional({ example: false })
+  @IsBoolean()
+  @IsOptional()
+  isFeatured?: boolean;
+
+  @ApiPropertyOptional({ example: false })
+  @IsBoolean()
+  @IsOptional()
+  isBestseller?: boolean;
+
+  @ApiPropertyOptional({ example: true })
+  @IsBoolean()
+  @IsOptional()
+  isNew?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  publishedAt?: Date;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  lastUpdated?: Date;
+
+  @ApiPropertyOptional({
+    type: [DateOptionDto],
+    description: 'Course time table/schedule',
+  })
+  @ValidateNested({ each: true })
+  @Type(() => DateOptionDto)
   @IsArray()
   @IsOptional()
-  modules?: any[];
+  timeTable?: DateOptionDto[];
 }

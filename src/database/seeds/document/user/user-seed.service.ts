@@ -4,8 +4,7 @@ import bcrypt from 'bcryptjs';
 import { Model } from 'mongoose';
 import { RoleEnum } from '../../../../roles/roles.enum';
 import { StatusEnum } from '../../../../statuses/statuses.enum';
-import { UserSchemaClass } from '../../../../users/infrastructure/persistence/document/entities/user.schema';
-
+import { UserSchemaClass } from '../../../../users/schema/user.schema';
 @Injectable()
 export class UserSeedService {
   constructor(
@@ -20,7 +19,7 @@ export class UserSeedService {
 
     if (!admin) {
       const salt = await bcrypt.genSalt();
-      const password = await bcrypt.hash('StrongPass123', salt);
+      const password = await bcrypt.hash('secret', salt);
 
       const data = new this.model({
         email: 'admin@example.com',

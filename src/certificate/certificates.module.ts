@@ -4,14 +4,14 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { CertificatesService } from './certificates.service';
 import { CertificatesController } from './certificates.controller';
 import {
-  Certificate,
+  CertificateSchemaClass,
   CertificateSchema,
-} from '../schema/Certificate/certificate.schema';
+} from './schema/certificate.schema';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
-      { name: Certificate.name, schema: CertificateSchema },
+      { name: CertificateSchemaClass.name, schema: CertificateSchema },
     ]),
   ],
   controllers: [CertificatesController],
