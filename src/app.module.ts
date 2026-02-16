@@ -27,25 +27,6 @@ import { MailerModule } from './mailer/mailer.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import { MongooseConfigService } from './database/mongoose-config.service';
 import { DatabaseConfig } from './database/config/database-config.type';
-import { CertificatesModule } from './certificate/certificates.module';
-import { CoursesModule } from './course/courses.module';
-import { CategoriesModule } from './category/categories.module';
-import { BlogsModule } from './blog/blogs.module';
-import { ClassScheduleModule } from './classSchedule/class-schedule.module';
-import { EnrollmentModule } from './Enrollment/enrollment.module';
-import { StripeModule } from './stripe/stripe.module';
-import stripeConfig from './stripe/config/stripe.config';
-import { PaymentModule } from './payment/payment.module';
-import { GoogleModule } from './googleService/google.module';
-import { BookingsModule } from './booking/booking.module';
-import { PurchaseOrderModule } from './purchaseOrder/purchase.module';
-import { AttendanceModule } from './attendance/attendence.module';
-import { LocationModule } from './location/location.module';
-import { NotificationModule } from './notification/notification.module';
-import { EnquiriesModule } from './enquiry/enquiries.module';
-import { AssigmentModule } from './assigment/assigment.module';
-import { AssessmentItemModule } from './assessment-Items/assessmentItem.module';
-import { StudentItemGradeModule } from './student-item-Grade/student-item-grade.module';
 
 // <database-block>
 const infrastructureDatabaseModule = (databaseConfig() as DatabaseConfig)
@@ -74,7 +55,6 @@ const infrastructureDatabaseModule = (databaseConfig() as DatabaseConfig)
         facebookConfig,
         googleConfig,
         appleConfig,
-        stripeConfig,
       ],
       envFilePath: ['.env'],
     }),
@@ -112,24 +92,6 @@ const infrastructureDatabaseModule = (databaseConfig() as DatabaseConfig)
     MailModule,
     MailerModule,
     HomeModule,
-    CertificatesModule,
-    CoursesModule,
-    CategoriesModule,
-    EnrollmentModule,
-    BlogsModule,
-    ClassScheduleModule,
-    GoogleModule,
-    StripeModule,
-    PaymentModule,
-    BookingsModule,
-    PurchaseOrderModule,
-    AttendanceModule,
-    LocationModule,
-    NotificationModule,
-    EnquiriesModule,
-    AssigmentModule,
-    AssessmentItemModule,
-    StudentItemGradeModule
   ],
 })
 export class AppModule {}

@@ -1,4 +1,5 @@
-import { UserSchemaClass } from '../../../../../users/schema/user.schema';
+import { UserSchemaClass } from '../../../../../users/infrastructure/persistence/document/entities/user.schema';
+import { UserMapper } from '../../../../../users/infrastructure/persistence/document/mappers/user.mapper';
 import { Session } from '../../../../domain/session';
 import { SessionSchemaClass } from '../entities/session.schema';
 
@@ -8,8 +9,7 @@ export class SessionMapper {
     domainEntity.id = raw._id.toString();
 
     if (raw.user) {
-      // Store the user reference directly (will be populated by Mongoose if needed)
-      domainEntity.user = raw.user as any;
+      domainEntity.user = UserMapper.toDomain(raw.user);
     }
 
     domainEntity.hash = raw.hash;

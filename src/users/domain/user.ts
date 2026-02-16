@@ -77,10 +77,4 @@ export class User {
 
   @ApiProperty()
   deletedAt: Date;
-
-  @ApiProperty()
-  isDeleted: boolean;
-
-  @ApiProperty()
-  isActive: boolean;
 }

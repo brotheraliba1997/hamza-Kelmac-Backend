@@ -7,8 +7,5 @@ export class FileDto {
   @IsNotEmpty()
   id: string;
 
-  @ApiProperty({ description: 'Relative path or key for the stored file' })
-  @IsString()
-  @IsNotEmpty()
   path: string;
 }

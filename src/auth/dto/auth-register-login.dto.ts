@@ -20,26 +20,4 @@ export class AuthRegisterLoginDto {
   @ApiProperty({ example: 'Doe' })
   @IsNotEmpty()
   lastName: string;
-
-  @ApiProperty({ example: 'orca-technologies' })
-  @IsNotEmpty()
-  company: string;
-
-  @ApiProperty({ example: 'web developer' })
-  @IsNotEmpty()
-  jobTitle: string;
-
-  @ApiProperty({ example: 'hamzaali1997.h@gmail.com' })
-  @IsNotEmpty()
-  emailAddress: string;
-
-  @ApiProperty({ example: 'hamzaali1997.h@gmail.com' })
-  @IsNotEmpty()
-  phoneNumber: number;
-  @ApiProperty({ example: 'United State America' })
-  @IsNotEmpty()
-  country: string;
-  @ApiProperty({ example: 'United State America' })
-  @IsNotEmpty()
-  industry: string;
 }

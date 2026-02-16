@@ -4,7 +4,7 @@ import { UserSeedService } from './user-seed.service';
 import {
   UserSchemaClass,
   UserSchema,
-} from '../../../../users/schema/user.schema';
+} from '../../../../users/infrastructure/persistence/document/entities/user.schema';
 
 @Module({
   imports: [

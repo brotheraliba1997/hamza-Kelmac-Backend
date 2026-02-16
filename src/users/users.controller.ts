@@ -19,7 +19,6 @@ import {
   ApiCreatedResponse,
   ApiOkResponse,
   ApiParam,
-  ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
 import { Roles } from '../roles/roles.decorator';
@@ -31,16 +30,15 @@ import {
   InfinityPaginationResponseDto,
 } from '../utils/dto/infinity-pagination-response.dto';
 import { NullableType } from '../utils/types/nullable.type';
-import { FilterUserDto, QueryUserDto } from './dto/query-user.dto';
+import { QueryUserDto } from './dto/query-user.dto';
 import { User } from './domain/user';
 import { UsersService } from './users.service';
 import { RolesGuard } from '../roles/roles.guard';
 import { infinityPagination } from '../utils/infinity-pagination';
 
-// @ApiBearerAuth()
-@Roles(RoleEnum.admin, RoleEnum.instructor)
-// @UseGuards(AuthGuard('jwt'), RolesGuard)
-
+@ApiBearerAuth()
+@Roles(RoleEnum.admin)
+@UseGuards(AuthGuard('jwt'), RolesGuard)
 @ApiTags('Users')
 @Controller({
   path: 'users',
@@ -61,60 +59,6 @@ export class UsersController {
     return this.usersService.create(createProfileDto);
   }
 
-  @ApiQuery({
-    name: 'search',
-    required: false,
-    type: String,
-    description: 'Filter by search',
-  })
-  @ApiQuery({
-    name: 'role',
-    required: false,
-    type: String,
-    description: 'Filter by role',
-  })
-  @ApiQuery({
-    name: 'isActive',
-    required: false,
-    type: Boolean,
-    description: 'Filter by active status',
-  })
-  @ApiQuery({
-    name: 'country',
-    required: false,
-    type: String,
-    description: 'Filter by country',
-  })
-  @ApiQuery({
-    name: 'USD',
-    required: false,
-    type: String,
-    description: 'Filter by currency',
-  })
-  @ApiQuery({
-    name: 'company',
-    required: false,
-    type: String,
-    description: 'Filter by company',
-  })
-  @ApiQuery({
-    name: 'page',
-    required: false,
-    type: Number,
-    description: 'Page number',
-  })
-  @ApiQuery({
-    name: 'limit',
-    required: false,
-    type: Number,
-    description: 'Items per page',
-  })
-  @ApiQuery({
-    name: 'isDeleted',
-    required: false,
-    type: Boolean,
-    description: 'Filter by deleted status',
-  })
   @ApiOkResponse({
     type: InfinityPaginationResponse(User),
   })
@@ -123,21 +67,26 @@ export class UsersController {
   })
   @Get()
   @HttpCode(HttpStatus.OK)
-  async findAll(@Query() query: QueryUserDto & FilterUserDto) {
+  async findAll(
+    @Query() query: QueryUserDto,
+  ): Promise<InfinityPaginationResponseDto<User>> {
     const page = query?.page ?? 1;
     let limit = query?.limit ?? 10;
     if (limit > 50) {
       limit = 50;
     }
 
-    return this.usersService.findManyWithPagination({
-      filterOptions: query,
-      sortOptions: query?.sort,
-      paginationOptions: {
-        page,
-        limit,
-      },
-    });
+    return infinityPagination(
+      await this.usersService.findManyWithPagination({
+        filterOptions: query?.filters,
+        sortOptions: query?.sort,
+        paginationOptions: {
+          page,
+          limit,
+        },
+      }),
+      { page, limit },
+    );
   }
 
   @ApiOkResponse({

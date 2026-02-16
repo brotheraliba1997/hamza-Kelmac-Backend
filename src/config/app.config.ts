@@ -47,10 +47,6 @@ class EnvironmentVariablesValidator {
   @IsString()
   @IsOptional()
   APP_HEADER_LANGUAGE: string;
-
-  @IsString()
-  @IsOptional()
-  ADMIN_EMAIL: string;
 }
 
 export default registerAs<AppConfig>('app', () => {
@@ -70,6 +66,5 @@ export default registerAs<AppConfig>('app', () => {
     apiPrefix: process.env.API_PREFIX || 'api',
     fallbackLanguage: process.env.APP_FALLBACK_LANGUAGE || 'en',
     headerLanguage: process.env.APP_HEADER_LANGUAGE || 'x-custom-lang',
-    adminEmail: process.env.ADMIN_EMAIL || 'admin@example.com',
   };
 });

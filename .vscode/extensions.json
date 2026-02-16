@@ -1,7 +1,6 @@
 {
   "recommendations": [
     "yzhang.markdown-all-in-one",
-    "DavidAnson.vscode-markdownlint",
-    "postman.postman-for-vscode"
+    "DavidAnson.vscode-markdownlint"
   ]
 }

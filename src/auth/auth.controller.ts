@@ -44,11 +44,8 @@ export class AuthController {
   }
 
   @Post('email/register')
-  @ApiOkResponse({ type: LoginResponseDto })
-  @HttpCode(HttpStatus.OK)
-  async register(
-    @Body() createUserDto: AuthRegisterLoginDto,
-  ): Promise<LoginResponseDto> {
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async register(@Body() createUserDto: AuthRegisterLoginDto): Promise<void> {
     return this.service.register(createUserDto);
   }
 
